@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leadfuel-core"
-version = "0.1.0"
-description = "Shared layer for the LeadFuel app suite (service mesh + knowledge client; auth/icp/spend to follow)."
+version = "0.2.0"
+description = "Shared layer + Nova OS kernel for the LeadFuel/Nova suite (service mesh + knowledge + constitution/consent/privacy/warden/mcp)."
 requires-python = ">=3.11"
 dependencies = []  # stdlib-only by design — keep the core dependency-free
 
