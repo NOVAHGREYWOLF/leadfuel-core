@@ -1,13 +1,31 @@
+> # ⚠️ DEPRECATED — ARCHIVED
+>
+> **This repository is deprecated and no longer maintained.** It is a frozen, divergent
+> ancestor of the shared kernel and **no live app pins it**. Do **not** edit, pin, or
+> install `leadfuel-core`.
+>
+> The shared kernel now lives at **https://github.com/NOVAHGREYWOLF/novahos** and is
+> distributed as the **`novahos`** package. Install that instead:
+> ```
+> novahos @ git+https://github.com/NOVAHGREYWOLF/novahos.git@main
+> ```
+> Everything below is retained for historical reference only.
+
+---
+
 # leadfuel-core
 
 Shared library for the **LeadFuel Business Suite** apps (novahawk · novahub · icp · campaign).
 No app, no domain — just the common code each service imports so the suite behaves uniformly.
 
+> **Note:** This repo is deprecated — use the `novahos` kernel instead (see notice above).
+> The install instructions below are historical and should not be followed for new work.
+
 Install it in any app (add to that app's `requirements.txt`):
 ```
-leadfuel-core @ git+https://github.com/NOVAHGREYWOLF/leadfuel-core.git@main
+novahos @ git+https://github.com/NOVAHGREYWOLF/novahos.git@main
 ```
-Local dev: `pip install -e .` from a clone, or `pip install git+https://github.com/NOVAHGREYWOLF/leadfuel-core.git`.
+Local dev: `pip install -e .` from a clone, or `pip install git+https://github.com/NOVAHGREYWOLF/novahos.git`.
 
 ## What's in it
 - **`service_auth`** — validate inbound `X-Service-Token` (the producer half of the mesh).
