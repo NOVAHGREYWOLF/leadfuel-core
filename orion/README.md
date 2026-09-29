@@ -9,3 +9,7 @@ Digital footprint audit, saved from a ChatGPT share link so it lives alongside t
 | `raw/share-page.html` | The share page exactly as downloaded |
 
 Source: https://chatgpt.com/share/6ab98cd1-4540-83e8-896a-b152b66c883f
+
+| `word/*.docx` | The two Word files ChatGPT built in the chat (gap worksheet, drawing release timeline), regenerated from the python-docx code in the transcript because the original sandbox links aren't downloadable |
+
+OneDrive copy: `NovahOS/50_LEADFUEL/clients/Orion Fredericks/`
