@@ -1,0 +1,10 @@
+{
+  "name": "LeadFuel Reports completion",
+  "slug": "leadfuel-reports",
+  "goal": "Finish the Reports program: one command briefing, every report attached as a PDF, proven in a real inbox.",
+  "auto_archive": false,
+  "budget": {
+    "soft": 700000,
+    "hard": 1000000
+  }
+}

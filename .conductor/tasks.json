@@ -1,0 +1,92 @@
+[
+  {
+    "id": "P5-F4",
+    "title": "Reports P5-F4: auto-archive line in the briefing (novahub#692)",
+    "effort": "small",
+    "envelope": "standard",
+    "depends": [],
+    "model": "sonnet",
+    "model_pin": null,
+    "status": "pr",
+    "session_id": "session_01E4SGoX7VSuJHKATRrcVsde",
+    "pr": 692,
+    "cost_usd": 0.87,
+    "context_tokens": 96615
+  },
+  {
+    "id": "P6",
+    "title": "Reports 6: Scope and Core report builders",
+    "effort": "medium",
+    "envelope": "standard",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_01UmpNPpyBBhJ3AaWbXr1BKZ",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "P7",
+    "title": "Reports 7: Estate weekly report (domains, DNS, liveness)",
+    "effort": "medium",
+    "envelope": "standard",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_013Z7qK6SXAW9BqJZXFfWdn9",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "P8",
+    "title": "Reports 8: DMARC digest (Deliverability report)",
+    "effort": "medium",
+    "envelope": "standard",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_014H6eSc9uEDH6SiGfaVVidc",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "P9",
+    "title": "Reports 9: attach every report as a PDF to the briefing",
+    "effort": "high",
+    "envelope": "standard",
+    "depends": [
+      "P6",
+      "P7",
+      "P8"
+    ],
+    "model": null,
+    "model_pin": "sonnet",
+    "status": "todo",
+    "session_id": null,
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "P10",
+    "title": "Reports 10: end-to-end check that the briefing lands with every attachment",
+    "effort": "medium",
+    "envelope": "standard",
+    "depends": [
+      "P9"
+    ],
+    "model": null,
+    "model_pin": null,
+    "status": "todo",
+    "session_id": null,
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  }
+]
