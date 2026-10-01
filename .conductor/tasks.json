@@ -21,11 +21,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "review",
     "session_id": "session_01UmpNPpyBBhJ3AaWbXr1BKZ",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 1.9,
+    "context_tokens": 166954
   },
   {
     "id": "P7",
@@ -35,11 +35,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "blocked",
     "session_id": "session_013Z7qK6SXAW9BqJZXFfWdn9",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 1.22,
+    "context_tokens": 148558
   },
   {
     "id": "P8",
@@ -49,11 +49,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "blocked",
     "session_id": "session_014H6eSc9uEDH6SiGfaVVidc",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 1.06,
+    "context_tokens": 137388
   },
   {
     "id": "P9",
@@ -97,11 +97,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "review",
     "session_id": "session_01DzL21KWPysGdrEsyy3TQ28",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 0.68,
+    "context_tokens": 109482
   },
   {
     "id": "G4-followup-models",
@@ -111,11 +111,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "review",
     "session_id": "session_01LN9oNYiQiMJPRLGipHDHcL",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 0.75,
+    "context_tokens": 103534
   },
   {
     "id": "G5",
@@ -125,11 +125,11 @@
     "depends": [],
     "model": null,
     "model_pin": null,
-    "status": "doing",
+    "status": "review",
     "session_id": "session_018RmgeA3SD8vyYRgLpVAQgD",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 0.63,
+    "context_tokens": 97415
   },
   {
     "id": "G6",
@@ -142,7 +142,7 @@
     "status": "doing",
     "session_id": "session_011bRcro9wS5dVuaiVxnNkX2",
     "pr": null,
-    "cost_usd": 0.0,
-    "context_tokens": 0
+    "cost_usd": 0.54,
+    "context_tokens": 109044
   }
 ]
