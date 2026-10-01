@@ -13,7 +13,7 @@ Read `.conductor/report.md` and `board.md` first. Do ONE status pass per tick, t
 | G4-followup-models | session_01LN9oNYiQiMJPRLGipHDHcL | reach | draft PR |
 | G5 scope gateway PR check | session_018RmgeA3SD8vyYRgLpVAQgD | scope | updates to scope#11 stack or a note |
 | G6 signal gateway | session_011bRcro9wS5dVuaiVxnNkX2 | signal | draft PR |
-P5-F4 (novahub#692) is `pr`: CI green, waiting for the owner to mark ready and merge.
+P5-F4 (novahub#692) is `pr`: CI green, waiting to be marked ready and merged by the tick (merge gate).
 P9 waits on P6+P7+P8 `done` (pinned sonnet). P10 waits on P9 merged and deployed by the owner.
 
 ## How to tick (until CND-1 merges)
@@ -24,11 +24,11 @@ A 0 token reading from a running session is stale; ignore it. Use `plan --max-pa
 Child prompts are NOT built by `plan` alone: briefs live on the private build board and are appended by hand (CND-1 fixes this).
 
 ## Rules
-No merge, no deploy. No archive without the owner's yes (auto_archive is off). Models: follow route-and-spawn (Sonnet default, Opus for critical/door envelopes, high or xhigh effort, security/auth/migration/architecture, Haiku for small mechanical work). The Sonnet/Haiku-only hold was LIFTED by the owner on 2026-10-01.
+No deploy. MERGING IS AUTOMATED (owner, 2026-10-01): merge a task's PR once all checks on its current head are green, it is mergeable and ready for review (undraft first); production cutover steps and PRs touching secrets or deploy config get a look first. No archive without the owner's yes (auto_archive is off). Models: follow route-and-spawn (Sonnet default, Opus for critical/door envelopes, high or xhigh effort, security/auth/migration/architecture, Haiku for small mechanical work). The Sonnet/Haiku-only hold was LIFTED by the owner on 2026-10-01.
 On merge of a task's PR: `mark-done <task> --pr N`. Commit .conductor/ to claude/admiring-cerf-k1z6vd (leadfuel-core PR #7, state branch, public repo: no private details).
 
 ## Owner-only (do not do)
-Merge novahub#692; archive OKs (P5-F2 session, stray #683 merge session, coordinator sessions); the six open questions in the board handoff;
+archive OKs (P5-F2 session, stray #683 merge session, coordinator sessions); the six open questions in the board handoff;
 close leadfuel-core#2; gateway steps G7-G10 (Railway/PC); rotate the hub database password (board Y12).
 
 ## Archive gate (owner rule, 2026-10-01; auto_archive is now ON for this project)
