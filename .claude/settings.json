@@ -1,7 +1,7 @@
 {
   "env": {
-    "SESSION_SOFT_TOKENS": "90000",
-    "SESSION_HARD_TOKENS": "120000"
+    "SESSION_SOFT_TOKENS": "300000",
+    "SESSION_HARD_TOKENS": "450000"
   },
   "hooks": {
     "PostToolUse": [

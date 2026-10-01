@@ -29,3 +29,11 @@ Router #1 = session_01PjWdddCUgWifTFgyqnt7Pe. It reached ~145k tokens during set
 
 ## Ids
 Board artifact A4uS9xn1emqupohdE4DUfV. Hourly tick trig_015prRzaktsxeYJLiD7x8G9B, nightly trig_01U9CpzgkUWKbLeymJ46qmuA, 4-hourly novahos tick trig_01SXmjamu3JKRDbFyVvvHtGN. State branch for the plan: claude/admiring-cerf-k1z6vd (leadfuel-core PR #7).
+
+## POLICY CHANGE (owner, 2026-10-01, after router #2 started): bigger sessions
+Owner: weekly usage is ~4% after the reset, plenty of room, make sessions bigger so work gets finished.
+- Guard: soft 300k, hard 450k (`.claude/settings.json` env; pull the branch, it applies to new sessions from this checkout). Reuse an idle session under 200k; do not wake one over 300k for new work. Haiku stays under 150k (200k window).
+- Project budget raised on the state branch (claude/admiring-cerf-k1z6vd): soft 5M, hard 8M tokens (was 700k/1M, already exceeded at 969k, which blocked new starts such as P9).
+- Hourly routine trig_015prRzaktsxeYJLiD7x8G9B updated (own size 200k, nudge sessions over 300k, size-policy line). NOT yet updated, router #2 please do (keep existing text, change numbers only): nightly trig_01U9CpzgkUWKbLeymJ46qmuA ("flag any session over 100k", "100k/150k per session" -> 300k/450k) and 4-hourly trig_01SXmjamu3JKRDbFyVvvHtGN if it stays.
+- Novahos code still has the old constants (tick.py reuse < 60,000; child_brief "handoff at 100k, hard stop 150k"; context_guard defaults 100k/150k; route-and-spawn 60k/100k). Needs a novahos PR (push access) that reads these from `.conductor/project.json` or raises them. Start it as a task.
+- NOT changed, owner decides: the "Sonnet or Haiku only until 2026-10-03 21:00 UTC" model hold. Ask in one line whether to lift it now.
