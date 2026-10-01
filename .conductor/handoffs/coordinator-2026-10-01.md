@@ -30,3 +30,19 @@ On merge of a task's PR: `mark-done <task> --pr N`. Commit .conductor/ to claude
 ## Owner-only (do not do)
 Merge novahub#692; archive OKs (P5-F2 session, stray #683 merge session, coordinator sessions); the six open questions in the board handoff;
 close leadfuel-core#2; gateway steps G7-G10 (Railway/PC); rotate the hub database password (board Y12).
+
+## Archive gate (owner rule, 2026-10-01; auto_archive is now ON for this project)
+A session is archived only when ALL hold: (1) its PR is merged; (2) its last message explicitly says DONE; (3) it left a handoff or a final
+done report. `mark-done` is the gate: run it only when all three hold, because auto_archive then archives every task marked `done`.
+Idle sessions outside the plan (not archived yet, owner said they must first say DONE and leave a handoff or final report):
+- session_01AqEe6LghcvzuWQHGmvaSFs (P5-F2): says #691 merged, but board task still `pr` and an owner decision open. Not an explicit DONE.
+- session_01XLr7jXSgaGwbgTbfoXtNd4 (stray #683 merge): final merge report exists, no explicit DONE (#683 itself is merged).
+- session_013KaA5oWtyQXtWULYd32wx7 (old Reports coordinator): waiting on the owner's six questions. Not done.
+First tick: send_message each one: "If your work is complete reply DONE plus a five-line final report; otherwise say what remains."
+When a reply satisfies the gate, list it as ready-to-archive in your report for the owner's yes. Do not archive these yourself.
+
+## Routine and verification
+Hourly routine trig_015prRzaktsxeYJLiD7x8G9B (minute :36, fresh session each fire, first fire 22:36 UTC). It stores NO connectors.
+UNVERIFIED: that a fired session has add_repo / create_session / get_session. At the first tick after 22:36 UTC, find the session it started
+(list_sessions) and confirm it ran a pass; if it could not, tell the owner (fix is in the claude.ai routines UI).
+The predecessor's own check-in trigger (trig_01181qvrG12rNQZsPBZfcss7) is deleted.
