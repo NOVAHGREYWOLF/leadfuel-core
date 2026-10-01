@@ -49,9 +49,9 @@ By model:
 
 - Total spend: $7.65
 - Total context tokens: 968,990
-- Soft budget: 700,000 tokens (exceeded)
-- Hard budget: 1,000,000 tokens (ok)
-- Status: **OVER SOFT BUDGET**
+- Soft budget: 5,000,000 tokens (ok)
+- Hard budget: 8,000,000 tokens (ok)
+- Status: **within budget**
 
 ## Archive candidates
 
