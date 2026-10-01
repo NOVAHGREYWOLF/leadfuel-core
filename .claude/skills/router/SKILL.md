@@ -17,7 +17,7 @@ The router does **no build work**. It reads, decides, relays, records, and rotat
 5. **Rotate.** At ~300k tokens (the guard's soft cap), or when told to, hand over to a fresh router (below). Never let the owner chase a session.
 
 ## Rules (inherited, do not relax)
-- Never merge, never deploy, never force-push, never print secrets. Draft PRs only.
+- Never merge, never deploy, never force-push, never print secrets. Draft PRs only. NEVER bulk mark-done anything (owner, 2026-10-01).
 - Archive gate: only when (1) the task's PR is merged, (2) its last message says DONE, (3) it left a handoff or final report. `conductor.cloud mark-done` is the gate; `auto_archive` is ON for project `leadfuel-reports`. Sessions outside the plan need the owner's yes. Router predecessors are archived only if `router/config.archive_predecessors` is true.
 - Models: the Sonnet/Haiku-only hold was LIFTED by the owner on 2026-10-01 (weekly usage ~2%). Use the `route-and-spawn` rules: Sonnet by default; Opus for critical/door envelopes, high/xhigh effort, or security/auth/migration/architecture work; Haiku for small mechanical work. A task's `model_pin` still wins.
 - Size (owner raised these on 2026-10-01: plenty of weekly headroom, bigger sessions are wanted so work gets finished): reuse a session if under 200k tokens, same repo and area; do not wake one over 300k for new work; guard soft cap 300k (finish the step, hand off), hard cap 450k (stop); one task, one session, one PR; max 8 in parallel. Haiku has a 200k window: keep Haiku tasks under 150k. Project budget (sum of context tokens, `.conductor/project.json`): soft 5M, hard 8M. These are fences, not targets: do not pad context.
@@ -74,8 +74,10 @@ Predecessor:
 Successor (**Claim**, idempotent, safe to run twice):
 1. `router/current` -> `{session_id: me, incarnation: N+1, predecessor, status: "active"}`; add tag `router:current` to me, remove it from the predecessor.
 2. `send_message` the new id, one line, to every child that is `doing` and under 300k tokens. Skip the rest.
-3. `PushNotification`: `Router #N+1 is live, use it from now on` plus the session link `https://claude.ai/code/<my session id>`.
-4. Post a 5-line digest in this thread: what carried over, what needs the owner.
+3. **Heartbeat.** The hourly heartbeat routine wakes the live router (owner approved 2026-10-01). It is bound to one session, so on every rotation: `delete_trigger` the predecessor's (id in `router/current.heartbeat_trigger_id`), then `create_trigger` a new one with `persistent_session_id` = me, cron `0 * * * *`, initiation `human_request`, prompt = `.conductor/router/HEARTBEAT_PROMPT.md` verbatim; store the new id in `router/current.heartbeat_trigger_id`.
+4. If `router/config.archive_predecessors` is true (owner approved 2026-10-01), `archive_session` the predecessor once steps 1-3 are done. Never archive yourself.
+5. `PushNotification`: `Router #N+1 is live, use it from now on` plus the session link `https://claude.ai/code/<my session id>`.
+6. Post a 5-line digest in this thread: what carried over, what needs the owner.
 If the owner messages a predecessor after rotation, the predecessor forwards the message to `router/current.session_id` and replies with one line saying where to go.
 
 ## Watchdog (hourly routine, fresh small session; also does the conductor tick pass)

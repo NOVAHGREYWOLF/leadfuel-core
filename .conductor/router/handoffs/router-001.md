@@ -49,3 +49,9 @@ Owner: weekly usage is ~4% after the reset, plenty of room, make sessions bigger
 - DECISION: intake is PULL first (SKILL.md "Intake"). `get_session` already carries a harness-written `post_turn_summary` {status_category, status_detail, needs_action} for every session, plus status_bucket and tokens. A sweep of the 26 idle sessions from it gave a usable one-line status for each.
 - The four throwaway test sessions (019VMz6f..., 013LUNTj..., 01SEkgXR..., 012EHgbq...) sit on an unanswered permission prompt; archive candidates (owner OK).
 - NEW owner question for #2's batch: allow an hourly heartbeat routine that wakes the router session (persistent_session_id) so it sweeps without the owner opening it? Recommend yes. It is a scheduled wake-up into a session, which the earlier rules forbade, so only with the owner's yes. Recreate it on each rotation (Claim step).
+
+## OWNER ANSWERS (2026-10-01, ~22:17 UTC, directly to router #1) and what was done
+- "Do not bulk done anything." Never. Recorded in router/config and the skill rules.
+- "Everything else yes": archive router predecessors automatically (`router/config.archive_predecessors: true`; #2 archives router #1 after the owner has moved over); 4-hourly tick trig_01SXmjamu3JKRDbFyVvvHtGN retired (PAUSED, not deleted); hourly heartbeat created: trig_01DiwJhuwjtyDx4TyH4v6Fxa, minute :17, bound to router #2 (recreate on each rotation, see Claim step 3); four throwaway smoke-test sessions archived.
+- "Do the new PR": CND-2 started as session_01TDrz4hsNv1cSg1PN9PTcPr (Sonnet, novahos, base claude/conductor-done or PR #34's head). It ends with a `STATUS: ... | CND-2 | <PR url> | ...` line; read it by pull. Add it to router/roster.
+- New limits: guard soft 300k / hard 450k; reuse an idle session under 200k; do not wake over 300k; Haiku under 150k; coordinator/tick self-check 200k; project budget soft 5M / hard 8M tokens; max parallel 8. Model hold lifted.
