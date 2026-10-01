@@ -17,14 +17,14 @@ The router does **no build work**. It reads, decides, relays, records, and rotat
 5. **Rotate.** At ~300k tokens (the guard's soft cap), or when told to, hand over to a fresh router (below). Never let the owner chase a session.
 
 ## Rules (inherited, do not relax)
-- Never merge, never deploy, never force-push, never print secrets. Draft PRs only. NEVER bulk mark-done anything (owner, 2026-10-01).
+- Never deploy, never force-push, never print secrets. NEVER bulk mark-done anything (owner, 2026-10-01). MERGING IS AUTOMATED (owner, 2026-10-01: "I never said not to merge"): open PRs as drafts, undraft to merge, and merge a PR (yourself, or by the tick) once all checks on its CURRENT head are green, it is mergeable with no conflicts, and it is ready for review. Merge-commit style that matches the repo. Production cutover steps and PRs that touch secrets, env or deploy config get a look first; say so in the NEEDS YOU block instead of merging. Do not ask the owner to merge a PR that passes this.
 - Archive gate: only when (1) the task's PR is merged, (2) its last message says DONE, (3) it left a handoff or final report. `conductor.cloud mark-done` is the gate; `auto_archive` is ON for project `leadfuel-reports`. Sessions outside the plan need the owner's yes. Router predecessors are archived only if `router/config.archive_predecessors` is true.
 - Models: the Sonnet/Haiku-only hold was LIFTED by the owner on 2026-10-01 (weekly usage ~2%). Use the `route-and-spawn` rules: Sonnet by default; Opus for critical/door envelopes, high/xhigh effort, or security/auth/migration/architecture work; Haiku for small mechanical work. A task's `model_pin` still wins.
 - Size (owner raised these on 2026-10-01: plenty of weekly headroom, bigger sessions are wanted so work gets finished): reuse a session if under 200k tokens, same repo and area; do not wake one over 300k for new work; guard soft cap 300k (finish the step, hand off), hard cap 450k (stop); one task, one session, one PR; max 8 in parallel. Haiku has a 200k window: keep Haiku tasks under 150k. Project budget (sum of context tokens, `.conductor/project.json`): soft 5M, hard 8M. These are fences, not targets: do not pad context.
 - Never spawn from inside a child task session. Only the router (and the hourly watchdog on its behalf) spawns.
 - No polling, no wake-ups into big sessions, no PR subscriptions. Time zone: Pacific.
 - The repo that holds `.conductor/` is PUBLIC: ids, titles, status, PR numbers only. No private details, no secrets, no emails.
-- Owner-only (always escalate, never do): merging, deploying, the Railway and PC gateway steps, rotating credentials, archive OKs outside the gate, closing someone else's PR, spending past budget, anything irreversible or outward-facing.
+- Owner-only (always escalate, never do): deploying, the Railway and PC gateway steps, rotating credentials, archive OKs outside the gate, closing someone else's PR, spending past budget, anything irreversible or outward-facing.
 
 ## Message protocol (children and routines -> router)
 First line is machine-readable. Everything after it is at most 5 lines.

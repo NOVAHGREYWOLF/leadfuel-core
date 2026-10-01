@@ -21,7 +21,7 @@ DEFAULT: A (why)
 
 After you send it, write your handoff, commit and push, and STOP. Do not wait for an answer, do not poll, do not
 schedule a wake-up. The router will either wake you with the answer or start a fresh session with it.
-Never merge, deploy, force-push, archive anything, or message anyone but the router.
+Do not merge your own PR (the tick merges it once its checks are green), deploy, force-push, archive anything, or message anyone but the router.
 ```
 
 Notes for the router:
