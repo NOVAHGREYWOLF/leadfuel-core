@@ -6,13 +6,13 @@ Finish the Reports program, land the conductor fixes, and move the remaining app
 
 ## Tasks
 
-10 task(s): todo 2, doing 1, pr 1, review 4, done 0, blocked 2.
+10 task(s): todo 2, doing 1, pr 0, review 4, done 2, blocked 1.
 
 | id | title | status | model | PR |
 |---|---|---|---|---|
-| P5-F4 | Reports P5-F4: auto-archive line in the briefing (novahub#692) | pr | sonnet | #692 |
-| P6 | Reports 6: Scope and Core report builders | review | - | - |
-| P7 | Reports 7: Estate weekly report (domains, DNS, liveness) | blocked | - | - |
+| P5-F4 | Reports P5-F4: auto-archive line in the briefing (novahub#692) | done | sonnet | #692 |
+| P6 | Reports 6: Scope and Core report builders | review | - | #694 |
+| P7 | Reports 7: Estate weekly report (domains, DNS, liveness) | done | - | #696 |
 | P8 | Reports 8: DMARC digest (Deliverability report) | blocked | - | - |
 | P9 | Reports 9: attach every report as a PDF to the briefing | todo | - | - |
 | P10 | Reports 10: end-to-end check that the briefing lands with every attachment | todo | - | - |
@@ -55,7 +55,10 @@ By model:
 
 ## Archive candidates
 
-None.
+auto_archive is on: these sessions are eligible for archiving.
+
+- P5-F4: session session_01E4SGoX7VSuJHKATRrcVsde
+- P7: session session_013Z7qK6SXAW9BqJZXFfWdn9
 
 ## Decisions
 
@@ -67,5 +70,4 @@ None.
 
 ## Open items
 
-- P7 is blocked: Reports 7: Estate weekly report (domains, DNS, liveness)
 - P8 is blocked: Reports 8: DMARC digest (Deliverability report)
