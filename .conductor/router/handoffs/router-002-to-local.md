@@ -26,3 +26,8 @@ Merge queue: novahub #692/#694/#696 (CI/draft), novahos #25 (+ commit check), #3
 
 ## Local first steps
 1 `railway whoami`. 2 read ACCESS.md. 3 check CI on the PRs above with `gh`. 4 do the cutover with the owner, stopping before the key delete.
+
+## Local folder map (owner's computer, verified from remote URLs, no secrets)
+Real clones live in F:\Leadfuel\repos (folder name -> GitHub repo): novahub -> novahub; signal and novahound -> signal; scope and icp -> scope; reach and novaherald -> reach; orbit and novahawk -> orbit; lucid, echo, odyssey, novahub-mcp, apollo-enricher, instagram-outreach, howlclip, NovahPrime -> same names. Folders named .wt-* are git worktrees of those repos: do not work in them.
+Missing locally: leadfuel-core and novahos. Clone both into F:\Leadfuel\repos, and run the local router from F:\Leadfuel\repos\leadfuel-core (a throwaway clone also exists at C:\Users\novah\leadfuel\leadfuel-core; do not use it).
+Do NOT open sessions in F:\Claude Sessions (holds a credentials file). Old notes are in F:\Leadfuel (PROGRESS.md, CLAUDE.md) and F:\Claude Sessions (WORK_QUEUE.md, SESSION_MAP.md); read only if the owner asks.
