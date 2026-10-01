@@ -6,6 +6,7 @@ Router #3 = local desktop session "Session inventory and local migration plan" (
 - Grouping rule met: the sidebar's Ungrouped section is empty. 16 scheduled-task runs cannot be grouped (the sidebar files them under Routines).
 - Dispatched by message: DOORS (signal #13/#28), INTELLIGENCE reports (hub #694), NODE (Railway, read-only), local router (merge queue).
 - Merged today: novahos #25 #35 #36 #37, orbit #28, hub #692 #696 (23:27Z). Hub main CI is green on 634bcc8, deployed, /healthz 200.
+- Archived 15 local sessions: 2 finished desks (INTELLIGENCE command wall boards, owner action list) and 13 finished hourly heartbeat runs. One heartbeat run (local_82b89557) still shows running since 20:04Z; left alone.
 - Cloud router #2 archived about 25 cloud sessions. 13 remain (ids in CLOUD_SESSIONS_DISPOSITION.md); they need claude.ai.
 
 ## State (verified unless marked)
@@ -16,7 +17,7 @@ Router #3 = local desktop session "Session inventory and local migration plan" (
 - The owner's global settings file is empty (`null`). Newest real copy: the 2026-09-24 backup.
 
 ## Next
-1. Archive finished local sessions (read-only agent classifies; gate: PR merged, DONE, handoff, no unpushed work). Never DOORS Odyssey purge or MONEY outbound metering (unpushed commits).
+1. Do NOT bulk-archive desks. A read-only check of 33 desk sessions found 2 finished (archived), 30 with work owed or owner decisions pending (many cut off by usage limits; the app's "PR merged" badge is often an earlier PR), and 1 with no GitHub copy (INTELLIGENCE debt signal fix: its repo has no remote). Archive a desk only after its own final report. Never DOORS Odyssey purge or MONEY outbound metering (unpushed commits). The real next work is those 30 desks' owed items and owner decisions.
 2. Resend the undelivered reports-desk message once the owner types.
 3. Claim: set board doc router/current to the new router.
 4. PR #9 (draft): finish LOCAL_BOOTSTRAP.md and CLOUD_SESSIONS_DISPOSITION.md names, trim the path and credentials lines, then merge.
