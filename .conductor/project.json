@@ -1,7 +1,7 @@
 {
-  "name": "LeadFuel Reports completion",
+  "name": "LeadFuel completion (Reports + conductor fixes + gateway)",
   "slug": "leadfuel-reports",
-  "goal": "Finish the Reports program: one command briefing, every report attached as a PDF, proven in a real inbox.",
+  "goal": "Finish the Reports program, land the conductor fixes, and move the remaining apps onto the LLM gateway. Cloud sessions do the code; Railway and PC steps stay with Novah.",
   "auto_archive": false,
   "budget": {
     "soft": 700000,

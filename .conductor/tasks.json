@@ -88,5 +88,61 @@
     "pr": null,
     "cost_usd": 0.0,
     "context_tokens": 0
+  },
+  {
+    "id": "CND-1",
+    "title": "Conductor fixes: session JSON paths, per-task briefs, per-session budget and handoff-due, adopted tasks do not use slots",
+    "effort": "medium",
+    "envelope": "standard",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_01DzL21KWPysGdrEsyy3TQ28",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "G4-followup-models",
+    "title": "Reach: align default model IDs with novahos model_tiers (after gateway cutover)",
+    "effort": "small",
+    "envelope": "production",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_01LN9oNYiQiMJPRLGipHDHcL",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "G5",
+    "title": "Scope: check gateway PR scope#11 (+#12,#13) is mergeable against main, update if small, add to runbook",
+    "effort": "medium",
+    "envelope": "production",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_018RmgeA3SD8vyYRgLpVAQgD",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
+  },
+  {
+    "id": "G6",
+    "title": "Signal: route the direct vendor client through the hub gateway (G1 model map, G2 template)",
+    "effort": "medium",
+    "envelope": "production",
+    "depends": [],
+    "model": null,
+    "model_pin": null,
+    "status": "doing",
+    "session_id": "session_011bRcro9wS5dVuaiVxnNkX2",
+    "pr": null,
+    "cost_usd": 0.0,
+    "context_tokens": 0
   }
 ]
