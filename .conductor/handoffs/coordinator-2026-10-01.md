@@ -1,7 +1,7 @@
 # Handoff: conductor coordinator, 2026-10-01 (predecessor session_01BRArxH6fbwuHsz6KhxYsDh, stopped at ~245k tokens, over the 150k cap)
 
 Read `.conductor/report.md` and `board.md` first. Do ONE status pass per tick, then stop. Check your own
-`external_metadata.context_usage.used_tokens` via get_session at the start; at 90k write a handoff and spawn a successor.
+`external_metadata.context_usage.used_tokens` via get_session at the start; at 200k write a handoff and spawn a successor (owner raised session sizes 2026-10-01: guard soft 300k, hard 450k, reuse under 200k, budget soft 5M / hard 8M).
 
 ## Running (all Sonnet, draft PRs only, tracked in tasks.json)
 | task | session | repo | expected output |
@@ -24,7 +24,7 @@ A 0 token reading from a running session is stale; ignore it. Use `plan --max-pa
 Child prompts are NOT built by `plan` alone: briefs live on the private build board and are appended by hand (CND-1 fixes this).
 
 ## Rules
-No merge, no deploy. No archive without the owner's yes (auto_archive is off). Sonnet/Haiku only until the weekly limit resets 2026-10-03 21:00 UTC.
+No merge, no deploy. No archive without the owner's yes (auto_archive is off). Models: follow route-and-spawn (Sonnet default, Opus for critical/door envelopes, high or xhigh effort, security/auth/migration/architecture, Haiku for small mechanical work). The Sonnet/Haiku-only hold was LIFTED by the owner on 2026-10-01.
 On merge of a task's PR: `mark-done <task> --pr N`. Commit .conductor/ to claude/admiring-cerf-k1z6vd (leadfuel-core PR #7, state branch, public repo: no private details).
 
 ## Owner-only (do not do)
