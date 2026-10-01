@@ -7,7 +7,7 @@ If that session is archived or send_message fails, read doc router/current on th
 
 TOOL: use `mcp__claude-code-remote__send_message` with `session_id` (load it with ToolSearch `select:mcp__claude-code-remote__send_message`).
 Do NOT use the generic `SendMessage` / `ListAgents` tools: they address by name and fail with "No agent named ... is reachable".
-SPAWNER: create children with `extra_allowed_tools: ["mcp__claude-code-remote__send_message"]`, otherwise the child stops on a permission prompt the first time it tries to report.
+NOTE: the first send_message from a spawned child can stop on a permission prompt. The router does not depend on it: it reads your harness status summary directly. So always end with a clear one-line final message (what is done, what you need) and your handoff; that is what gets read.
 
 When you finish, are blocked, or need a decision, send ONE message to the router:
 

@@ -39,3 +39,13 @@ Owner: weekly usage is ~4% after the reset, plenty of room, make sessions bigger
 - 4-hourly tick trig_01SXmjamu3JKRDbFyVvvHtGN has no size or model text, so nothing to edit. It drives the NovahOS plan on novahos branch claude/conductor-done (277 adopted sessions, budget still 100k/150k there, archives only tasks marked done, which nothing marks automatically). Recommendation to the owner: retire (pause) it, the router covers the roster. Owner decides.
 - STILL OPEN for the owner (ask once, together, with recommendations): archive router predecessors automatically; retire the 4-hourly tick; bulk mark-done of 238 sessions (irreversible, recommend NOT yet); merges and the Railway cutover; the six coordinator questions (text not retrieved).
 - Novahos code still has the old constants (tick.py reuse < 60,000; child_brief "handoff at 100k, hard stop 150k"; context_guard defaults 100k/150k; route-and-spawn 60k/100k). Needs a novahos PR (push access). Start it as a task.
+
+## SMOKE TEST RESULTS (router #1, 2026-10-01 ~22:14 UTC): child -> router push is BLOCKED
+- Test 1 (Haiku, generic `SendMessage`): wrong tool, "No agent named ... is reachable".
+- Test 2 (router #2's Haiku, right tool): stopped on a permission prompt, session REQUIRES_ACTION (`Waiting on permission: mcp__claude-code-remote__send_message`).
+- Test 3 (same, spawned with `extra_allowed_tools: [send_message]`): same prompt. The parameter did not clear it.
+- Test 4 (same, source repo with `permissions.allow` for the tool in `.claude/settings.json`, commit e0d8deb, since reverted): same prompt (the child's `current_branches` read null, so the rule may not have loaded; not conclusive for that approach, but it did not work here).
+- Router -> session and router -> router `send_message` DO work (#1 -> #2, #2 -> #1).
+- DECISION: intake is PULL first (SKILL.md "Intake"). `get_session` already carries a harness-written `post_turn_summary` {status_category, status_detail, needs_action} for every session, plus status_bucket and tokens. A sweep of the 26 idle sessions from it gave a usable one-line status for each.
+- The four throwaway test sessions (019VMz6f..., 013LUNTj..., 01SEkgXR..., 012EHgbq...) sit on an unanswered permission prompt; archive candidates (owner OK).
+- NEW owner question for #2's batch: allow an hourly heartbeat routine that wakes the router session (persistent_session_id) so it sweeps without the owner opening it? Recommend yes. It is a scheduled wake-up into a session, which the earlier rules forbade, so only with the owner's yes. Recreate it on each rotation (Claim step).
