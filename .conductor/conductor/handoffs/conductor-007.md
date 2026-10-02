@@ -27,6 +27,7 @@ First, before Next: record the owner's card answers on the matching picks (note 
 - q166 A plus a note: the current wall stays stable and the new one ships as a beta, both reachable until the beta passes. Sent to ONE-PLACE-SURVEY.
 - q164 is still open.
 - The ci-novahub lock was released at ~23:48Z.
+- ROUTER #12 rotated: router-012.md at 51845c0 on claude/heuristic-mahavira-26f264. The owner has the prompt for ROUTER #13. #12 stays unarchived because it has 7 child desks. Brief #13 instead of #12 once it is live.
 
 ## Owed
 - Owner: clear the D4-build-A prompt; Router desk cards q154-q168 plus ATLAS-B1's; owner said YES to ROUTER #12 sweeping live sessions for unanswered owner questions into cards; brief sent (queued at #12), result comes to 008.
