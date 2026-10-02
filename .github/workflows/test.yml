@@ -1,0 +1,46 @@
+name: test
+
+# Bare `pytest` from the repo root, on the self-hosted runner (the $0 Actions spending cap stays
+# set, so a GitHub-hosted job never starts). Bare, not `pytest tests/`: an explicit path
+# overrides testpaths and silently drops suites such as plugins/leadfuel-way/tests.
+#
+# The repo is PUBLIC and the runner is this PC. A fork PR must never reach it, so every job
+# carries an explicit same-repo guard in addition to the repo's fork-approval setting.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest
+    # push events have no pull_request payload, so they pass; a PR must come from this repo.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, novah]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: pytest (bare, from the repo root)
+        run: |
+          pytest -q -ra | tee pytest.out
+          # Exit 5 (nothing collected) fails the step: a run that collects nothing is not a pass.
+          n=$(grep -Eo '[0-9]+ passed' pytest.out | head -1 | cut -d' ' -f1)
+          echo "collected-and-passed: ${n:-0}"
+          test "${n:-0}" -gt 0
