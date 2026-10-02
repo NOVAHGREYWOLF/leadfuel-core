@@ -1,6 +1,6 @@
 ---
 name: desk
-description: The DESK session: one task, one worktree, one draft PR. Use when the title reads `LANE · <task id> n/m · topic`, or when you were opened by a router to do one task. Covers isolation, the checks, reporting to the router with STATUS or ASK, and handing off.
+description: The DESK session. Does one task in one worktree and opens one draft PR. Use when the title reads `LANE · <task id> n/m · topic`, or when you were opened by a router to do one task. Covers isolation, the checks, reporting to the router with STATUS or ASK, and handing off.
 ---
 
 # desk (one task)

@@ -208,12 +208,12 @@ def guard_message(tokens: int, last_warned: int, soft: int, hard: int) -> tuple[
     if tokens >= hard:
         return (
             f"CONTEXT BUDGET: HARD CAP. This session is at ~{k}k tokens (cap {hard // 1000}k). "
-            "Start nothing. Run the `handoff` skill now: write the note, commit and push it, give the "
+            "Start nothing. Run the `leadfuel-way:handoff` skill now: write the note, commit and push it, give the "
             "owner the one prompt for a fresh session, end your turn."
         ), tokens
     return (
         f"CONTEXT BUDGET: ~{k}k tokens (handoff point {soft // 1000}k, hard cap {hard // 1000}k). "
-        "Finish the step you are on, start nothing new, and run the `handoff` skill: write the note, "
+        "Finish the step you are on, start nothing new, and run the `leadfuel-way:handoff` skill: write the note, "
         "commit and push it, give the owner the one prompt for a fresh session, end your turn. "
         "You will not be able to end a turn until a handoff note exists."
     ), tokens
@@ -350,7 +350,7 @@ def handle(event: dict) -> dict | None:
                     out = {"decision": "block", "reason": (
                         f"THE WAY: this session is at ~{tokens // 1000}k tokens, past its "
                         f"{'hard cap ' + str(hard // 1000) if tokens >= hard else 'handoff point ' + str(soft // 1000)}k, "
-                        "and no handoff note has been written since. Run the `handoff` skill now: "
+                        "and no handoff note has been written since. Run the `leadfuel-way:handoff` skill now: "
                         "write the note (path containing 'handoff'), commit and push it, give the owner "
                         "the one prompt for a fresh session, then end your turn."
                     )}

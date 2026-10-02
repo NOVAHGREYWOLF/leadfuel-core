@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: Start a project the way the owner wants it started: the sidebar groups exist, the two pages exist, the plan files exist, and one router (never more) is opened for it. Use when the conductor has queued tasks that belong to a project with no live router, or when the owner says "new project".
+description: Start a project the way the owner wants it started, with the sidebar groups, the two pages and the plan files in place and one router (never more) opened for it. Use when the conductor has queued tasks that belong to a project with no live router, or when the owner says "new project".
 ---
 
 # new-project

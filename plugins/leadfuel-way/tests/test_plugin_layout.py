@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 
 import pytest
 
@@ -56,6 +58,27 @@ def test_skill_frontmatter(name):
     assert m["n"] == name and len(m["d"]) > 40
 
 
+@pytest.mark.parametrize("name", SKILLS)
+def test_description_is_a_safe_yaml_plain_scalar(name):
+    """`claude plugin validate` caught `description: The DESK session: one task`: a colon and a space
+    ends a YAML plain scalar, so the whole frontmatter failed to parse and the skill loaded with
+    empty metadata. A space then `#` starts a comment and silently truncates it."""
+    text = (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+    desc = re.match(r"---\nname: [^\n]+\ndescription: ([^\n]+)\n---\n", text)[1]
+    assert ": " not in desc and " #" not in desc and not desc.endswith(":")
+    assert desc[0] not in "\"'[{&*!|>%@`"
+
+
+def test_claude_cli_validates_the_plugin():
+    """The real parser, when this machine has it. Skipped (not passed) elsewhere."""
+    claude = shutil.which("claude")
+    if not claude:
+        pytest.skip("the claude CLI is not installed here")
+    done = subprocess.run([claude, "plugin", "validate", str(PLUGIN), "--strict"], capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", timeout=120)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
 def test_skill_cross_references_resolve():
     for name in SKILLS:
         text = (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
@@ -71,8 +94,11 @@ def test_the_banner_only_names_skills_that_exist(hook):
 
 def test_hook_messages_only_name_skills_that_exist(hook):
     src = (PLUGIN / "hooks" / "way_hook.py").read_text(encoding="utf-8")
-    for ref in set(re.findall(r"leadfuel-way:([a-z-]+)", src)) | set(re.findall(r"`(handoff)` skill", src)):
-        assert ref in SKILLS
+    refs = set(re.findall(r"leadfuel-way:([a-z-]+)", src))
+    assert "handoff" in refs  # the guard and the Stop gate both send a session to this skill
+    assert all(ref in SKILLS for ref in refs)
+    # A plugin skill is invoked by its namespaced name. A bare "the `handoff` skill" would not resolve.
+    assert "`handoff` skill" not in src
 
 
 # Standing rules: the retired arm spellings never reappear; a public repo carries no emails.
