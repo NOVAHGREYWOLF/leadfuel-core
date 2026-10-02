@@ -16,6 +16,18 @@ Ids only (public repo). This session: local_da515743, branch claude/hungry-spenc
 ## Next
 When ONE-PLACE-SURVEY reports, turn its plan into page tasks and ask the owner what to queue.
 
+First, before Next: record the owner's card answers on the matching picks (note field), as relayed by ROUTER #12 at ~23:50Z. Verify on the Router desk first.
+- ON8 = q160 A: two hub runners; no local full suites while CI is queued.
+- Q1 = q161 A: new standing rule, every desk PR states its bare pytest count. It belongs in the way's desk skill and would be a NODE task.
+- T9, T10, T12 = q162, q163, q165 A: the desk prepares, the owner flips.
+- H5 = q168 A.
+- DOORFIX-07 = q170 A: odyssey goes through the hub embedding door, then its key is removed.
+- CORE-CI = q171 A.
+- q169 C: Voyage now, local later; GRP-embed-mxbai is the later leg.
+- q166 A plus a note: the current wall stays stable and the new one ships as a beta, both reachable until the beta passes. Sent to ONE-PLACE-SURVEY.
+- q164 is still open.
+- The ci-novahub lock was released at ~23:48Z.
+
 ## Owed
 - Owner: clear the D4-build-A prompt; Router desk cards q154-q168 plus ATLAS-B1's; owner said YES to ROUTER #12 sweeping live sessions for unanswered owner questions into cards; brief sent (queued at #12), result comes to 008.
 - Carried from 006: credential exposure in the CENSUS-1 transcript, unrevoked GSC key, apex cert check 2026-10-14, gateway tokens.
