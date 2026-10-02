@@ -123,4 +123,12 @@ gh pr merge <n> -R NOVAHGREYWOLF/<repo> --squash
 - **No CI ran, so there is no green to merge on:** leadfuel-core#3, #7 to #16 (the repo has no CI; #10 and #16 are also stacked); leadfuel-ios#1, #2; novahos#11; hub #730 (draft, its stacked child is #736); scope#7; orbit#5 (stacked); Jarvis#2; apollo-enricher#1; leadfuel-intake#1 to #4; wolfos#5, #6; JobHunter#1 to #6; email-app#1; n8n-leadfuel#1.
 - **howlclip#1:** reads green but is not. Its title says ".gitignore", yet it changes 30 files, including railway.toml, app.py and security code. The only check that ran is Dependabot's config check; the repo's own CI never ran on it.
 
+## Still owed: the hub merges, queued
+
+Ticket `20261002T212711Z-WATCH-MERGE-ALL-GREEN` in `ci-novahub.wait` covers five green orphans: hub #717 (TUFTE-G6 dossier charts), #715 (TUFTE-G3 admin wall), #726 (QBO-REAUTH), #721 (DEL-SCRIPT, dry-run-default prune script) and #638 (qbo freshness). Their desks went idle waiting for CI that is now green.
+
+At 23:54Z FIELD-2of2 held the lock and my ticket was 14th of 17. The queue moved about one slot in 2.5 hours. This session stays idle with the ticket live, so the desk ahead can wake it by name. When woken, it runs each PR in turn: merge main in, wait for CI green on that head, check main is unmoved, then squash. Per Q144, the next PR re-runs after each merge.
+
+While queueing I woke INTELLIGENCE D4 for #702 (lock rule 6, free lock with the head ticket stale); D4 took the lock at 21:30Z. At 23:54Z #702 was still open, which I report and did not investigate.
+
 <!-- QUEUE-STATE -->
