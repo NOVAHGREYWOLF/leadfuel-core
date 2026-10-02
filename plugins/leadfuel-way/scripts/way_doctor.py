@@ -263,11 +263,20 @@ def check_synthetic(ctx: Ctx) -> list[Result]:
         step("hook: self-archive refused with no successor", arch,
              lambda p: (denied(p)[0], "ROUTER #9 self-archive refused: no successor seen" if denied(p)[0] else f"not refused: {p!r}"[:160]))
         row = {"sessionId": "local_x", "title": "ROUTER #10", "isArchived": False, "group": {"id": "g", "name": "ROUTER"}}
+        _jl(rt, _asst(10, [{"type": "tool_use", "id": "me", "name": "mcp__ccd_session_mgmt__get_session", "input": {"session_id": "self"}}]),
+            {"type": "user", "isSidechain": False, "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "me", "content": [{"type": "text", "text": json.dumps({"sessionId": "local_me", "isArchived": False})}]}]}})
         _jl(rt, _asst(10, [{"type": "tool_use", "id": "ls", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"group": "ROUTER"}}]),
             {"type": "user", "isSidechain": False, "message": {"content": [
                 {"type": "tool_result", "tool_use_id": "ls", "content": [{"type": "text", "text": json.dumps([row])}]}]}})
         step("hook: self-archive allowed once the successor is live", arch,
              lambda p: (not p, "allowed after list_sessions showed ROUTER #10 live in the group" if not p else f"still refused: {p!r}"[:160]))
+        kid = {"sessionId": "local_kid", "title": "DOORS · T-1 1/1 · x", "isArchived": False, "parentSessionId": "local_me"}
+        _jl(rt, _asst(10, [{"type": "tool_use", "id": "ls2", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {}}]),
+            {"type": "user", "isSidechain": False, "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "ls2", "content": [{"type": "text", "text": json.dumps([row, kid])}]}]}})
+        step("hook: archive refused while a live child exists", arch,
+             lambda p: (denied(p)[0], "archive refused: local_kid is a live child of this session" if denied(p)[0] else f"not refused: {p!r}"[:160]))
     return out
 
 
