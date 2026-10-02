@@ -34,5 +34,7 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 
 - World lane (local_4c9e680a): novahub #703 MERGED (a98761b), CI green on the merged head per its own gh read; deployed. Its question: delete remote feat/world-subject-gate (c357034)? Decision: LEAVE it (irreversible, only artefact of the dead end); tell it so. It has nothing in flight; Q94 answered no-quote (it was not told), Q95 open. Not archive until Q95 is answered.
 
+- FAN-OUT OWED to DOORS 2/2 (find it by title in list_sessions; it holds ci-novahub): when it releases the lock, offer it to 'ARMS · conformance gate 2/2' (local_824b0fc9) BY NAME (ARMS is the oldest waiter, its ticket refs are dead; SUITE's ticket is a zero-byte file named SUITE: live desk is 'SUITE · the gate's blind spots 2/2' local_ae2f0221). Confirm waiters are live by desk name, not by ref. Source: old DOORS desk local_360656b4 (its handoff fix is commit 49f278f on doors-egress-blindspot). Old DOORS desk archives after 2/2 pushes 0f7382b. Structural point for the owner/ROUTER (stale waiters are manufactured by a blocked queue; tickets should carry desk name + PRECONDITION): raise as a card, not a build.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
