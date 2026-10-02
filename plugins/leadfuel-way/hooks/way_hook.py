@@ -10,8 +10,9 @@ Events (one entry point, dispatched on `hook_event_name`):
     SessionStart      inject the banner: load the way, your role (from your title), your caps.
     UserPromptSubmit  guard: past the soft cap, tell the session to finish the step and hand off.
     PostToolUse       same guard.
-    Stop              past the soft cap with no handoff written since crossing it: block the stop
-                      once, with the reason. Hard cap: same, measured from the hard crossing.
+    Stop              past the soft cap with no handoff written since crossing it: block the stop,
+                      once per stop (the harness sets stop_hook_active on the retry, and a hook that
+                      blocked again would loop). Hard cap: same, measured from the hard crossing.
     PreToolUse        a CONDUCTOR or ROUTER #N session may not edit files inside a git checkout,
                       except handoff notes and .conductor/ state. All work happens in desks.
 
@@ -44,6 +45,12 @@ DESK_TITLE = re.compile(r"^\s*([A-Z][A-Z0-9_-]+)\s*·")
 # A Stop gate is satisfied by a handoff written after the crossing: a file write whose path says
 # handoff, a shell command that commits or pushes one, or a board write naming one.
 HANDOFF_WORD = re.compile(r"hand-?off", re.I)
+# A shell command counts only if it also writes: mentioning the word (ls, cat, grep) is not a handoff.
+SHELL_WRITES = re.compile(
+    r"git\s+(add|commit|push)|>>?\s*\S|tee|(Set|Add|Out)-Content|Out-File"
+    r"|(cp|mv)\s|(Copy|Move|New)-Item",
+    re.I,
+)
 
 
 # --- transcript ---------------------------------------------------------------------------
@@ -88,14 +95,23 @@ def last_turn(transcript_path: str) -> tuple[int | None, str | None, int]:
     return None, None, size
 
 
-def session_title(transcript_path: str) -> str | None:
-    """The newest title the app or the session gave itself, or None."""
+def scan_title(transcript_path: str, start: int = 0) -> tuple[str | None, int]:
+    """(newest custom title in the bytes from `start`, offset to resume from).
+
+    Reads only the new bytes and stops at the last complete line, so a caller that keeps the
+    offset pays for what was appended, not for the whole transcript (they reach tens of MB).
+    """
     try:
-        data = Path(transcript_path).read_bytes()
+        with Path(transcript_path).open("rb") as fh:
+            fh.seek(max(0, start))
+            data = fh.read()
     except OSError:
-        return None
+        return None, start
+    cut = data.rfind(b"
+") + 1
     title = None
-    for line in data.split(b"\n"):
+    for line in data[:cut].split(b"
+"):
         if b'"custom-title"' not in line:
             continue
         try:
@@ -103,6 +119,26 @@ def session_title(transcript_path: str) -> str | None:
         except ValueError:
             continue
         title = rec.get("customTitle") or title
+    return title, start + cut
+
+
+def session_title(transcript_path: str) -> str | None:
+    """The newest title the app or the session gave itself, or None."""
+    return scan_title(transcript_path)[0]
+
+
+def cached_title(transcript_path: str, state: dict) -> str | None:
+    """session_title, remembering how far it has read in `state` (see scan_title)."""
+    scan = state.get("title_scan") or {}
+    start = int(scan.get("offset") or 0)
+    try:
+        if Path(transcript_path).stat().st_size < start:
+            scan, start = {}, 0  # the file was replaced: read it afresh
+    except OSError:
+        return scan.get("title")
+    found, offset = scan_title(transcript_path, start)
+    title = found or scan.get("title")
+    state["title_scan"] = {"offset": offset, "title": title}
     return title
 
 
@@ -130,8 +166,11 @@ def handoff_written_since(transcript_path: str, offset: int) -> bool:
                 target = json.dumps(inp)
             else:
                 continue
-            if HANDOFF_WORD.search(target):
-                return True
+            if not HANDOFF_WORD.search(target):
+                continue
+            if name in SHELL_TOOLS and not SHELL_WRITES.search(target):
+                continue
+            return True
     return False
 
 
@@ -266,7 +305,11 @@ def handle(event: dict) -> dict | None:
     guard_off = os.environ.get("SESSION_GUARD_OFF") == "1"
 
     if name == "SessionStart":
-        title = session_title(tpath)
+        if event.get("source") in ("compact", "clear"):
+            # The context just shrank: what was crossed before no longer holds.
+            for k in ("soft_crossed_at", "hard_crossed_at", "last_warned"):
+                state.pop(k, None)
+        title = cached_title(tpath, state)
         role, lane = role_of(title)
         tokens, model, _ = last_turn(tpath)
         soft, hard = caps_for(model)
@@ -316,7 +359,7 @@ def handle(event: dict) -> dict | None:
         role = None
         if tool in WRITE_TOOLS and path:
             # Read the title fresh: a session can retitle itself after SessionStart.
-            role, lane = role_of(session_title(tpath))
+            role, lane = role_of(cached_title(tpath, state))
             state.update(role=role, lane=lane)
         if role in ("CONDUCTOR", "ROUTER") and not write_allowed_for_coordinator(path):
             out = {"hookSpecificOutput": {
