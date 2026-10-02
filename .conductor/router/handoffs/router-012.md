@@ -23,3 +23,6 @@ The chain is 005 local_083bdfe0 -> ROUTER #11 local_99c30023 -> #12 (me) -> ever
 - Use route.py from cache 0.1.3; 0.1.0 drops the Fable pin.
 - A model set applies from a desk's NEXT turn, so its first turn runs on the old model.
 - Auto mode refuses router merges.
+
+## Arrived after handoff
+- Conductor 007 relays the owner's yes (local_da515743): sweep live sessions with list_events for unanswered owner questions/ASKs; card each one not already carded (dedupe vs OWED-<id8> rows, unverified); report the count to the conductor (008 soon). Delegate the sweep to a read-only subagent (more than 5 sessions).
