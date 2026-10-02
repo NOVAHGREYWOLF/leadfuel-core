@@ -23,5 +23,8 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 - Conductor: owner typed in the conductor session 'merge what's green and stop'. Owning desks merge green PRs on their own tree in the ci hold; 702, 701, 699 stay held (cards); then no new desks, every desk writes its handoff. Answer the conductor with merged / held / owner decisions from live gh. SUITE 2/2 chip started by owner.
 - PRODUCT (local_c1723d22) NEEDS-NOVAH: reach PRs 25 and 27 merged and live (headline quoting is in production). Card Q94 (stop quoting, rec) updated; Q102 asks to post two correcting PR comments. Owed: scope, orbit, signal reply assistant never reviewed; experiment 1 blocked on an env value (NODE apply path). Not archiving; PRODUCT at ~241k.
 
+- Q94 answered NO QUOTES: PRODUCT told (delivered), world lane NOT told (cap hit); a desk must remove headline quoting from reach (live via reach #25, #27). Q102 asks about PRODUCT's two PR comments.
+- SENSORS A6 (local_bb561b81): novahub PR 705 (health-rollup-merge) open, 3 checks pending, auto-merge off, it waits for the owner's answer in its own session. For the map (not its lane): gates.sh on main still has ten --deselect flags (SUITE's removal e6242f3 on fix/one-door-probe-leaves-the-shared-index is unmerged), export-harvest gate has never run (check_export_harvest.py missing, 13 is the max), box shows 24 gates.sh and 27 pytest processes at 100% CPU: route to SUITE/WATCH, not a router task.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
