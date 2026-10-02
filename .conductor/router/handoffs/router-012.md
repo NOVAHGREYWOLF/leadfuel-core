@@ -26,3 +26,6 @@ The chain is 005 local_083bdfe0 -> ROUTER #11 local_99c30023 -> #12 (me) -> ever
 
 ## Arrived after handoff
 - Conductor 007 relays the owner's yes (local_da515743): sweep live sessions with list_events for unanswered owner questions/ASKs; card each one not already carded (dedupe vs OWED-<id8> rows, unverified); report the count to the conductor (008 soon). Delegate the sweep to a read-only subagent (more than 5 sessions).
+- ROUTER #11 relay: INTELLIGENCE D4-build-A local_fbb1b69d is NEEDS-NOVAH on hub #702 (CI green f26a860, main d094a57 at ~22:45Z; squash refused as a production deploy). The owner has the PowerShell from #11. #714 is refused the same way. Under Q144, whichever merges second re-runs CI. Both desks are now #13's.
+- ATLAS-ACT 1/2 local_da34f6df at 345k is handing off; its successor carries hold ticket 20261002T230352Z-SURFACE-ATLAS-ACT-pr739. Post card Q6: superuser vs a site-admin role below the owner (default A: today's bare admin is the superuser; the role is an auth task the atlas adopts). New task candidate: account-bound atlas readers for user mode, after #713.
+- Conductor 007 handed off (conductor-007.md at f5b16dd). 008 is a chip; report to 008 once it is live.
