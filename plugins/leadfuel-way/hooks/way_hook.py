@@ -17,10 +17,16 @@ Events (one entry point, dispatched on `hook_event_name`):
                       in any case) is a coordinator tier and may not edit files inside a git
                       checkout, except handoff notes and .conductor/ state. All work happens in
                       desks, and a desk's lane is never ROUTER or CONDUCTOR.
+                      Also: `archive_session` on `self` is refused, for every tier, unless this
+                      transcript holds a `list_sessions` / `get_session` result showing the
+                      session's successor live (not archived) in its sidebar group. Owner,
+                      2026-10-02: a router does not leave itself until it has a successor, and a
+                      desk at its limit hands off and stays open until the new desk is live.
 
 Caps follow the model the session runs on: Haiku 120k/150k (200k window), others 300k/450k.
 SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 disables the guard
-and the Stop gate; WAY_ENFORCE_ROLES=0 disables the PreToolUse rule.
+and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule; WAY_ARCHIVE_GUARD=0
+disables the self-archive guard.
 
 It never raises: a broken hook must not break the session it guards. What it cannot measure it
 reports as unknown, never as small.
@@ -35,7 +41,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -59,6 +65,9 @@ SHELL_WRITES = re.compile(
     r"|\b(cp|mv)\s|\b(Copy|Move|New)-Item\b",
     re.I,
 )
+# A desk title carries its task id and session count: `LANE · <task id> n/m · topic`.
+DESK_TASK = re.compile(r"·\s*(\S+)\s+(\d+)\s*/\s*\d+")
+SESSION_READS = ("list_sessions", "get_session")
 
 
 # --- transcript ---------------------------------------------------------------------------
@@ -180,6 +189,59 @@ def handoff_written_since(transcript_path: str, offset: int) -> bool:
     return False
 
 
+def _json_in(text: str):
+    """The JSON value in a tool result's text, tolerating a line of prose around it, or None."""
+    try:
+        return json.loads(text)
+    except ValueError:
+        pass
+    for open_, close in (("[", "]"), ("{", "}")):
+        i, j = text.find(open_), text.rfind(close)
+        if 0 <= i < j:
+            try:
+                return json.loads(text[i:j + 1])
+            except ValueError:
+                continue
+    return None
+
+
+def _result_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(str(b.get("text") or "") for b in content if isinstance(b, dict))
+    return ""
+
+
+def sessions_seen(transcript_path: str) -> list[dict]:
+    """Every session row this session has read back with list_sessions / get_session (main thread,
+    within the transcript tail), oldest first. A row is whatever the tool returned: it is judged by
+    successor_in, which treats a missing field as unknown, never as a pass."""
+    try:
+        text, _ = _tail(transcript_path)
+    except OSError:
+        return []
+    asked: set[str] = set()
+    rows: list[dict] = []
+    for rec in _records(text):
+        if rec.get("isSidechain"):
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and str(block.get("name") or "").endswith(SESSION_READS):
+                asked.add(str(block.get("id") or ""))
+            elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asked:
+                if block.get("is_error"):
+                    continue
+                value = _json_in(_result_text(block.get("content")))
+                if isinstance(value, dict):
+                    value = value.get("sessions", [value]) if isinstance(value.get("sessions"), list) else [value]
+                if isinstance(value, list):
+                    rows.extend(r for r in value if isinstance(r, dict))
+    return rows
+
+
 # --- policy (pure, so it can be tested) ---------------------------------------------------
 
 def role_of(title: str | None) -> tuple[str, str | None]:
@@ -195,6 +257,66 @@ def role_of(title: str | None) -> tuple[str, str | None]:
     if m:
         return "DESK", m.group(1).upper()
     return "UNFILED", None
+
+
+def _router_number(title: str) -> int | None:
+    m = re.match(r"^\s*ROUTER\s*#\s*(\d+)", title or "", re.I)
+    return int(m.group(1)) if m else None
+
+
+def is_successor(own_title: str | None, row: dict) -> bool:
+    """True only if `row` (a session as list_sessions / get_session returns it) is provably this
+    session's successor: live, filed in the group the tier names, and the next of the same line.
+    Anything the row does not say (no `isArchived`, no `group`) is unknown, and unknown is not live.
+
+    ROUTER #N: another ROUTER, numbered above N when both carry a number, in the ROUTER group.
+    CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one).
+    DESK: the same lane, in that lane's group, and when the title carries `<task id> n/m`, the
+    same task id with n advanced.
+    """
+    own_role, own_lane = role_of(own_title)
+    title = str(row.get("title") or "")
+    if own_role == "UNFILED" or not title or title == own_title:
+        return False
+    if row.get("isArchived") is not False:
+        return False
+    group = row.get("group")
+    group_name = str(group.get("name") or "") if isinstance(group, dict) else ""
+    role, lane = role_of(title)
+    if role != own_role:
+        return False
+    if own_role in TIERS:
+        if group_name.upper() != own_role:
+            return False
+        if own_role == "ROUTER":
+            mine, theirs = _router_number(own_title or ""), _router_number(title)
+            if mine is not None and (theirs is None or theirs <= mine):
+                return False
+        return True
+    if lane != own_lane or group_name.upper() != (own_lane or ""):
+        return False
+    mine = DESK_TASK.search(own_title or "")
+    if mine:
+        theirs = DESK_TASK.search(title)
+        if not theirs or theirs.group(1) != mine.group(1) or int(theirs.group(2)) <= int(mine.group(2)):
+            return False
+    return True
+
+
+def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
+    """The reason to refuse archiving yourself, or None when a live successor has been seen."""
+    if any(is_successor(own_title, r) for r in rows):
+        return None
+    role, lane = role_of(own_title)
+    where = lane if role == "DESK" else role
+    return (
+        "THE WAY: you may not archive yourself until your successor is live and visible in its "
+        f"sidebar group ({where or 'unfiled: title and file yourself first'}). Owner, 2026-10-02: a "
+        "session never leaves before its successor exists. If the successor can only be a paste "
+        "prompt, give the owner the prompt and STAY OPEN: the successor archives you once it is live. "
+        "If you started it yourself, run `list_sessions` with that group and archive only once the "
+        "result shows it, not archived."
+    )
 
 
 def cap_override(now: float | None = None) -> tuple[int, int] | None:
@@ -379,6 +501,20 @@ def handle(event: dict) -> dict | None:
                         "write the note (path containing 'handoff'), commit and push it, give the owner "
                         "the one prompt for a fresh session, then end your turn."
                     )}
+
+    elif name == "PreToolUse" and str(event.get("tool_name") or "").endswith("__archive_session"):
+        inp = event.get("tool_input") or {}
+        target = str(inp.get("session_id") or "").strip()
+        if os.environ.get("WAY_ARCHIVE_GUARD", "1") != "0" and target.lower() == "self":
+            title = cached_title(tpath, state)
+            reason = archive_refusal(title, sessions_seen(tpath))
+            if reason:
+                state["archives_refused"] = int(state.get("archives_refused") or 0) + 1
+                out = {"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": reason,
+                }}
 
     elif name == "PreToolUse" and os.environ.get("WAY_ENFORCE_ROLES", "1") != "0":
         tool = str(event.get("tool_name") or "")

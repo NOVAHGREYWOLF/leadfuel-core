@@ -19,7 +19,7 @@ def hook():
 @pytest.fixture(autouse=True)
 def isolated_env(monkeypatch, tmp_path):
     """No test may read the owner's real state or env: state goes to tmp_path, caps are defaults."""
-    for var in ("SESSION_SOFT_TOKENS", "SESSION_HARD_TOKENS", "SESSION_GUARD_OFF", "WAY_ENFORCE_ROLES"):
+    for var in ("SESSION_SOFT_TOKENS", "SESSION_HARD_TOKENS", "SESSION_GUARD_OFF", "WAY_ENFORCE_ROLES", "WAY_ARCHIVE_GUARD"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("WAY_STATE_DIR", str(tmp_path / "state"))
 

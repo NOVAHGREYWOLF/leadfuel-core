@@ -170,7 +170,7 @@ def synthetic_run(ctx: Ctx, event: dict, workdir: Path, env_extra: dict):
     cfg = load_hooks_json(ctx)
     command = expand(cfg["hooks"][event["hook_event_name"]][0]["hooks"][0]["command"], ctx)
     env = {**os.environ, "WAY_STATE_DIR": str(workdir / "state"), **env_extra}
-    for var in ("SESSION_GUARD_OFF", "WAY_ENFORCE_ROLES"):
+    for var in ("SESSION_GUARD_OFF", "WAY_ENFORCE_ROLES", "WAY_ARCHIVE_GUARD"):
         env.pop(var, None)
     code, so, se = run(command, timeout=20, env=env, stdin=json.dumps(event), shell=True)
     parsed = None
@@ -254,6 +254,20 @@ def check_synthetic(ctx: Ctx) -> list[Result]:
         _jl(desk, {"type": "custom-title", "customTitle": "DOORS · T-1 1/1 · x"}, _asst(10))
         step("hook: PreToolUse lets a desk edit", {**pre, "session_id": "doctor-3", "transcript_path": str(desk)},
              lambda p: (not p, "desk edit allowed" if not p else f"wrongly denied: {p!r}"[:160]))
+
+        rt = tmp_path / "r.jsonl"
+        rt.write_bytes(b"")
+        _jl(rt, {"type": "custom-title", "customTitle": "ROUTER #9"}, _asst(10))
+        arch = {"session_id": "doctor-4", "transcript_path": str(rt), "hook_event_name": "PreToolUse",
+                "tool_name": "mcp__ccd_session_mgmt__archive_session", "tool_input": {"session_id": "self"}}
+        step("hook: self-archive refused with no successor", arch,
+             lambda p: (denied(p)[0], "ROUTER #9 self-archive refused: no successor seen" if denied(p)[0] else f"not refused: {p!r}"[:160]))
+        row = {"sessionId": "local_x", "title": "ROUTER #10", "isArchived": False, "group": {"id": "g", "name": "ROUTER"}}
+        _jl(rt, _asst(10, [{"type": "tool_use", "id": "ls", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"group": "ROUTER"}}]),
+            {"type": "user", "isSidechain": False, "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "ls", "content": [{"type": "text", "text": json.dumps([row])}]}]}})
+        step("hook: self-archive allowed once the successor is live", arch,
+             lambda p: (not p, "allowed after list_sessions showed ROUTER #10 live in the group" if not p else f"still refused: {p!r}"[:160]))
     return out
 
 
@@ -362,13 +376,22 @@ def check_duplicates(ctx: Ctx) -> list[Result]:
     return out
 
 
+UNCONDITIONAL_ARCHIVE = re.compile(r"archive yourself as your last act|archives itself as its last act|archives itself at handoff", re.I)
+
+
 def check_handoff_archives(ctx: Ctx) -> Result:
-    """The handoff skill must END in the owner's self-archive step (2026-10-02): the last numbered
-    step archives the session, and only after `git ls-remote` shows nothing is unpushed. A static
-    check on text the doctor can read in full, so it is OK or FAIL, never UNKNOWN. Whether a live
-    session then does it is the desktop pilot's question: `archive_session` is a desktop-app tool and
-    does not exist in a headless `claude -p` run, so way_pilot.py cannot see it."""
-    name = "handoff skill ends in self-archive"
+    """The handoff skill's last step must keep the owner's rule (2026-10-02): no session leaves
+    before its successor is live. With only a paste prompt it stays open; it archives itself only
+    after `list_sessions` shows the successor live and `git ls-remote` shows nothing is unpushed.
+    No skill may carry the older unconditional "archive yourself as your last act", which orphaned
+    ROUTER #9's project. A static check on text the doctor reads in full, so OK or FAIL, never
+    UNKNOWN. Whether a live session obeys is the hook guard's job (see the synthetic checks)."""
+    name = "handoff: no self-archive before a live successor"
+    stale = [p.parent.name for p in sorted((ctx.plugin_dir / "skills").glob("*/SKILL.md"))
+             if UNCONDITIONAL_ARCHIVE.search(p.read_text(encoding="utf-8", errors="replace"))]
+    if stale:
+        return Result(name, FAIL, f"unconditional self-archive wording in: {', '.join(stale)}",
+                      "a session archives itself only once its successor is live (owner, 2026-10-02)")
     path = ctx.plugin_dir / "skills" / "handoff" / "SKILL.md"
     try:
         text = path.read_text(encoding="utf-8")
@@ -383,14 +406,36 @@ def check_handoff_archives(ctx: Ctx) -> Result:
     last = section.group(1)[starts[-1]:]
     low = last.lower()
     missing = [what for what, ok in (("archive_session", "archive_session" in last), ("self", "`self`" in last),
-                                      ("git ls-remote", "git ls-remote" in last), ("'last act'", "last act" in low)) if not ok]
+                                      ("git ls-remote", "git ls-remote" in last), ("list_sessions", "list_sessions" in last),
+                                      ("'stay open'", "stay open" in low), ("'successor'", "successor" in low)) if not ok]
     earlier = section.group(1)[:starts[-1]].lower()
     if "push" not in earlier:
         missing.append("a push step before it")
     if missing:
-        return Result(name, FAIL, f"the last step ({len(starts)}) does not archive the session safely; missing: {', '.join(missing)}",
-                      "restore the self-archive step, or (if the owner withdraws the rule) change this check and its test together")
-    return Result(name, OK, f"step {len(starts)} is the last act: archive_session self, after git ls-remote verifies the push")
+        return Result(name, FAIL, f"the last step ({len(starts)}) does not keep the no-orphan rule; missing: {', '.join(missing)}",
+                      "restore the step, or (if the owner withdraws the rule) change this check and its test together")
+    return Result(name, OK, f"step {len(starts)}: stay open on a paste prompt; archive self only once list_sessions shows the "
+                            "successor live and git ls-remote verifies the push")
+
+
+def check_archive_guard_registered(ctx: Ctx) -> Result:
+    """hooks.json must route archive_session through the hook, or the guard is text nobody runs."""
+    name = "archive guard registered"
+    try:
+        groups = (load_hooks_json(ctx).get("hooks") or {}).get("PreToolUse") or []
+    except (OSError, ValueError) as exc:
+        return Result(name, FAIL, f"{type(exc).__name__}: {exc}")
+    tools = ("mcp__ccd_session_mgmt__archive_session", "mcp__claude-code-remote__archive_session")
+    for g in groups:
+        matcher = str(g.get("matcher") or "")
+        try:
+            hits = [t for t in tools if re.fullmatch(matcher, t)]
+        except re.error:
+            continue
+        if len(hits) == len(tools) and not re.fullmatch(matcher, "mcp__ccd_session_mgmt__unarchive_session") and g.get("hooks"):
+            return Result(name, OK, f"PreToolUse matcher {matcher!r} covers archive_session (desktop and remote), not unarchive")
+    return Result(name, FAIL, "no PreToolUse matcher sends archive_session to the hook",
+                  "add a PreToolUse entry with matcher mcp__.*__archive_session pointing at way_hook.py")
 
 
 # --- main ---------------------------------------------------------------------------------
@@ -400,6 +445,7 @@ def run_all(ctx: Ctx) -> list[Result]:
     results += check_python(ctx)
     results += check_manifests(ctx)
     results.append(check_handoff_archives(ctx))
+    results.append(check_archive_guard_registered(ctx))
     results.append(check_validate(ctx))
     results += check_synthetic(ctx)
     results.append(check_enabled(ctx))
