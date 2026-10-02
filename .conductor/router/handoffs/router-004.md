@@ -4,7 +4,7 @@ Router #4 = local session local_fe99f3da, past the 300k cap. The guard hook was 
 
 ## New today (owner, 2026-10-02)
 - One skill, `leadfuel-way`, governs every session and all work: user level `~/.claude/skills/leadfuel-way/`, copy in `.claude/skills/leadfuel-way/`, loaded by section 11 of the owner's global CLAUDE.md. This router skill is only the router's part. A router and the conductor do no work; all work is in desk sessions.
-- **Router desk** (artifact LzmP6QcxmYh9TdvMMjS883, db `questions`): questions only, one click each. Pull answers with ArtifactData, then write `routed`. **Conductor desk**: the complete task list by desk with full docs; the conductor asks "what next?"; only owner-queued tasks start. **NOT BUILT.** Open a desk session (the ROUTER desk owns the queue) to build it from board doc `router/build_conductor_py` (private board A4uS9xn1emqupohdE4DUfV; written, never run). Page URLs: board doc `router/desks`.
+- **Router desk** (artifact LzmP6QcxmYh9TdvMMjS883, db `questions`): questions only, one click each. Pull answers with ArtifactData, then write `routed`. **Conductor desk**: the complete task list by desk with full docs; the conductor asks "what next?"; only owner-queued tasks start. **BEING BUILT by CONDUCTOR · plan + task list (local_18eeff8c), which holds a 560-item list: do not build it twice.** Check board doc `router/desks` (private board A4uS9xn1emqupohdE4DUfV) for the URL; ROUTER #4's unrun assignment script is board doc `router/build_conductor_py`.
 - Guard hook and settings snippet are staged in the skill folder (`python`, not `python3`). Switching it on is the owner's step.
 
 ## Not delivered
