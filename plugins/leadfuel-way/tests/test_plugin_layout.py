@@ -5,6 +5,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -158,8 +159,51 @@ def test_route_picks_the_model(route_mod, task, model):
 
 
 def test_route_ids_are_current(route_mod):
-    assert set(route_mod.IDS) == {"opus", "sonnet", "haiku"}
+    assert set(route_mod.IDS) == {"fable", "opus", "sonnet", "haiku"}
     assert "haiku" in route_mod.IDS["haiku"]
+    assert route_mod.IDS["fable"] == "claude-fable-5-1"
+
+
+@pytest.mark.parametrize("pin", ["fable", "FABLE", "claude-fable-5-1"])
+def test_route_obeys_a_fable_pin(route_mod, pin):
+    """Owner, 2026-10-02: queue work on Fable. Before this the pin was dropped silently and the
+    task routed by the rules, so a router could not put a desk on Fable through route.py."""
+    out = route_mod.route({"title": "Add a column", "effort": "small", "model_pin": pin})
+    assert out["model"] == "fable" and out["model_id"] == "claude-fable-5-1"
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        {"title": "Rewrite the security door", "effort": "xhigh", "envelope": "critical"},
+        {"title": "Add a column", "effort": "medium"},
+    ],
+)
+def test_route_never_picks_fable_on_its_own(route_mod, task):
+    assert route_mod.route(task)["model"] != "fable"
+
+
+@pytest.mark.parametrize("pin", ["fabel", "gpt", "claude-opus-4-1"])
+def test_route_refuses_a_pin_it_cannot_read(route_mod, pin):
+    """A pin that names no model must not quietly become whatever the rules say."""
+    with pytest.raises(route_mod.BadTask):
+        route_mod.route({"title": "Add a column", "model_pin": pin})
+
+
+def test_route_passes_the_model_effort_through(route_mod):
+    out = route_mod.route({"title": "Audit the doors", "model_pin": "fable", "model_effort": "XHigh"})
+    assert out["model_effort"] == "xhigh"
+    assert "model_effort" not in route_mod.route({"title": "Add a column"})
+    with pytest.raises(route_mod.BadTask):
+        route_mod.route({"title": "Add a column", "model_effort": "huge"})
+
+
+def test_route_cli_exits_nonzero_on_a_bad_pin():
+    run = subprocess.run(
+        [sys.executable, str(PLUGIN / "scripts" / "route.py"), json.dumps({"title": "x", "model_pin": "fabel"})],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert run.returncode != 0 and run.stdout == "" and "fabel" in run.stderr
 
 
 UNCONDITIONAL = re.compile(r"archive yourself as your last act|archives itself as its last act|archives itself at handoff", re.I)
