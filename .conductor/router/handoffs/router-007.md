@@ -30,5 +30,7 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 
 - PRODUCT removal brief (for the reach desk): the quoting surface is hub_company.py (lines ~88-147), scheduler.py (~841-850), sequence_agents.py (~621, 629), render.py (~20, 237), .env.example, test_company_news_line.py, test_copy_quality.py. ORDER TRAP: remove the copywriter instruction at sequence_agents.py:629 before or with the token path, never render's empty-token handling first, or a literal {{company_news}} reaches a prospect. New card Q103 asks whether NO QUOTES also covers orbit's outreach_angle and scope's grounding (default C: orbit yes, scope no). Never-rotated surfaces, in order: signal reply assistant, orbit, scope. PRODUCT is NOT archiving and not posting its PR comments (Q102 stands). PRODUCT is waiting for ROUTER #8 to appear.
 
+- D4-build-A (local_fbb1b69d): novahub PR 702 head 7337db9, draft. Its ASK (how to get a green run on the busy box) is UNANSWERED (send hit the cap): answer B, let CI on 702 be the verdict, no more local full runs, do not merge. Card Q104 asks the owner about merging (creates a prod table; PRIVACY has not reviewed the one-line data_rights change; PRIVACY 2/2 is live).
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
