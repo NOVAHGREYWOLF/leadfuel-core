@@ -188,8 +188,24 @@ def role_of(title: str | None) -> tuple[str, str | None]:
     return "UNFILED", None
 
 
+def cap_override(now: float | None = None) -> tuple[int, int] | None:
+    """A machine-wide forced cap for piloting: <state dir>/caps-override.json
+    {"soft": int, "hard": int, "expires": epoch seconds}. It lapses by itself, so a forgotten one
+    cannot leave every session on the machine handing off early. Written by scripts/way_caps.py."""
+    try:
+        data = json.loads((state_dir() / "caps-override.json").read_text(encoding="utf-8"))
+        soft, hard, expires = int(data["soft"]), int(data["hard"]), float(data["expires"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if (now if now is not None else time.time()) >= expires or soft <= 0 or hard < soft:
+        return None
+    return soft, hard
+
+
 def caps_for(model: str | None) -> tuple[int, int]:
+    """Env beats a live override file beats the model's default."""
     soft, hard = CAPS["haiku"] if model and "haiku" in model.lower() else CAPS["default"]
+    soft, hard = cap_override() or (soft, hard)
     try:
         soft = int(os.environ.get("SESSION_SOFT_TOKENS") or soft)
         hard = int(os.environ.get("SESSION_HARD_TOKENS") or hard)

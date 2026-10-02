@@ -272,3 +272,35 @@ def test_the_command_line_prints_json_and_an_exit_code(tmp_path):
 def test_the_text_report_states_the_rule(doc):
     text = doc.render([R(doc, doc.OK), R(doc, doc.UNKNOWN)])
     assert "VERDICT: UNPROVEN" in text and "not a pass" in text
+
+
+# --- way_caps.py and the doctor's report of an override -------------------------------------
+
+def test_caps_script_sets_shows_and_clears(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("WAY_STATE_DIR", str(tmp_path / "s"))
+    caps = load_module(PLUGIN / "scripts" / "way_caps.py", "way_caps_under_test")
+    assert caps.main(["set", "40000", "90000", "--minutes", "5"]) == 0
+    data = json.loads((tmp_path / "s" / "caps-override.json").read_text(encoding="utf-8"))
+    assert (data["soft"], data["hard"]) == (40_000, 90_000) and data["expires"] > time.time()
+    caps.main(["show"])
+    assert "40000" in capsys.readouterr().out
+    assert caps.main(["clear"]) == 0 and not (tmp_path / "s" / "caps-override.json").exists()
+    assert caps.main(["set", "5000", "1000"]) == 2  # soft above hard is refused
+
+
+def test_the_hook_obeys_what_the_caps_script_wrote(tmp_path, monkeypatch):
+    monkeypatch.setenv("WAY_STATE_DIR", str(tmp_path / "s"))
+    caps = load_module(PLUGIN / "scripts" / "way_caps.py", "way_caps_under_test2")
+    hook = load_module(PLUGIN / "hooks" / "way_hook.py", "way_hook_for_caps")
+    caps.main(["set", "12000", "34000"])
+    assert hook.caps_for("claude-sonnet-5-5") == (12_000, 34_000)
+
+
+def test_the_doctor_reports_an_active_override_but_not_an_expired_one(doc, ctx):
+    ctx.state_dir.mkdir(parents=True, exist_ok=True)
+    path = ctx.state_dir / "caps-override.json"
+    path.write_text(json.dumps({"soft": 40_000, "hard": 90_000, "expires": time.time() + 600}), encoding="utf-8")
+    [r] = [r for r in doc.check_duplicates(ctx) if r.name == "forced caps active"]
+    assert r.status == doc.WARN and "40k" in r.detail and "clear" in r.fix
+    path.write_text(json.dumps({"soft": 40_000, "hard": 90_000, "expires": time.time() - 1}), encoding="utf-8")
+    assert not [r for r in doc.check_duplicates(ctx) if r.name == "forced caps active"]

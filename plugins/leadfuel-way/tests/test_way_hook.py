@@ -474,3 +474,43 @@ def test_the_process_blocks_a_stop_over_the_cap(tmp_path, transcript):
     transcript.add(assistant(9_000))
     done = run_hook(json.dumps(event("Stop", transcript)), tmp_path, SESSION_SOFT_TOKENS="1000")
     assert json.loads(done.stdout)["decision"] == "block"
+
+
+# --- the forced-cap override file -----------------------------------------------------------
+
+def write_override(hook, soft, hard, expires_in):
+    import time
+
+    hook.state_dir().mkdir(parents=True, exist_ok=True)
+    (hook.state_dir() / "caps-override.json").write_text(
+        json.dumps({"soft": soft, "hard": hard, "expires": time.time() + expires_in}), encoding="utf-8")
+
+
+def test_a_live_override_beats_the_model_default_for_every_model(hook):
+    write_override(hook, 40_000, 90_000, 600)
+    assert hook.caps_for(SONNET) == (40_000, 90_000)
+    assert hook.caps_for(HAIKU) == (40_000, 90_000)
+
+
+def test_an_expired_override_is_ignored(hook):
+    write_override(hook, 40_000, 90_000, -1)
+    assert hook.caps_for(SONNET) == (300_000, 450_000)
+
+
+def test_env_beats_the_override(hook, monkeypatch):
+    write_override(hook, 40_000, 90_000, 600)
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "7000")
+    assert hook.caps_for(SONNET) == (7_000, 90_000)
+
+
+@pytest.mark.parametrize("body", ["{", "[]", '{"soft": 1}', '{"soft": 0, "hard": 5, "expires": 9e99}', '{"soft": 9, "hard": 5, "expires": 9e99}', '{"soft": "x", "hard": 5, "expires": 9e99}'])
+def test_a_broken_override_is_ignored_not_fatal(hook, body):
+    hook.state_dir().mkdir(parents=True, exist_ok=True)
+    (hook.state_dir() / "caps-override.json").write_text(body, encoding="utf-8")
+    assert hook.caps_for(SONNET) == (300_000, 450_000)
+
+
+def test_the_override_reaches_the_guard(hook, transcript):
+    write_override(hook, 1_000, 90_000, 600)
+    transcript.add(assistant(5_000))
+    assert "CONTEXT BUDGET" in hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]

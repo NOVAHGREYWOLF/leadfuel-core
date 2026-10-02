@@ -328,6 +328,16 @@ def check_duplicates(ctx: Ctx) -> list[Result]:
                           f"{user_copy} still exists. Plugin skills are namespaced (`{PLUGIN_NAME}:way`), so the old `{PLUGIN_NAME}` skill "
                           "and the plugin's would both load.",
                           "owner step, after the plugin is installed and this doctor says LIVE: delete that folder (and its hooks/ and guard-settings.json)"))
+    sdir = ctx.state_dir or Path(os.environ.get("WAY_STATE_DIR") or Path(tempfile.gettempdir()) / "leadfuel-way")
+    try:
+        ov = json.loads((sdir / "caps-override.json").read_text(encoding="utf-8"))
+        if float(ov["expires"]) > time.time():
+            out.append(Result("forced caps active", WARN,
+                              f"every session on this machine is being told to hand off at {int(ov['soft']) // 1000}k (hard {int(ov['hard']) // 1000}k) "
+                              f"until the override expires ({(float(ov['expires']) - time.time()) / 60:.0f} min)",
+                              "python scripts/way_caps.py clear, when the pilot is over"))
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
     for root in {ctx.cwd, *ctx.cwd.parents}:
         skills = root / ".claude" / "skills"
         copies = [s for s in ("handoff", "router") if (skills / s / "SKILL.md").is_file()]
