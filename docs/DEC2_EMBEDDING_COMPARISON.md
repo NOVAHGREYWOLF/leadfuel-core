@@ -58,21 +58,31 @@ have no embedding. `brain.py` takes the dimension from `VOYAGE_DIM` and the mode
 ## Steps
 1. **Take the `gpu` lock** (estate lock, `mkdir`) for the whole run, about 12 h, and say so in
    `WORK_QUEUE.md`. Nothing else may use the GPU or Ollama. No CI hold needed unless code is merged.
-2. **Prepare, no downtime:** add `embedding_v2 vector(1024)` to the three tables (an additive
-   migration, so nothing breaks). Do not alter the 768 column in place.
-3. **Re-embed in batches** into `embedding_v2` with `mxbai-embed-large`, resumable by a
-   `WHERE embedding_v2 IS NULL` cursor, at about 6.5 items/s on long text (the 12 h figure is an
+2. **Prepare, no downtime:** create the 1024-d chunk side tables (see step 3; additive, so nothing
+   breaks). Do not alter the 768 column in place.
+3. **Re-embed in batches** into the chunk tables with `mxbai-embed-large`, resumable by a
+   not-yet-chunked cursor, at about 6.5 items/s on long text (the 12 h figure is an
    extrapolation; re-measure on the first 5,000 rows and re-quote the estimate before committing).
    Use the query prefix `Represent this sentence for searching relevant passages: ` on queries only.
-   Cap text at about 1,500 chars (512-token window): long items such as chatgpt and fieldy transcripts
-   are truncated, so decide chunking or truncation first. That decision is open and affects recall.
-4. **Verify before cutover:** `embedding_v2` non-null count equals `embedding` non-null count; re-run
+   **Long items are split into chunks, not truncated (owner answer Q64).** Chunk at about 1,100
+   chars (comfortably inside 512 tokens), split on paragraph then sentence boundaries, with about
+   150 chars of overlap; every chunk is embedded separately. This makes embeddings one-to-many, so
+   a single new column on the row is not enough; use a side table per source table, `<table>_chunk_embedding(row_id, chunk_no, embedding vector(1024))`, with a unique key
+   on `(row_id, chunk_no)`. Short items (the large majority) are one chunk.
+   Search returns the best-scoring chunk per row and de-duplicates by row. `brain.py` search
+   and every writer must change to match, which is a code change for the owning desk, not this plan.
+   **Measured read-only on the local DB:** 197,261 embedded `user_memory` rows, median content 43
+   chars, 95th percentile 1,797 chars, 6.6% longer than 1,500 chars; at about 1,100 chars per chunk
+   that is roughly **226,000 chunks**, about 15% more embeds than rows. Because most rows are short,
+   the 12 h figure (measured on 300+ char texts) is likely a high bound; re-measure on the first 5,000.
+   Open: apply the same chunking to the `document` table (long files); not measured.
+4. **Verify before cutover:** every row with a 768 embedding has at least one chunk row; re-run
    this PR's sample test against the DB vectors; spot-check retrieval on the known queries.
 5. **Cutover (one short window):** set `OSS_EMBED_MODEL=mxbai-embed-large` and `VOYAGE_DIM=1024`,
-   and point reads and writes at `embedding_v2` (rename columns in one transaction: `embedding` to
-   `embedding_old`, `embedding_v2` to `embedding`). New ingests embed with mxbai from this point.
+   (switch search and writers to the chunk tables in one deploy; the old 768 column stays untouched
+   as the rollback). New ingests embed with mxbai from this point.
    Stop ingest during the swap, or backfill rows ingested during the run.
-6. **Cleanup after a soak (suggest 7 days):** drop `embedding_old`, which reclaims the extra storage.
+6. **Cleanup after a soak (suggest 7 days):** drop the old 768 column, then reclaim its storage.
 
 ## Rollback
 Until step 6, rollback is the reverse rename plus the old env values (`nomic-embed-text`, 768). It is
