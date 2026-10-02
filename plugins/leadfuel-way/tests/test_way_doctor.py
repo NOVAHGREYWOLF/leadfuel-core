@@ -320,7 +320,7 @@ def _handoff_copy(plugin_copy, mutate):
 
 def test_a_handoff_skill_without_the_archive_step_fails(doc, plugin_copy, ctx):
     ctx.plugin_dir = plugin_copy
-    _handoff_copy(plugin_copy, lambda t: t[: t.index("6. **Archive yourself")] + "\n## Where the note goes\n" + t.split("## Where the note goes\n", 1)[1])
+    _handoff_copy(plugin_copy, lambda t: t[: t.index("7. **Archive yourself")] + "\n## Where the note goes\n" + t.split("## Where the note goes\n", 1)[1])
     r = doc.check_handoff_archives(ctx)
     assert r.status == doc.FAIL and "archive_session" in r.detail
 

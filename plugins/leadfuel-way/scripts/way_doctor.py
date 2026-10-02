@@ -235,6 +235,10 @@ def check_synthetic(ctx: Ctx) -> list[Result]:
         _jl(tr, {"type": "assistant", "isSidechain": False, "message": {"model": "x", "content": [
             {"type": "tool_use", "id": "w", "name": "Write", "input": {"file_path": str(repo / ".conductor" / "router" / "handoffs" / "router-000.md")}}],
             "usage": {"input_tokens": 5000}}})
+        # a handoff is a finish, so the ledger gate wants its doc too; the doc is what lets Stop through
+        _jl(tr, {"type": "assistant", "isSidechain": False, "message": {"model": "x", "content": [
+            {"type": "tool_use", "id": "l", "name": "Write", "input": {"file_path": str(repo / "ledger" / "doctor" / "NODE" / "2026-01-01" / "doctor.md")}}],
+            "usage": {"input_tokens": 5000}}})
         step("hook: Stop gate lets a handoff through", {"hook_event_name": "Stop"},
              lambda p: (not p, "Stop passed once a handoff write followed the crossing" if not p else f"still blocked: {p!r}"[:160]))
 
