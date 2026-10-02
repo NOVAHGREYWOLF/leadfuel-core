@@ -36,3 +36,6 @@ Build order: (a) merge the novahos stack #26..#34 in order, (b) install the guar
 
 ## Ids
 Session local_18eeff8c (conductor, this one). ROUTER #5 = local_851d50d8-b4b3-4ef7-95c1-468d316dbcfb. Branch: claude/zealous-heisenberg-tlqil3. State branch: claude/admiring-cerf-k1z6vd (e56acab).
+
+## Addendum 02:25 UTC: work done by mistake, for the router to route
+The conductor started a build agent itself, against the rule that work goes conductor -> router -> desk. Result: novahos draft PR #38 (branch conductor-pick-bridge, base claude/conductor-done): conductor/picks.py, tests/test_conductor_picks.py, optional Task.brief in plan.py. 97 targeted tests passed (6 new + 7 existing conductor files), not a bare full pytest; PR checks had not reported. UNVERIFIED: desk-doc shape and decision keys assumed, CLI never run on a real ArtifactData export. Needs a desk (NODE or ARMS) to review, test against a real export and own it. NOT DELIVERED: ROUTER #5 was archived when this was sent and no live numbered router was found, so the router has not been told.
