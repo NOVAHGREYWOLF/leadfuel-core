@@ -8,12 +8,13 @@ description: The ROUTER. The single session the owner talks to. Every task sessi
 One front door. The owner opens this session and nothing else. Task sessions do the work, the router routes.
 Same rules as the conductor kit (`route-and-spawn`, `handoff`, `conductor`, the context guard); this skill adds the message protocol and the rotation.
 The router does **no build work**. It reads, decides, relays, records, and rotates.
+**This file is only the router's part.** The universal skill `leadfuel-way` governs every session and all work; read it first. Where they differ, `leadfuel-way` and the owner's global `CLAUDE.md` win (2026-10-02): the router asks questions on the **Router desk** page, the **conductor** holds the full task list on the **Conductor desk** page and asks what to do next, and the owner picks. All work happens in desk sessions.
 
 ## The five jobs
 1. **Intake.** Messages arrive as user turns: from children (`STATUS:` / `ASK:`), from the hourly watchdog, from the owner. Handle every message waiting in one turn.
 2. **Decide.** Answer from the rules below when they cover it. Otherwise it goes to the owner (job 3). Never guess on an owner-only item.
-3. **Escalate in one place.** The owner reads only this thread. Post a `NEEDS YOU` block, numbered, each item answerable in a word, each with a recommended default. `PushNotification` only for an item that blocks work, batched, at most one push per hour.
-4. **Fan out.** Owner says `1 yes, 2 B`: send each answer to the session that asked (see "Waking" for when not to), record it, report in two lines.
+3. **Escalate in one place: the Router desk page.** Each question is a `questions/<id>` card (`kind` choice or step, `options`, `default`, `why`, `asker`, `check` verified or unverified), answerable by one click. In chat, say only how many are waiting. Never list a plain merge or deploy; only deploy-configuration PRs, spending, credentials and irreversible steps. `PushNotification` only for an item that blocks work, batched, at most one push per hour.
+4. **Fan out.** Pull answered cards with ArtifactData (`answer` set, `routed` empty; the page cannot wake you, so read them when the owner messages you). Send each answer to the session that asked (see "Waking" for when not to), then write `routed: {at, note}` on the card so the owner sees what you did. Brief each desk with the true source of the instruction.
 5. **Rotate.** At ~300k tokens (the guard's soft cap), or when told to, hand over to a fresh router (below). Never let the owner chase a session.
 
 ## Rules (inherited, do not relax)
@@ -62,10 +63,11 @@ Because child -> router push can be blocked by that prompt, do not depend on it.
 If ArtifactData is unavailable, fall back to the handoff note alone and say so in the digest.
 
 ## Your own size
-A running session reports `used_tokens: 0` about itself through `get_session`, so do not trust that. The context guard hook (`.claude/hooks/context_guard.py`) measures the transcript and tells you at 300k (soft) and 450k (hard). When it speaks, or when you have handled ~150 messages, rotate. The watchdog also reads your size from outside while you are idle.
+A running session reports `used_tokens: 0` about itself through `get_session`, so do not trust that. The context guard hook (`.claude/hooks/context_guard.py`) measures the transcript and tells you at 300k (soft) and 450k (hard). **Check on your first turn that it is live** (hook file present in your checkout, and `context_guard` in the user-level settings); on 2026-10-02 router #4 ran far past 300k because it was not, and a silent hook looks exactly like a small session. The repo setting calls `python3`, which does not exist on the owner's Windows machine (use `python`). If the guard is not live, rotate yourself at ~300k or ~150 messages, or when the owner says so. The watchdog also reads your size from outside while you are idle.
 Keep your turns small: do not run `list_sessions` (50 sessions is ~100KB); use roster ids with `get_session`. Read children with `list_events` kinds `assistant,result`, limit 5. Delegate any sweep wider than 5 sessions to a read-only subagent.
 
 ## Rotate (router #N -> #N+1)
+**Local desktop mode (the owner's PC, since 2026-10-02): there is no `create_session` and the hourly heartbeat is off.** Do the Predecessor steps 1, 2 and 4, and save unfinished build material to a private board doc, never the public repo. Then give the owner the one prompt to paste into a fresh session: `You are ROUTER #N+1. Read .claude/skills/router/SKILL.md and .conductor/router/handoffs/router-NNN.md, then run the Claim steps.` The Claim steps 1, 5 and 6 apply; skip the heartbeat step.
 Predecessor:
 1. Finish the message in hand. Do not start new work.
 2. Write `.conductor/router/handoffs/router-NNN.md` (< 300 words, ids only): done, roster summary with tokens, open `NEEDS YOU` items, pending fan-outs, gotchas. Commit and push to the router branch.

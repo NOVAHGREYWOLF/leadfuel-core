@@ -1,19 +1,17 @@
-# Router handoff #004 -> #005 (2026-10-02, ~01:15 UTC)
+# Router handoff #004 -> #005 (2026-10-02, ~01:30 UTC)
 
-Router #4 = local desktop session local_fe99f3da. It is past the 300k soft cap. The context guard hook was never installed for it (this worktree was cut from main; the user-level settings file is empty), so nothing told it to rotate. It hands over by note. Local mode: no create_session. The owner opens a fresh session and pastes: "You are ROUTER #5. Read .claude/skills/router/SKILL.md and .conductor/router/handoffs/router-004.md, then run the Claim steps."
+Router #4 = local session local_fe99f3da, past the 300k cap. The guard hook was never installed for it, so it hands over by note. The owner opens a fresh session and pastes: "You are ROUTER #5. Read .claude/skills/router/SKILL.md and .conductor/router/handoffs/router-004.md, then run the Claim steps." First `git pull --ff-only` the router branch.
 
-## Owner's structure (2026-10-02)
-- Router desk = questions only. Artifact LzmP6QcxmYh9TdvMMjS883 (db: questions, work). 23 questions: steps and decisions, each with a default. Pull answers with ArtifactData; after acting write `routed: {at, note}`. Delete the `work` collection and the Your queue and All tasks tabs once the Conductor desk exists.
-- Conductor desk = the complete task list, held on the conductor, grouped by desk like the sidebar, full documentation per task. The conductor asks "what next?"; the owner chooses. **NOT BUILT.** The router builds nothing: delegate it to CONDUCTOR · plan + task list (local_18eeff8c), or build the first cut and hand it over.
-
-## Unfinished build
-Build script saved in board doc `router/build_conductor_py` (board artifact A4uS9xn1emqupohdE4DUfV, private). Written, never run. Inputs: all 135 board tasks (ArtifactData list with out_dir), plus about 45 desk-owed items, plus the desk files. Design: one doc per desk (`desks/<id>` with a `tasks` map), `next/<id>` for proposals, no tasks chosen by default.
+## New today (owner, 2026-10-02)
+- One skill, `leadfuel-way`, governs every session and all work: user level `~/.claude/skills/leadfuel-way/`, copy in `.claude/skills/leadfuel-way/`, loaded by section 11 of the owner's global CLAUDE.md. This router skill is only the router's part. A router and the conductor do no work; all work is in desk sessions.
+- **Router desk** (artifact LzmP6QcxmYh9TdvMMjS883, db `questions`): questions only, one click each. Pull answers with ArtifactData, then write `routed`. **Conductor desk**: the complete task list by desk with full docs; the conductor asks "what next?"; only owner-queued tasks start. **NOT BUILT.** Open a desk session (the ROUTER desk owns the queue) to build it from board doc `router/build_conductor_py` (private board A4uS9xn1emqupohdE4DUfV; written, never run). Page URLs: board doc `router/desks`.
+- Guard hook and settings snippet are staged in the skill folder (`python`, not `python3`). Switching it on is the owner's step.
 
 ## Not delivered
-Odyssey purge desk (local_27593340) and the archive-sweep session were unreachable by name. The Odyssey desk has commits on no remote.
+Odyssey purge desk (local_27593340) unreachable; its commits are on no remote. The archive-sweep session was unreachable once.
 
 ## State (re-read before acting)
-hub main 5556c6b. signal #13 and #28 green, wait on the owner's token and go-word typed in the DOORS desk session. Archive sweep archived 4; never archive Odyssey, A6, MONEY metering, DOORS mail, world lane until pushed.
+hub main 5556c6b. signal #13 and #28 green; the DOORS desk waits for the owner's word typed in its own session. Archive sweep archived 4; never archive Odyssey, A6, MONEY metering, DOORS mail or the world lane until pushed.
 
 ## Gotchas
-Messaging pauses after 10 sends until the owner types. A proof of identity must be reachable by the desk: point at the session transcript, not the private board. Merges and deploys never go on the owner's list (deploy-config PRs are the exception). gh times are UTC. Heartbeat is off.
+Sends pause after 10 until the owner types. Proof of identity must be readable by the desk (session id plus `list_events`). Plain merges and deploys never go on the owner's list. `gh` times are UTC. Heartbeat is off.
