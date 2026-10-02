@@ -28,5 +28,7 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 
 - P8 (local_1998189a): novahub PR 695 draft, DMARC ingest read-only, pushed c9f2d69, CI queued; local gates timed out at 2h (box contended). Nothing sends. Next: when CI is green, merge-main re-check, then the owner decides whether to allow a live mailbox read (a card is owed).
 
+- PRODUCT removal brief (for the reach desk): the quoting surface is hub_company.py (lines ~88-147), scheduler.py (~841-850), sequence_agents.py (~621, 629), render.py (~20, 237), .env.example, test_company_news_line.py, test_copy_quality.py. ORDER TRAP: remove the copywriter instruction at sequence_agents.py:629 before or with the token path, never render's empty-token handling first, or a literal {{company_news}} reaches a prospect. New card Q103 asks whether NO QUOTES also covers orbit's outreach_angle and scope's grounding (default C: orbit yes, scope no). Never-rotated surfaces, in order: signal reply assistant, orbit, scope. PRODUCT is NOT archiving and not posting its PR comments (Q102 stands). PRODUCT is waiting for ROUTER #8 to appear.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
