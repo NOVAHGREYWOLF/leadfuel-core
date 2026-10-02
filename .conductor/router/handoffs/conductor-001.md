@@ -12,7 +12,17 @@ Ids, titles, status only (public repo). All working files are private, outside a
 - Verified: the desk docs, picks (empty except one cleared test click), and the artifact versions were read back after writing. Not verified: button behaviour in the browser (optimistic update added after the owner reported "do now" showed nothing; owner has not confirmed it works).
 - Task statuses are mostly UNVERIFIED (read from session tails and old checklists), labelled as such on the page. Desk assignments are heuristic from id prefixes (P6 and P8 sit under WATCH).
 
-## Not done (next session, in order)
+## FIRST: get the system itself working (owner, 2026-10-02: "conduct that first")
+Readiness, checked at ~02:05 UTC by the conductor (files and gh, not run):
+- Context guard: `context_guard.py` exists on the router branch but is NOT wired into ~/.claude/settings.json (0 matches). So no session gets a size warning. Owner step: add the hook (the conductor may not edit settings).
+- Conductor engine (novahos): built as a 6-step stack, PRs #26 to #34 OPEN; the code (11 files under conductor/) is only on branch claude/conductor-done, NOT on novahos main. `run_tick` has never run. Nothing is scheduled.
+- Skills: only `leadfuel-way` is installed at user level; router, handoff, conductor, route-and-spawn exist only inside repos.
+- MISSING LINK: nothing turns an owner's pick on the Conductor page into started work. The page stores `picks/`; the engine reads tasks.json; no bridge. Needs: read picks, write a brief per queued task, run it as a desk session or a `claude -p` run in a worktree, report cost.
+- No tool to start sessions from a session here; ROUTER #5 says desks are idle with 1000+ messages.
+- Classifier still denies agent-run `gh pr merge` on hub; owner setting.
+Build order: (a) merge the novahos stack #26..#34 in order, (b) install the guard hook and user-level skills (owner edits settings), (c) build the pick-to-run bridge and run ONE queued task by hand end to end, (d) then the hourly schedule, (e) then the project view below, (f) Router cards for the 26 decisions.
+
+## Not done (next session, in order, after the system works)
 1. Build the PROJECT VIEW the owner asked for: a project (e.g. Reports, gateway cutover) with tasks 1..N, its intent, where we are, and per task Finished / Start / Edit / Do now / Schedule. Task rows have no `project` field yet; infer from board `phase`, desk dossiers and PR titles. Owner wants Reports first. Rule: questions only on the Router desk, only real tasks on the Conductor.
 2. Add the 26 decisions in `data\QUESTIONS-for-router.md` to the Router desk as cards (ROUTER's page; send ROUTER #5 an ASK, do not write them yourself).
 3. Add a "Finished" action and an Edit action; owner-queued tasks only get started.
