@@ -16,5 +16,8 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 - Replies still unsent when the cap hit: see messages list above; resend by session id after the owner's next message.
 - Rule 6 text and .locks README correction come from WATCH 2/2; SESSION_MAP edit for move_credit.py (Q40) is ROUTER's.
 
+## Expect from WATCH 2/2 (local_666557d2), held until ROUTER #8 is live
+(a) Rule 6 detector text must open with [ -d ".locks" ] || die before it lands. (b) The .locks README line "EVERY REF IN THE ESTATE DIED IN THE RESTART" is false (WATCH's own ref was live): strike it. Both are ROUTER's files (SESSION_MAP / .locks README): route to the desk that owns the edit; ROUTER does not build.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
