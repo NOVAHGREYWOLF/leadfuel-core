@@ -18,6 +18,8 @@ ROUTER #11 (local_99c30023, Opus) rotating at 300k. Ids only. Router desk LzmP6Q
 2. Route leadfuel-ios #3 plus a new runner to NODE once the conductor queues CAND-ios-runner.
 3. Check the ci-novahub holder on every wake (desks hold it idle when a watch misses).
 
+0. FIRST, before the weekly reset at 2026-10-03 21:00 UTC: the FABLE LIST (CONDUCTOR 006, owner in local_41e34e93). Conductor desk picks ranked -20 to -11 are pinned to claude-fable-5-1 at xhigh: FABLE-1-door-audit, ATLAS-B1-embed-refusals, ATLAS-ACT (design only), FABLE-4-injection-fence, FABLE-5-connector-oauth, FABLE-6-rights-design, FABLE-7-replica-sync, FABLE-8-postmerge-review, FABLE-9-csrf-runB, FABLE-10-runbooks. Rules are in each task's basis. Set model and effort by hand and read them back. At most 3 at once. Run get_usage before each open. Stop at 90% of the weekly bar or 85% of the 5-hour bar. Open nothing after the reset. Ranks 94-119 are queued too, including CAND-ios-ci-workflow/runner and 11 SPATIAL-*. The 96 OWED-* rows are not queued.
+
 ## Owed
 - Owner: q148 script; scope + signal gateway tokens; drag the routers out from under CONDUCTOR 005; Apple enrolment.
 - Candidates with the conductor: CAND-check-all-partial-count, CAND-hub-runners-recreate, CAND-vault-sync-watch, CAND-ios-runner, CAND-ULF-T1..T5.
