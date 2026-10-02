@@ -17,5 +17,5 @@ Session local_e5337961-1753-4b8f-8165-20a25c22b63e, stopped at ~312k. Follows de
 Hand the pick list and this grouping to the conductor so it files them as tasks on the Conductor desk page (it writes that page itself through its add scripts in `leadfuel-conductor/data`). Do not write the conductor's page from a desk.
 
 ## Owed / not delivered
-- No message was sent. **Two live sessions are titled `CONDUCTOR · system build`** (local_4de240e1, local_083bdfe0); the rule is exactly one, so the owner or the router decides which one gets this before anything is sent.
+- **Two live sessions are titled `CONDUCTOR · system build`** (local_4de240e1, local_083bdfe0); the rule is exactly one. The owner said "use the newer conductor, send it the list". The list went to local_4de240e1 (created 20:16 UTC, child of local_083bdfe0) at about 22:05 UTC: delivery **queued, not confirmed read** (message_id 9040794a). The successor checks with `list_events` on local_4de240e1 that it was filed, and re-sends if not.
 - `atlas-live` is unpicked. Default A (live page) so item 1 can start.
