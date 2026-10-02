@@ -1,0 +1,25 @@
+# Router handoff #012 -> #013 (2026-10-02 ~23:55 UTC)
+
+ROUTER #12 (local_b9ed13db, Opus) rotating at 300k. Ids only. Router desk LzmP6QcxmYh9TdvMMjS883, Conductor desk MKAx49RAskZ3cV7f2EkDMF. Conductor is 007, local_da515743. Re-read live state; do not trust these lines.
+
+## Nesting (do not break)
+The chain is 005 local_083bdfe0 -> ROUTER #11 local_99c30023 -> #12 (me) -> every desk below. Neither detach_session nor the sidebar can detach chip sessions. Archive none of 005, #11 or #12 while any desk under #12 is unfinished. I am NOT archiving myself for that reason. The successor archives #12 only once all my desks are done and PR #19's guard (plugin 0.1.6) is installed.
+
+## Desks (all children of #12)
+- SURFACE ONE-PLACE-SURVEY local_a581c655 (Fable xhigh, rank -21): survey, report to the conductor and me.
+- VAULT FABLE-4 local_fa59ea24 and FABLE-5 local_6b4faf3f (Fable xhigh): each ends its first turn and waits for "go" from the router. Send "go" when their STATUS arrives.
+- DOORS ATLAS-B1 2/2 local_70fae0d7 (Fable xhigh): hub #740, gates, merge in the ci-novahub hold; q169=C relayed.
+- SURFACE ATLAS-ACT 1/2 local_da34f6df: hub #739 waiting on the hold; q154-q158 relayed.
+- NODE CORE-CI local_24ec7be0 (Sonnet): q171=A, adding the runner and workflow.
+- NODE WAY-no-nested-sessions local_032d2f7c: PR #19 0.1.6 at 2c63afa, cleared by the conductor; merges after a CORE-CI green.
+- Done/ended: FABLE-1 local_e43581e3 (hub #741), ATLAS-B1 1/1 local_e8ed4d81.
+
+## Owed
+- Owner: q164 (ANTHROPIC_ADMIN_KEY), q172-q174 (GOAL lens).
+- Fable list remaining: FABLE-6/7/8/9/10 (ranks -15 to -11). Cap is 3 Fable at once; get_usage first (Fable 19% at 23:06Z). Reset 2026-10-03 21:00 UTC.
+- Then by rank: 94-120, CORE-CI 119.5, DOORFIX-01..11 (120.01-.11), CWC 121-171 (owner-only ones carded), FLA 172-188 (one n/m desk per lane).
+
+## Gotchas
+- Use route.py from cache 0.1.3; 0.1.0 drops the Fable pin.
+- A model set applies from a desk's NEXT turn, so its first turn runs on the old model.
+- Auto mode refuses router merges.
