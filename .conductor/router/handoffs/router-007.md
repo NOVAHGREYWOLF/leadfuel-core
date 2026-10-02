@@ -26,5 +26,7 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 - Q94 answered NO QUOTES: PRODUCT told (delivered), world lane NOT told (cap hit); a desk must remove headline quoting from reach (live via reach #25, #27). Q102 asks about PRODUCT's two PR comments.
 - SENSORS A6 (local_bb561b81): novahub PR 705 (health-rollup-merge) open, 3 checks pending, auto-merge off, it waits for the owner's answer in its own session. For the map (not its lane): gates.sh on main still has ten --deselect flags (SUITE's removal e6242f3 on fix/one-door-probe-leaves-the-shared-index is unmerged), export-harvest gate has never run (check_export_harvest.py missing, 13 is the max), box shows 24 gates.sh and 27 pytest processes at 100% CPU: route to SUITE/WATCH, not a router task.
 
+- P8 (local_1998189a): novahub PR 695 draft, DMARC ingest read-only, pushed c9f2d69, CI queued; local gates timed out at 2h (box contended). Nothing sends. Next: when CI is green, merge-main re-check, then the owner decides whether to allow a live mailbox read (a card is owed).
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
