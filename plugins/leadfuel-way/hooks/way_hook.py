@@ -231,7 +231,7 @@ def guard_message(tokens: int, last_warned: int, soft: int, hard: int) -> tuple[
         f"CONTEXT BUDGET: ~{k}k tokens (handoff point {soft // 1000}k, hard cap {hard // 1000}k). "
         "Finish the step you are on, start nothing new, and run the `leadfuel-way:handoff` skill: write the note, "
         "commit and push it, give the owner the one prompt for a fresh session, end your turn. "
-        "You will not be able to end a turn until a handoff note exists."
+        "If you try to end a turn without a handoff note, the Stop hook will send you back to write it."
     ), tokens
 
 
@@ -253,8 +253,8 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
         lines.append("2. Your title files you. Check you are in the sidebar group it names.")
     lines.append(
         f"3. Handoff guard is live for model {model or 'unknown'}: hand off at {soft // 1000}k, "
-        f"hard stop at {hard // 1000}k. Size now: {size}. Past {soft // 1000}k the Stop hook will "
-        "not let you end a turn until a handoff note exists."
+        f"hard stop at {hard // 1000}k. Size now: {size}. Past {soft // 1000}k the Stop hook sends "
+        "you back to write the handoff each time you try to end a turn without one."
     )
     if source == "compact":
         lines.append("4. Your context was just compacted. Re-read your handoff and live state before acting.")
