@@ -269,14 +269,17 @@ def check_synthetic(ctx: Ctx) -> list[Result]:
         _jl(rt, _asst(10, [{"type": "tool_use", "id": "ls", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"group": "ROUTER"}}]),
             {"type": "user", "isSidechain": False, "message": {"content": [
                 {"type": "tool_result", "tool_use_id": "ls", "content": [{"type": "text", "text": json.dumps([row])}]}]}})
+        _jl(rt, _asst(10, [{"type": "tool_use", "id": "gx", "name": "mcp__ccd_session_mgmt__get_session", "input": {"session_id": "local_x"}}]),
+            {"type": "user", "isSidechain": False, "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "gx", "content": [{"type": "text", "text": json.dumps(row)}]}]}})
         step("hook: self-archive allowed once the successor is live", arch,
              lambda p: (not p, "allowed after list_sessions showed ROUTER #10 live in the group" if not p else f"still refused: {p!r}"[:160]))
-        kid = {"sessionId": "local_kid", "title": "DOORS · T-1 1/1 · x", "isArchived": False, "parentSessionId": "local_me"}
+        kid = {"sessionId": "local_kid", "title": "DOORS · T-1 1/1 · x", "isArchived": False, "group": {"id": "g", "name": "DOORS"}}
         _jl(rt, _asst(10, [{"type": "tool_use", "id": "ls2", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {}}]),
             {"type": "user", "isSidechain": False, "message": {"content": [
                 {"type": "tool_result", "tool_use_id": "ls2", "content": [{"type": "text", "text": json.dumps([row, kid])}]}]}})
-        step("hook: archive refused while a live child exists", arch,
-             lambda p: (denied(p)[0], "archive refused: local_kid is a live child of this session" if denied(p)[0] else f"not refused: {p!r}"[:160]))
+        step("hook: archive refused over an unread live listing row", arch,
+             lambda p: (denied(p)[0], "archive refused: a live listed session with no parent field was never read with get_session (unknown, not clear)" if denied(p)[0] else f"not refused: {p!r}"[:160]))
     return out
 
 

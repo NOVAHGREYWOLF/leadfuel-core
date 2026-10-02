@@ -45,7 +45,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -217,20 +217,24 @@ def _result_text(content) -> str:
     return ""
 
 
-def session_reads(transcript_path: str) -> tuple[list[dict], bool, str | None]:
-    """(rows, listed, own_id). Every session row this session has read back with list_sessions /
+def session_reads(transcript_path: str) -> tuple[list[dict], bool, str | None, set[str], list[dict]]:
+    """(rows, listed, own_id, detailed, listing). Every session row this session has read back with list_sessions /
     get_session (main thread, within the transcript tail), oldest first; whether a list_sessions
-    call returned at all; and this session's own id, if a get_session("self") result named it.
+    call returned at all; this session's own id, if a get_session("self") result named it; the ids
+    of sessions read with get_session (`detailed`, the only read that carries parentSessionId); and
+    the rows list_sessions returned (`listing`).
     A row is whatever the tool returned: it is judged by successor_in / live_children, which treat
     a missing field as unknown, never as a pass."""
     try:
         text, _ = _tail(transcript_path)
     except OSError:
-        return [], False, None
+        return [], False, None, set(), []
     asked: dict[str, tuple[str, str]] = {}
     rows: list[dict] = []
     listed = False
     own_id: str | None = None
+    detailed: set[str] = set()
+    listing: list[dict] = []
     for rec in _records(text):
         if rec.get("isSidechain"):
             continue
@@ -251,9 +255,12 @@ def session_reads(transcript_path: str) -> tuple[list[dict], bool, str | None]:
                     rows.extend(r for r in value if isinstance(r, dict))
                     if tool.endswith("list_sessions"):
                         listed = True
-                    elif arg.lower() == "self" and value and value[0].get("sessionId"):
-                        own_id = str(value[0]["sessionId"])
-    return rows, listed, own_id
+                        listing.extend(r for r in value if isinstance(r, dict))
+                    else:
+                        detailed.update(str(r.get("sessionId")) for r in value if isinstance(r, dict) and r.get("sessionId"))
+                        if arg.lower() == "self" and value and isinstance(value[0], dict) and value[0].get("sessionId"):
+                            own_id = str(value[0]["sessionId"])
+    return rows, listed, own_id, detailed, listing
 
 
 def sessions_seen(transcript_path: str) -> list[dict]:
@@ -338,8 +345,9 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
 
 
 def parent_of(row: dict) -> str:
-    """The session that opened this one, as a session row says it (get_session: parentSessionId;
-    list_sessions: startedBy). Empty when the row does not say, or when it was detached."""
+    """The session that opened this one, as a get_session row says it (`parentSessionId`; a
+    list_sessions row may say `startedBy`, but a live listing was observed 2026-10-02 to carry
+    neither on chip children). Empty when the row does not say, or when it was detached."""
     if row.get("detached") is True:
         return ""
     return str(row.get("parentSessionId") or row.get("startedBy") or "")
@@ -351,32 +359,46 @@ def live_children(target_id: str, rows: list[dict]) -> list[dict]:
     return [r for r in rows if target_id and parent_of(r) == target_id and r.get("isArchived") is not True]
 
 
-def descendants_refusal(target: str, rows: list[dict], listed: bool, own_id: str | None) -> str | None:
+def descendants_refusal(target: str, rows: list[dict], listed: bool, own_id: str | None,
+                        detailed: set[str] | None = None, listing: list[dict] | None = None) -> str | None:
     """The reason to refuse archiving `target` (a session id, or "self"), or None when this
     transcript shows it has no live child. Archiving sweeps idle child sessions that have no open
-    PR (observed 2026-10-02), so a parent is never archived over live work. A check that cannot see
-    the children says unknown and refuses: no list_sessions read, or "self" with no known own id,
-    is not a pass."""
+    PR (observed 2026-10-02), so a parent is never archived over live work.
+
+    A list_sessions row does NOT carry the parent (observed live: a chip child's row had neither
+    parentSessionId nor startedBy; get_session on it did). So a listing row with no parent field
+    is *unknown*, not "no parent": every live listed session must also have been read with
+    get_session, and only those reads can clear it. No list_sessions read, an unread live row, or
+    "self" with no known own id all refuse as unknown."""
     is_self = target.lower() == "self"
     target_id = own_id if is_self else target
+    detailed = detailed or set()
     if not target_id or not listed:
         need = "`get_session` with session_id \"self\" and " if is_self and not own_id else ""
         return (
             "THE WAY: cannot tell whether this session has live children, so it may not be archived. "
-            f"Run {need}`list_sessions` (a high `limit`, and `include_archived` false) and read each "
-            "candidate with `get_session`; archive only when none shows this session as its "
-            "`parentSessionId` while live. Archiving sweeps idle child sessions that have no open PR."
+            f"Run {need}`list_sessions` (a high `limit`, `include_archived` false), then `get_session` on every "
+            "live row: only get_session shows `parentSessionId`. Archive only when none names this session "
+            "as its parent while live. Archiving sweeps idle child sessions that have no open PR."
         )
     kids = live_children(target_id, rows)
-    if not kids:
-        return None
-    names = ", ".join(str(k.get("sessionId") or k.get("title") or "?") for k in kids[:5])
-    return (
-        f"THE WAY: {target_id} still has live child session(s): {names}. Archiving it can sweep them "
-        "and their unpushed work. Do not archive it. Wait for them to finish, or ask the owner to "
-        "move them to top level; open new routers and desks as top-level sessions (no chip, no "
-        "in-session prompt) so no predecessor ever parents live work."
-    )
+    if kids:
+        names = ", ".join(str(k.get("sessionId") or k.get("title") or "?") for k in kids[:5])
+        return (
+            f"THE WAY: {target_id} still has live child session(s): {names}. Archiving it can sweep them "
+            "and their unpushed work. Do not archive it. Wait for them to finish, or ask the owner to "
+            "move them to top level; open new routers and desks as top-level sessions (no chip, no "
+            "in-session prompt) so no predecessor ever parents live work."
+        )
+    unread = [str(r.get("sessionId") or r.get("title") or "?") for r in (listing or [])
+              if r.get("isArchived") is not True and str(r.get("sessionId") or "") not in (detailed | {target_id})]
+    if unread:
+        return (
+            f"THE WAY: cannot tell whether {target_id} has live children: {len(unread)} live listed session(s) "
+            f"were never read with `get_session` (first: {', '.join(unread[:3])}). A list_sessions row carries "
+            "no `parentSessionId`, so an unread row is unknown, not clear. Read each with `get_session`, then retry."
+        )
+    return None
 
 
 def cap_override(now: float | None = None) -> tuple[int, int] | None:
@@ -567,10 +589,10 @@ def handle(event: dict) -> dict | None:
         target = str(inp.get("session_id") or "").strip()
         if os.environ.get("WAY_ARCHIVE_GUARD", "1") != "0" and target:
             reason = None
-            rows, listed, own_id = session_reads(tpath)
+            rows, listed, own_id, detailed, listing = session_reads(tpath)
             if target.lower() == "self":
                 reason = archive_refusal(cached_title(tpath, state), rows)
-            reason = reason or descendants_refusal(target, rows, listed, own_id)
+            reason = reason or descendants_refusal(target, rows, listed, own_id, detailed, listing)
             if reason:
                 state["archives_refused"] = int(state.get("archives_refused") or 0) + 1
                 out = {"hookSpecificOutput": {
