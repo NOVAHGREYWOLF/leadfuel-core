@@ -5,7 +5,9 @@
     python route.py --backtest <dir of board task JSON files>
 
 Rules, first match wins:
-  1. task["model_pin"] ("opus"|"sonnet"|"haiku") is obeyed.
+  1. task["model_pin"] ("fable"|"opus"|"sonnet"|"haiku", or that model's full id) is obeyed.
+     FABLE is reached ONLY by a pin: it is the owner's choice, never a rule's. A pin that names
+     no known model is an error, not a silent fall-through to the rules below.
   2. OPUS   envelope critical/door, effort high/xhigh, or a risk word in the TITLE
             (security, auth, migration, architecture, rewrite).
   3. HAIKU  effort small/low AND a mechanical word in the TITLE (sweep, typo, docs,
@@ -15,7 +17,12 @@ Rules, first match wins:
 Words are matched on the TITLE only. Briefs mention "security" and "privacy" in passing all
 the time; matching them would send everything to Opus.
 
+task["model_effort"] (low|medium|high|xhigh|max), when given, is passed through as "model_effort"
+for the router's set_session_effort. It is the model's thinking effort, not the board's task
+"effort" (small/high/...), which only feeds rule 2.
+
 IDs come from novahos.model_tiers when importable, else the fallback below. Keep them in step.
+model_tiers has no Fable tier, so the Fable id lives here alone.
 
 Copied into the leadfuel-way plugin from novahos .claude/skills/route-and-spawn/route.py (cb94eb0);
 this copy is the one the router runs when it opens a desk. Only the fallback Haiku id changed.
@@ -33,7 +40,10 @@ try:  # one place for model IDs, when the kernel is installed
     IDS = {"opus": model_for("reason"), "sonnet": model_for("write"), "haiku": model_for("classify")}
 except Exception:  # noqa: BLE001
     IDS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-4-5-20251001"}
+IDS["fable"] = "claude-fable-5-1"
+NAME_FOR_ID = {model_id: name for name, model_id in IDS.items()}
 
+MODEL_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 OPUS_ENVELOPES = {"critical", "door"}
 OPUS_EFFORT = {"high", "xhigh"}
 CHEAP_EFFORT = {"small", "low"}
@@ -44,14 +54,31 @@ MECHANICAL_WORDS = re.compile(
 )
 
 
+class BadTask(ValueError):
+    """A model_pin or model_effort that names nothing this router knows."""
+
+
 def route(task: dict) -> dict:
+    model_effort = str(task.get("model_effort") or "").lower()
+    if model_effort and model_effort not in MODEL_EFFORTS:
+        raise BadTask(f"unknown model_effort {model_effort!r}; expected one of {list(MODEL_EFFORTS)}")
+    out = _route(task)
+    if model_effort:
+        out["model_effort"] = model_effort
+    return out
+
+
+def _route(task: dict) -> dict:
     title = str(task.get("title") or "")
     effort = str(task.get("effort") or "").lower()
     envelope = str(task.get("envelope") or "").lower()
 
-    pin = str(task.get("model_pin") or "").lower()
-    if pin in IDS:
-        return _out(pin, f"pinned to {pin}")
+    pin = str(task.get("model_pin") or "").strip().lower()
+    if pin:
+        name = pin if pin in IDS else NAME_FOR_ID.get(pin)
+        if name is None:
+            raise BadTask(f"unknown model_pin {pin!r}; expected one of {sorted(IDS)} or their ids")
+        return _out(name, f"pinned to {name}")
     risky = envelope in OPUS_ENVELOPES or effort in OPUS_EFFORT or bool(OPUS_WORDS.search(title))
     if risky:
         why = (
@@ -94,6 +121,9 @@ if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--backtest":
         backtest(sys.argv[2])
     elif len(sys.argv) == 2:
-        print(json.dumps(route(json.loads(sys.argv[1]))))
+        try:
+            print(json.dumps(route(json.loads(sys.argv[1]))))
+        except BadTask as exc:
+            sys.exit(f"route.py: {exc}")
     else:
         sys.exit(__doc__)
