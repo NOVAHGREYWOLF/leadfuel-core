@@ -46,11 +46,17 @@ def test_hooks_json_registers_all_five_events_on_the_one_script():
     cfg = json.loads((PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8"))
     assert set(cfg["hooks"]) == EVENTS
     for name, groups in cfg["hooks"].items():
-        [group] = groups
-        [hook] = group["hooks"]
-        assert hook["type"] == "command" and hook["timeout"] == 10
-        assert hook["command"] == 'python "${CLAUDE_PLUGIN_ROOT}/hooks/way_hook.py"', name
+        assert len(groups) == (2 if name == "PreToolUse" else 1), name
+        for group in groups:
+            [hook] = group["hooks"]
+            assert hook["type"] == "command" and hook["timeout"] == 10
+            assert hook["command"] == 'python "${CLAUDE_PLUGIN_ROOT}/hooks/way_hook.py"', name
+    # The doctor's synthetic run uses PreToolUse[0], so the edit rule stays first.
     assert cfg["hooks"]["PreToolUse"][0]["matcher"] == "Edit|Write|MultiEdit|NotebookEdit"
+    archive = cfg["hooks"]["PreToolUse"][1]["matcher"]
+    for tool in ("mcp__ccd_session_mgmt__archive_session", "mcp__claude-code-remote__archive_session"):
+        assert re.search(archive, tool), tool
+    assert not re.search(archive, "mcp__ccd_session_mgmt__unarchive_session")
     assert (PLUGIN / "hooks" / "way_hook.py").is_file()
 
 
@@ -156,11 +162,26 @@ def test_route_ids_are_current(route_mod):
     assert "haiku" in route_mod.IDS["haiku"]
 
 
-def test_skills_follow_the_self_archive_rule():
-    """Owner, 2026-10-02: a session archives itself as the last act of its handoff, after the push is
-    verified. An earlier draft of these skills said the opposite."""
-    for name in SKILLS:
-        text = (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
-        assert "do not archive yourself" not in text.lower() and "never archive yourself" not in text.lower(), name
+UNCONDITIONAL = re.compile(r"archive yourself as your last act|archives itself as its last act|archives itself at handoff", re.I)
+
+
+@pytest.mark.parametrize("path", [PLUGIN / "skills" / s / "SKILL.md" for s in SKILLS]
+                         + [REPO / ".claude" / "skills" / s / "SKILL.md" for s in ("leadfuel-way", "router", "handoff")])
+def test_no_skill_archives_a_session_before_its_successor_is_live(path):
+    """Owner, 2026-10-02: "MAKE SURE ROUTER DOESNT LEAVE ITSELF UNTIL IT HAS A SUCCESSOR", and a desk
+    at its limit hands off and stays open. The older unconditional "archive yourself as your last
+    act" let ROUTER #9 archive itself with no ROUTER #10, so it must not come back in any copy."""
+    if not path.is_file():
+        pytest.skip(f"{path} is not in this tree")
+    assert not UNCONDITIONAL.search(path.read_text(encoding="utf-8")), path
+
+
+@pytest.mark.parametrize("name", ["way", "handoff", "router", "conductor", "desk"])
+def test_each_tier_skill_says_stay_open_until_the_successor_is_live(name):
+    low = (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8").lower()
+    assert "stay open" in low and "successor" in low and "live" in low, name
+
+
+def test_the_handoff_skill_names_the_proof_the_guard_needs():
     handoff = (PLUGIN / "skills" / "handoff" / "SKILL.md").read_text(encoding="utf-8")
-    assert "archive_session" in handoff and "git ls-remote" in handoff
+    assert "archive_session" in handoff and "git ls-remote" in handoff and "list_sessions" in handoff

@@ -111,7 +111,7 @@ def test_unparseable_hooks_json_is_a_failure(doc, plugin_copy, ctx):
 
 def test_the_real_hook_passes_every_synthetic_check(doc, ctx):
     results = doc.check_synthetic(ctx)
-    assert len(results) == 6
+    assert len(results) == 8
     assert all(r.status == doc.OK for r in results), [(r.name, r.detail) for r in results]
 
 
@@ -306,7 +306,7 @@ def test_the_doctor_reports_an_active_override_but_not_an_expired_one(doc, ctx):
     assert not [r for r in doc.check_duplicates(ctx) if r.name == "forced caps active"]
 
 
-# --- the handoff skill must end in the owner's self-archive step ---------------------------
+# --- the handoff skill must keep the no-orphan rule (owner, 2026-10-02) ---------------------------
 
 def test_the_real_handoff_skill_ends_in_self_archive(doc, ctx):
     r = doc.check_handoff_archives(ctx)
@@ -320,7 +320,7 @@ def _handoff_copy(plugin_copy, mutate):
 
 def test_a_handoff_skill_without_the_archive_step_fails(doc, plugin_copy, ctx):
     ctx.plugin_dir = plugin_copy
-    _handoff_copy(plugin_copy, lambda t: t[: t.index("6. **Archive yourself")] + "\n## Where the note goes\n" + t.split("## Where the note goes\n", 1)[1])
+    _handoff_copy(plugin_copy, lambda t: t[: t.index("6. **Never leave")] + "\n## Where the note goes\n" + t.split("## Where the note goes\n", 1)[1])
     r = doc.check_handoff_archives(ctx)
     assert r.status == doc.FAIL and "archive_session" in r.detail
 
@@ -348,4 +348,57 @@ def test_a_missing_or_stepless_handoff_skill_is_a_failure_not_unknown(doc, plugi
 
 
 def test_the_doctor_run_includes_the_self_archive_check(doc, ctx):
-    assert any(r.name == "handoff skill ends in self-archive" for r in doc.run_all(ctx))
+    assert any(r.name == "handoff: no self-archive before a live successor" for r in doc.run_all(ctx))
+
+
+def test_unconditional_self_archive_wording_in_any_skill_fails(doc, plugin_copy, ctx):
+    """The wording that let ROUTER #9 archive itself with no successor must not come back anywhere."""
+    ctx.plugin_dir = plugin_copy
+    p = plugin_copy / "skills" / "router" / "SKILL.md"
+    p.write_text(p.read_text(encoding="utf-8") + "\nThen archive yourself as your last act.\n", encoding="utf-8")
+    r = doc.check_handoff_archives(ctx)
+    assert r.status == doc.FAIL and "router" in r.detail
+
+
+def test_a_handoff_step_that_does_not_say_stay_open_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t.replace("**stay open**", "leave"))
+    r = doc.check_handoff_archives(ctx)
+    assert r.status == doc.FAIL and "stay open" in r.detail
+
+
+def test_a_handoff_step_without_the_list_sessions_proof_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t.replace("list_sessions", "a look around"))
+    assert doc.check_handoff_archives(ctx).status == doc.FAIL
+
+
+# --- the archive guard must be registered ---------------------------------------------------
+
+def test_the_real_archive_guard_is_registered(doc, ctx):
+    r = doc.check_archive_guard_registered(ctx)
+    assert r.status == doc.OK, r.detail
+
+
+def test_an_unregistered_archive_guard_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    p = plugin_copy / "hooks" / "hooks.json"
+    cfg = json.loads(p.read_text(encoding="utf-8"))
+    cfg["hooks"]["PreToolUse"] = cfg["hooks"]["PreToolUse"][:1]
+    p.write_text(json.dumps(cfg), encoding="utf-8")
+    assert doc.check_archive_guard_registered(ctx).status == doc.FAIL
+
+
+def test_a_matcher_that_also_catches_unarchive_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    p = plugin_copy / "hooks" / "hooks.json"
+    cfg = json.loads(p.read_text(encoding="utf-8"))
+    cfg["hooks"]["PreToolUse"][1]["matcher"] = "mcp__.*archive_session"
+    p.write_text(json.dumps(cfg), encoding="utf-8")
+    assert doc.check_archive_guard_registered(ctx).status == doc.FAIL
+
+
+def test_the_synthetic_run_proves_the_archive_guard_both_ways(doc, ctx):
+    by = {r.name: r for r in doc.check_synthetic(ctx)}
+    assert by["hook: self-archive refused with no successor"].status == doc.OK, by["hook: self-archive refused with no successor"].detail
+    assert by["hook: self-archive allowed once the successor is live"].status == doc.OK, by["hook: self-archive allowed once the successor is live"].detail

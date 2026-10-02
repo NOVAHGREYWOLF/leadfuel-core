@@ -466,6 +466,122 @@ def test_role_rule_off_switch(hook, transcript, repo, monkeypatch):
     assert pre(hook, transcript, "Edit", repo / "a.py") is None
 
 
+# --- PreToolUse: no self-archive before a live successor (owner, 2026-10-02) ---------------
+
+ARCHIVE = "mcp__ccd_session_mgmt__archive_session"
+
+
+def archive(hook, transcript, target="self", tool=ARCHIVE):
+    return hook.handle(event("PreToolUse", transcript, tool_name=tool, tool_input={"session_id": target}))
+
+
+def refused(out) -> bool:
+    return bool(out) and out["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+_ids = iter(range(10_000))
+
+
+def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False):
+    """Append a session read and its result, the way the transcript records them."""
+    tid = f"ls{next(_ids)}"
+    text = as_text if as_text is not None else json.dumps(rows)
+    transcript.add(
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": {"group": "x"}}]),
+        {"type": "user", "isSidechain": False, "message": {"content": [
+            {"type": "tool_result", "tool_use_id": tid, "is_error": is_error, "content": [{"type": "text", "text": text}]}]}},
+    )
+
+
+def row(title, group, archived=False, **extra):
+    return {"sessionId": "local_next", "title": title, "isArchived": archived, "group": {"id": "g", "name": group}, **extra}
+
+
+@pytest.mark.parametrize("title", ["ROUTER #9", "CONDUCTOR · system build", "NODE · WAY-1 1/2 · build", "just a title"])
+def test_self_archive_with_no_successor_seen_is_refused_for_every_tier(hook, transcript, title):
+    """ROUTER #9 archived itself at 11:36 UTC on 2026-10-02 with no ROUTER #10: this is that call."""
+    transcript.add(title_rec(title))
+    out = archive(hook, transcript)
+    assert refused(out)
+    assert "STAY OPEN" in out["hookSpecificOutput"]["permissionDecisionReason"]
+    assert hook.load_state("sess-1")["archives_refused"] == 1
+
+
+@pytest.mark.parametrize("own, successor, group", [
+    ("ROUTER #9", "ROUTER #10", "ROUTER"),
+    ("CONDUCTOR · system build", "CONDUCTOR · system build 2", "CONDUCTOR"),
+    ("NODE · WAY-1 1/2 · build", "NODE · WAY-1 2/2 · build", "NODE"),
+    ("DOORS · topic", "DOORS · topic, continued", "DOORS"),
+])
+def test_self_archive_is_allowed_once_the_successor_is_seen_live_in_its_group(hook, transcript, own, successor, group):
+    transcript.add(title_rec(own))
+    saw_sessions(transcript, [row(successor, group)])
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("own, seen", [
+    ("ROUTER #9", row("ROUTER #10", "ROUTER", archived=True)),               # successor already gone
+    ("ROUTER #9", row("ROUTER #10", "NODE")),                                # not visible in its group
+    ("ROUTER #9", {"title": "ROUTER #10", "isArchived": False}),             # group unknown is not filed
+    ("ROUTER #9", {"title": "ROUTER #10", "group": {"name": "ROUTER"}}),     # archived unknown is not live
+    ("ROUTER #9", row("ROUTER #8", "ROUTER")),                               # an older router is not a successor
+    ("ROUTER #9", row("ROUTER #9", "ROUTER")),                               # yourself
+    ("ROUTER #9", row("CONDUCTOR · x", "CONDUCTOR")),                        # another tier
+    ("ROUTER #9", row("NODE · WAY-1 2/2 · x", "NODE")),
+    ("NODE · WAY-1 1/2 · build", row("NODE · WAY-2 1/1 · other", "NODE")),   # another task in the lane
+    ("NODE · WAY-1 2/2 · build", row("NODE · WAY-1 1/2 · build", "NODE")),   # the predecessor, not the successor
+    ("NODE · WAY-1 1/2 · build", row("DOORS · WAY-1 2/2 · build", "DOORS")), # another lane
+    ("just a title", row("just a title 2", "NODE")),                         # unfiled: no successor can be named
+])
+def test_what_does_not_count_as_a_live_successor(hook, transcript, own, seen):
+    transcript.add(title_rec(own))
+    saw_sessions(transcript, [seen])
+    assert refused(archive(hook, transcript))
+
+
+def test_a_get_session_result_counts_and_prose_around_the_json_is_tolerated(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    saw_sessions(transcript, None, tool="mcp__ccd_session_mgmt__get_session",
+                 as_text="Session:\n" + json.dumps(row("ROUTER #10", "ROUTER")) + "\n(end)")
+    assert archive(hook, transcript) is None
+
+
+def test_an_errored_or_unrelated_tool_result_does_not_count(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    saw_sessions(transcript, [row("ROUTER #10", "ROUTER")], is_error=True)
+    saw_sessions(transcript, [row("ROUTER #10", "ROUTER")], tool="Bash")  # e.g. an echo of the JSON
+    assert refused(archive(hook, transcript))
+
+
+def test_a_successor_read_in_a_subagent_does_not_count(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    transcript.add(
+        {**assistant(1, content=[{"type": "tool_use", "id": "sub", "name": "mcp__ccd_session_mgmt__list_sessions", "input": {}}]), "isSidechain": True},
+        {"type": "user", "isSidechain": True, "message": {"content": [
+            {"type": "tool_result", "tool_use_id": "sub", "content": json.dumps([row("ROUTER #10", "ROUTER")])}]}},
+    )
+    assert refused(archive(hook, transcript))
+
+
+def test_archiving_another_session_or_unarchiving_is_not_this_guard(hook, transcript):
+    transcript.add(title_rec("ROUTER #10"))
+    assert archive(hook, transcript, target="local_61ed8382") is None
+    assert archive(hook, transcript, tool="mcp__ccd_session_mgmt__unarchive_session") is None
+
+
+def test_the_remote_archive_tool_is_guarded_too(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    assert refused(archive(hook, transcript, tool="mcp__claude-code-remote__archive_session"))
+
+
+def test_the_archive_guard_is_not_switched_off_by_the_edit_rule_switch(hook, transcript, monkeypatch):
+    monkeypatch.setenv("WAY_ENFORCE_ROLES", "0")
+    transcript.add(title_rec("ROUTER #9"))
+    assert refused(archive(hook, transcript))
+    monkeypatch.setenv("WAY_ARCHIVE_GUARD", "0")
+    assert archive(hook, transcript) is None
+
+
 # --- state and the process ------------------------------------------------------------------
 
 def test_every_event_is_counted(hook, transcript):
