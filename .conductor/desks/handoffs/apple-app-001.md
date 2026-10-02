@@ -21,6 +21,17 @@ shapes (normalisers are defensive), any iPhone.
 ## Next
 Run `EXPO_PUBLIC_DEMO=1 npx expo start --web`, screenshot every screen, fix layout, run `expo lint`.
 
+## Added after this note was pushed: GOAL-iphone-command-center (rank 59)
+Relayed by ROUTER #8 (peer message, after the cap; the successor owns it). Its words: the owner queued it via the
+conductor, "the iphone app - it needs to have the command center interface only ... under surface ... a goal we push".
+Router's brief, unverified by me: this desk holds it, no new desk. Step one is READ-ONLY: what the app shows today,
+and how `/goal` is served. Then a plan with the owner-only steps listed BEFORE any build. Nothing goes to Apple
+without the owner. The web command center is a separate desk (`INTELLIGENCE · command center per user 1/1`, not in my
+earlier session list, so verify it exists): agree the page contract with it, do not duplicate it. Also read
+`SURFACE · command center nav button` and `SURFACE · command url check` (both open on leadfuel-core PR 8). Report
+STATUS/ASK to ROUTER #8. Note "command center only" may mean dropping or hiding the tabs built so far; ask before
+deleting any.
+
 ## Owed
 - Novah: Apple enrolment; approve creating a GitHub repo for `leadfuel-ios`; confirm bundle id
   `cloud.leadfuel.app` (permanent after first upload); replace the generated placeholder icon; say whether the
