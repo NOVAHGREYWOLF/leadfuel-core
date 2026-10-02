@@ -1,0 +1,15 @@
+{
+  "name": "leadfuel",
+  "description": "Plugins that make every Claude Code session on this estate work the same way.",
+  "owner": {
+    "name": "Novah Greywolf"
+  },
+  "plugins": [
+    {
+      "name": "leadfuel-way",
+      "source": "./plugins/leadfuel-way",
+      "description": "The way: banner, handoff guard, and the conductor / router / desk skills.",
+      "version": "0.1.3"
+    }
+  ]
+}
