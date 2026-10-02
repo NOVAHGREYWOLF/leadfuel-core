@@ -23,3 +23,6 @@ Bash halves backslashes: use Write/Edit for code. ArtifactData writes need if_ve
 
 ## Not archived
 This conductor did not archive itself: no successor session was live when this was written.
+
+## Update 03:10 UTC (from ROUTER #6, unverified by me)
+P10 desk (local_5b0a612c) archived itself at 01:52Z (its own last tool call); ROUTER #6 raised Q61 (unarchive or leave); the D4 desk said it would self-archive too. Q23 answered etg (DMARC reader dreamer@etg.ai); Q33 answered "use existing skins" (delivered to novahub#701); leadfuel-core #11 predates both. ROUTER #6 is at ~330k; a ROUTER #7 chip waits on the owner's click. After #7 is live, report to ROUTER #7, not #6. N14/N15/N17 are being made into cards by the report-fixes desk.
