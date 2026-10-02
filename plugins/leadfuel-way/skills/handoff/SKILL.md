@@ -17,8 +17,9 @@ A session's cost grows with its context: every turn re-reads the whole history. 
    - **Owed / not delivered**: decisions needed (and who answers), messages that did not land.
    - **Gotchas**: what cost you time.
 4. **Commit and push the note.** The path must contain `handoff`: the Stop hook looks for a write, commit or push naming one made after you crossed the cap.
-5. **Get the successor started** (below). Do not schedule a wake-up into this session: waking a large session re-reads all of it.
-6. **Archive yourself as your last act** (owner, 2026-10-02): `archive_session` with `self`, only after the push is verified with `git ls-remote` and nothing in your worktree is unpushed, because archiving removes the worktree. Do not keep answering messages after the handoff; anything that arrives belongs to the successor. If the push cannot be verified, or something is unpushed, do not archive: say so in your last message and end your turn.
+5. **Write your ledger doc** (every tier, every finish): one page, format v1, at `F:/Claude Sessions/ledger/<project>/<who>/<YYYY-MM-DD>/<id>.md`: 10 fixed header lines, then `## Done`, `## Why`, `## Open`. Read `F:/Claude Sessions/ledger/README.md` for the exact header. A successor writes its own file (`<id>-2.md`). The folder is private: never commit it, never copy it into a repo. The Stop hook asks once per session if you reported a final STATUS or wrote a handoff and wrote no ledger doc. A session that finishes with `STATUS: DONE` and no handoff does this step too.
+6. **Get the successor started** (below). Do not schedule a wake-up into this session: waking a large session re-reads all of it.
+7. **Archive yourself as your last act** (owner, 2026-10-02): `archive_session` with `self`, only after the push is verified with `git ls-remote` and nothing in your worktree is unpushed, because archiving removes the worktree. Do not keep answering messages after the handoff; anything that arrives belongs to the successor. If the push cannot be verified, or something is unpushed, do not archive: say so in your last message and end your turn.
 
 ## Where the note goes
 | Tier | File (on the branch the tier already works from) | Successor title |

@@ -13,6 +13,9 @@ Events (one entry point, dispatched on `hook_event_name`):
     Stop              past the soft cap with no handoff written since crossing it: block the stop,
                       once per stop (the harness sets stop_hook_active on the retry, and a hook that
                       blocked again would loop). Hard cap: same, measured from the hard crossing.
+                      Also once per session: a titled session that has reported a final STATUS or written a
+                      handoff, but wrote no doc under a `ledger` folder, is sent back to write it
+                      (WAY_LEDGER=0 disables).
     PreToolUse        a session whose title starts with CONDUCTOR or ROUTER (upper case; `ROUTER #N`
                       in any case) is a coordinator tier and may not edit files inside a git
                       checkout, except handoff notes and .conductor/ state. All work happens in
@@ -35,7 +38,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -59,6 +62,13 @@ SHELL_WRITES = re.compile(
     r"|\b(cp|mv)\s|\b(Copy|Move|New)-Item\b",
     re.I,
 )
+
+
+# A session is finishing when it reports a final-ish STATUS to its router, or has written a handoff.
+FINISH_STATUS = re.compile(r"\bSTATUS:\s*(DONE|BLOCKED|NEEDS-NOVAH)\b")
+MESSAGE_TOOLS = ("SendMessage", "send_message")
+# A ledger doc is a markdown file written under a folder named `ledger` (ledger/<project>/<who>/<date>/<id>.md).
+LEDGER_PATH = re.compile(r"[/\\]ledger[/\\][^\s\"']+\.md", re.I)
 
 
 # --- transcript ---------------------------------------------------------------------------
@@ -178,6 +188,65 @@ def handoff_written_since(transcript_path: str, offset: int) -> bool:
                 continue
             return True
     return False
+
+
+def _tool_calls(transcript_path: str, offset: int = 0):
+    """(name, input) of every main-thread tool call after byte `offset`."""
+    try:
+        with Path(transcript_path).open("rb") as fh:
+            fh.seek(max(0, offset))
+            text = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return
+    for rec in _records(text):
+        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                yield str(block.get("name") or ""), block.get("input") or {}
+
+
+def finish_reported(transcript_path: str) -> bool:
+    """True if this session has reported DONE/BLOCKED/NEEDS-NOVAH to a router, or written a handoff."""
+    try:
+        size = Path(transcript_path).stat().st_size
+    except OSError:
+        return False
+    for name, inp in _tool_calls(transcript_path, max(0, size - TAIL_BYTES)):
+        blob = json.dumps(inp)
+        if any(t in name for t in MESSAGE_TOOLS) and FINISH_STATUS.search(blob):
+            return True
+        if name in WRITE_TOOLS | SHELL_TOOLS and HANDOFF_WORD.search(blob) and (
+            name in WRITE_TOOLS or SHELL_WRITES.search(blob)
+        ):
+            return True
+    return False
+
+
+def ledger_written(transcript_path: str) -> bool:
+    """True if this session wrote a markdown file under a `ledger` folder (a file write or a shell write)."""
+    try:
+        size = Path(transcript_path).stat().st_size
+    except OSError:
+        return False
+    for name, inp in _tool_calls(transcript_path, max(0, size - TAIL_BYTES)):
+        if name in WRITE_TOOLS:
+            if LEDGER_PATH.search(str(inp.get("file_path") or "")):
+                return True
+        elif name in SHELL_TOOLS:
+            cmd = str(inp.get("command") or "")
+            if LEDGER_PATH.search(cmd) and SHELL_WRITES.search(cmd):
+                return True
+    return False
+
+
+LEDGER_REASON = (
+    "THE WAY: you are finishing (a final STATUS or a handoff was sent) and no ledger doc has been written. "
+    "Write your one-page ledger doc now, per F:/Claude Sessions/ledger/README.md (format v1): "
+    "ledger/<project>/<who>/<date>/<id>.md, 10 header lines then ## Done / ## Why / ## Open. "
+    "The folder is private: never commit it or copy it into a repo. Then end your turn. "
+    "This is asked once per session."
+)
 
 
 # --- policy (pure, so it can be tested) ---------------------------------------------------
@@ -363,7 +432,13 @@ def handle(event: dict) -> dict | None:
 
     elif name == "Stop" and not guard_off:
         tokens, model, size = last_turn(tpath)
-        if tokens is not None and not event.get("stop_hook_active"):
+        if (os.environ.get("WAY_LEDGER", "1") != "0" and not event.get("stop_hook_active")
+                and not state.get("ledger_asked")
+                and role_of(cached_title(tpath, state))[0] != "UNFILED"
+                and finish_reported(tpath) and not ledger_written(tpath)):
+            state["ledger_asked"] = True  # once per session: a hook that blocked again would loop
+            out = {"decision": "block", "reason": LEDGER_REASON}
+        elif tokens is not None and not event.get("stop_hook_active"):
             soft, hard = caps_for(model)
             if tokens >= soft:
                 state.setdefault("soft_crossed_at", size)
