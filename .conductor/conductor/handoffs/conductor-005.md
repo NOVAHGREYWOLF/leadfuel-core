@@ -20,3 +20,4 @@ Check that ROUTER #11 opened ATLAS-LIVE-FLOWS (chip task_ef9f29ae) and then the 
 - Write page JSON with encoding utf-8. A cp1252 read garbled NODE and SUITE once (repaired).
 - F:\Claude Sessions diverges from its private remote by design: push disabled, VAULT sync.
 - Archiving a predecessor whose PR is still open is refused by the classifier.
+- DO NOT archive local_083bdfe0 until ROUTER #11 (local_99c30023) and you yourself are no longer its side sessions. Both were started from its chips, and archive_session also sweeps finished side sessions, so an idle router could be archived with it. detach_session is refused for chip-started sessions; the owner must drag them out from under it in the sidebar first. Verify with get_session (parentSessionId / detached) before archiving.
