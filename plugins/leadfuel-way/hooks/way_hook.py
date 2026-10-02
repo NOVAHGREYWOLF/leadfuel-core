@@ -47,8 +47,8 @@ DESK_TITLE = re.compile(r"^\s*([A-Z][A-Z0-9_-]+)\s*·")
 HANDOFF_WORD = re.compile(r"hand-?off", re.I)
 # A shell command counts only if it also writes: mentioning the word (ls, cat, grep) is not a handoff.
 SHELL_WRITES = re.compile(
-    r"git\s+(add|commit|push)|>>?\s*\S|tee|(Set|Add|Out)-Content|Out-File"
-    r"|(cp|mv)\s|(Copy|Move|New)-Item",
+    r"\bgit\s+(add|commit|push)\b|>>?\s*\S|\btee\b|\b(Set|Add|Out)-Content\b|\bOut-File\b"
+    r"|\b(cp|mv)\s|\b(Copy|Move|New)-Item\b",
     re.I,
 )
 
@@ -107,11 +107,9 @@ def scan_title(transcript_path: str, start: int = 0) -> tuple[str | None, int]:
             data = fh.read()
     except OSError:
         return None, start
-    cut = data.rfind(b"
-") + 1
+    cut = data.rfind(b"\n") + 1
     title = None
-    for line in data[:cut].split(b"
-"):
+    for line in data[:cut].split(b"\n"):
         if b'"custom-title"' not in line:
             continue
         try:
@@ -270,10 +268,15 @@ def write_allowed_for_coordinator(path: str) -> bool:
 
 # --- state --------------------------------------------------------------------------------
 
+def state_dir() -> Path:
+    """Where per-session state lives. WAY_STATE_DIR overrides it (tests and the doctor use that)."""
+    return Path(os.environ.get("WAY_STATE_DIR") or Path(tempfile.gettempdir()) / "leadfuel-way")
+
+
 def _state_path(session_id: str) -> Path:
     safe = "".join(c for c in session_id if c.isalnum() or c in "-_")[:80] or "unknown"
-    d = Path(tempfile.gettempdir()) / "leadfuel-way"
-    d.mkdir(exist_ok=True)
+    d = state_dir()
+    d.mkdir(parents=True, exist_ok=True)
     return d / f"{safe}.json"
 
 

@@ -9,6 +9,15 @@ description = "Shared layer + Nova OS kernel for the LeadFuel/Nova suite (servic
 requires-python = ">=3.11"
 dependencies = []  # stdlib-only by design — keep the core dependency-free
 
+[tool.pytest.ini_options]
+# The repo root is itself a package (__init__.py with relative imports, built as `leadfuel_core`).
+# If pytest collects the root, it imports that __init__.py under the checkout's folder name, which
+# is not a valid Python name, the relative imports fail, and every test beneath errors at setup
+# (111 errors, no failures). So bare `pytest` collects from plugins/ and stops looking for conftest
+# files above it. Nothing outside plugins/ has tests; add a path here if that changes.
+testpaths = ["plugins"]
+addopts = "--confcutdir=plugins"
+
 [tool.setuptools]
 packages = ["leadfuel_core"]
 package-dir = { "leadfuel_core" = "." }

@@ -23,7 +23,7 @@ Three tiers. Each has a sidebar group, and **all work happens in desks.**
 | **ROUTER** | one per project | the conductor | Opens one desk session per queued task, picks its model, relays answers, posts questions as cards on the **Router desk** page. Does no work. |
 | **Desk session** | one per task | the router | Does the task: worktree, change, draft PR, checks, report, handoff. Titled `LANE · <task id> n/m · topic`, filed in its lane's group. |
 
-A conductor or router that finds itself building something stops and hands it to a desk. The hooks enforce part of this: in a session titled `CONDUCTOR · …` or `ROUTER #N`, edits inside a git checkout are refused, except handoff notes and `.conductor/` state.
+A conductor or router that finds itself building something stops and hands it to a desk. The hooks enforce part of this: in a session titled `CONDUCTOR · …` or `ROUTER #N`, the Edit, Write, MultiEdit and NotebookEdit tools are refused inside a git checkout, except for handoff notes and `.conductor/` state. (Shell commands are not covered; the rule is a nudge, not a wall.) A session titled `ROUTER · …` with a lane and a task number is a desk in the ROUTER lane, not a router, and may work.
 
 **The model depends on the task, not the tier.** The router runs `python "${CLAUDE_PLUGIN_ROOT}/scripts/route.py" '{"title":…,"effort":…,"envelope":…}'` for each task: Opus for security, auth, migration, architecture, rewrite, critical or door work and high effort; Haiku for small mechanical work (sweeps, typos, docs, lint, bumps); Sonnet otherwise. A task's `model_pin` wins. If a Sonnet or Haiku desk fails the same step twice, retry one tier up.
 
@@ -45,7 +45,7 @@ Plain words, five lines or fewer. Lead with what the owner must do, or say nothi
 
 ## 5. Handoff (every session, every tier, automatic)
 The caps follow your model: **Opus and Sonnet hand off at 300k and stop at 450k; Haiku at 120k and 150k** (its window is 200k). Also hand off at about 150 handled messages, or the moment the owner says the session is too large.
-- The guard tells you when you cross a cap. **Past the handoff point, the Stop hook will not let you end a turn until a handoff note exists** (a file or board write whose path names a handoff). That is deliberate: the handoff is not optional.
+- The guard tells you when you cross a cap. **Past the handoff point, the Stop hook stops you at the end of a turn and sends you back to write the handoff** (it looks for a file write, a commit or push, or a board write whose path names a handoff, made after you crossed). It blocks once per stop, because the harness marks the retry and a hook that blocked again would loop; the next turn end is checked again, so the handoff is not optional, only unforced.
 - How: `leadfuel-way:handoff`. Finish the step in hand, write the note (ids only), commit and push it, and get the successor started: by `start_session` if your session has it, else by giving the owner the one prompt to paste. Do not archive yourself.
 - The successor re-reads state before acting; it does not trust the note's state lines.
 
