@@ -13,8 +13,10 @@ Events (one entry point, dispatched on `hook_event_name`):
     Stop              past the soft cap with no handoff written since crossing it: block the stop,
                       once per stop (the harness sets stop_hook_active on the retry, and a hook that
                       blocked again would loop). Hard cap: same, measured from the hard crossing.
-    PreToolUse        a CONDUCTOR or ROUTER #N session may not edit files inside a git checkout,
-                      except handoff notes and .conductor/ state. All work happens in desks.
+    PreToolUse        a session whose title starts with CONDUCTOR or ROUTER (upper case; `ROUTER #N`
+                      in any case) is a coordinator tier and may not edit files inside a git
+                      checkout, except handoff notes and .conductor/ state. All work happens in
+                      desks, and a desk's lane is never ROUTER or CONDUCTOR.
 
 Caps follow the model the session runs on: Haiku 120k/150k (200k window), others 300k/450k.
 SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 disables the guard
@@ -33,15 +35,21 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
-ROUTER_TITLE = re.compile(r"^\s*ROUTER\s*#\s*\d+", re.I)
-CONDUCTOR_TITLE = re.compile(r"^\s*CONDUCTOR\b", re.I)
-DESK_TITLE = re.compile(r"^\s*([A-Z][A-Z0-9_-]+)\s*·")
+# ROUTER and CONDUCTOR are tiers, never desk lanes (owner, 2026-10-02): a title that starts with
+# either word is that tier, whatever follows. The loose form is upper case only, because that is how
+# tier titles are written and a natural-language title ("Router skill fixes") must not lose its edit
+# tools. The numbered form `ROUTER #N` has always matched in any case.
+TIERS = ("ROUTER", "CONDUCTOR")
+TIER_TITLE = re.compile(r"^\s*(ROUTER|CONDUCTOR)\b")
+ROUTER_NUMBERED = re.compile(r"^\s*ROUTER\s*#\s*\d+", re.I)
+# The lookahead makes it impossible for a desk title to yield lane ROUTER or CONDUCTOR.
+DESK_TITLE = re.compile(r"^\s*(?!(?:ROUTER|CONDUCTOR)\b)([A-Z][A-Z0-9_-]+)\s*·")
 # A Stop gate is satisfied by a handoff written after the crossing: a file write whose path says
 # handoff, a shell command that commits or pushes one, or a board write naming one.
 HANDOFF_WORD = re.compile(r"hand-?off", re.I)
@@ -175,12 +183,13 @@ def handoff_written_since(transcript_path: str, offset: int) -> bool:
 # --- policy (pure, so it can be tested) ---------------------------------------------------
 
 def role_of(title: str | None) -> tuple[str, str | None]:
-    """(CONDUCTOR | ROUTER | DESK | UNFILED, lane or None)."""
+    """(CONDUCTOR | ROUTER | DESK | UNFILED, lane or None). A tier is never a lane."""
     if not title:
         return "UNFILED", None
-    if CONDUCTOR_TITLE.match(title):
-        return "CONDUCTOR", None
-    if ROUTER_TITLE.match(title):
+    m = TIER_TITLE.match(title)
+    if m:
+        return m.group(1), None
+    if ROUTER_NUMBERED.match(title):
         return "ROUTER", None
     m = DESK_TITLE.match(title)
     if m:

@@ -6,7 +6,7 @@ the hooks in this plugin are the part that happens anyway.
 **What it does**
 - **Every session start** gets a `THE WAY` banner: its role (read from its title: conductor, router, or a desk lane), its model's handoff caps, and an instruction to load the right skill. No banner means the hooks are not live.
 - **The handoff guard** measures the session's real context from its transcript and tells it to hand off at the cap for its model (Opus and Sonnet 300k soft / 450k hard; Haiku 120k / 150k). Past the soft cap, the **Stop hook** sends a session back to write the handoff once before it may end a turn.
-- **A conductor or router may not edit inside a git checkout** (handoff notes and `.conductor/` state excepted). Work goes to desks.
+- **A conductor or router may not edit inside a git checkout** (handoff notes and `.conductor/` state excepted). Work goes to desks. A session is a coordinator if its title starts with `CONDUCTOR` or `ROUTER` (upper case, whatever follows); ROUTER and CONDUCTOR are tiers, never desk lanes, so a desk's lane is one of the owner's desk groups (NODE, DOORS, ...). Only the four edit tools are covered, not shell commands.
 - **Six skills**: `way` (every session), `handoff` (every tier), `conductor`, `router`, `desk`, `new-project`. Invoked as `leadfuel-way:<name>`.
 
 **Install (owner step, once).** Installing writes `~/.claude/settings.json`, which sessions may not edit.

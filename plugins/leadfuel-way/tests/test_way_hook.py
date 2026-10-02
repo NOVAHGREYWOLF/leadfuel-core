@@ -15,14 +15,25 @@ from kit import HAIKU, HOOK_PATH, OPUS, SONNET, assistant, event, title_rec, too
 @pytest.mark.parametrize(
     "title, expected",
     [
+        # The four the owner named (2026-10-02): ROUTER and CONDUCTOR are tiers, whatever follows.
+        ("ROUTER · x", ("ROUTER", None)),
+        ("ROUTER #5", ("ROUTER", None)),
+        ("CONDUCTOR · x", ("CONDUCTOR", None)),
+        ("NODE · x", ("DESK", "NODE")),
         ("CONDUCTOR · plan + task list", ("CONDUCTOR", None)),
-        ("conductor · lower case", ("CONDUCTOR", None)),
-        ("ROUTER #4", ("ROUTER", None)),
         ("ROUTER #12 · leadfuel-way", ("ROUTER", None)),
+        ("ROUTER #5: the one session to talk to", ("ROUTER", None)),
+        ("ROUTER · WAY-1 1/1 · leadfuel-way plugin build", ("ROUTER", None)),  # no longer a desk lane
+        ("ROUTER", ("ROUTER", None)),
+        ("ROUTER-2 · x", ("ROUTER", None)),
+        ("router #4", ("ROUTER", None)),  # the numbered form has always matched in any case
         ("DOORS · G6 2/5 · topic", ("DESK", "DOORS")),
         ("SENSORS · WAY-1 1/1 · topic", ("DESK", "SENSORS")),
-        # A session in the ROUTER lane with a task is a desk, not a router: it may work.
-        ("ROUTER · WAY-1 1/1 · leadfuel-way plugin build", ("DESK", "ROUTER")),
+        ("ROUTERS · x", ("DESK", "ROUTERS")),  # a different word, so a different lane
+        # Natural-language titles that merely start with the word are not tiers, so they keep their tools.
+        ("conductor · lower case", ("UNFILED", None)),
+        ("Conductor desk page build", ("UNFILED", None)),
+        ("Router skill fixes", ("UNFILED", None)),
         ("Build the leadfuel-way plugin", ("UNFILED", None)),
         ("", ("UNFILED", None)),
         (None, ("UNFILED", None)),
@@ -30,6 +41,27 @@ from kit import HAIKU, HOOK_PATH, OPUS, SONNET, assistant, event, title_rec, too
 )
 def test_role_of(hook, title, expected):
     assert hook.role_of(title) == expected
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["ROUTER · x", "ROUTER #5", "CONDUCTOR · x", "ROUTER · WAY-1 1/1 · y", "CONDUCTOR-2 · z", "ROUTER:x · y",
+     " ROUTER · padded", "ROUTER·x", "CONDUCTOR · ROUTER · both", "NODE · ROUTER · inner"],
+)
+def test_a_tier_is_never_a_desk_lane(hook, title):
+    """DESK_TITLE must never yield lane ROUTER or CONDUCTOR, however the title is shaped."""
+    role, lane = hook.role_of(title)
+    assert lane not in hook.TIERS
+    if role == "DESK":
+        assert title.lstrip().startswith("NODE")  # the only desk-shaped title in this list
+
+
+def test_the_desk_pattern_itself_cannot_match_a_tier(hook):
+    """Belt and braces: the lookahead is in the regex, so a later change to role_of cannot reopen it."""
+    for word in hook.TIERS:
+        assert hook.DESK_TITLE.match(f"{word} · x") is None
+        assert hook.DESK_TITLE.match(f"{word}-2 · x") is None
+    assert hook.DESK_TITLE.match("NODE · x").group(1) == "NODE"
 
 
 # --- caps and the guard ---------------------------------------------------------------------
@@ -378,7 +410,10 @@ def pre(hook, transcript, tool, path, **extra):
     return hook.handle(event("PreToolUse", transcript, tool_name=tool, tool_input={"file_path": str(path)}, **extra))
 
 
-@pytest.mark.parametrize("title", ["ROUTER #4", "ROUTER #7 · leadfuel-way", "CONDUCTOR · plan + task list"])
+@pytest.mark.parametrize(
+    "title",
+    ["ROUTER #4", "ROUTER #7 · leadfuel-way", "CONDUCTOR · plan + task list", "ROUTER · x", "ROUTER · WAY-1 1/1 · build"],
+)
 @pytest.mark.parametrize("tool", ["Edit", "Write", "MultiEdit"])
 def test_coordinators_may_not_edit_inside_a_checkout(hook, transcript, repo, title, tool):
     transcript.add(title_rec(title))
@@ -399,9 +434,11 @@ def test_coordinators_may_write_outside_a_checkout(hook, transcript, tmp_path):
 
 
 def test_desks_and_unfiled_sessions_are_not_blocked(hook, transcript, repo):
-    for title in ("DOORS · G6 2/5 · topic", "ROUTER · WAY-1 1/1 · build", "just a title"):
+    # Includes the lane of this very build (NODE) and natural-language titles that merely start with a tier word.
+    for title in ("DOORS · G6 2/5 · topic", "NODE · WAY-1 1/1 · leadfuel-way plugin build", "Router skill fixes",
+                  "conductor · lower case", "just a title"):
         transcript.add(title_rec(title))
-        assert pre(hook, transcript, "Edit", repo / "a.py") is None
+        assert pre(hook, transcript, "Edit", repo / "a.py") is None, title
 
 
 def test_a_session_that_retitles_itself_is_judged_by_its_new_title(hook, transcript, repo):

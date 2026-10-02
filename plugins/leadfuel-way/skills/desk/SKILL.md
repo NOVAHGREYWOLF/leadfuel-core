@@ -7,6 +7,8 @@ description: The DESK session. Does one task in one worktree and opens one draft
 
 You do one task. A router opened you, picked your model, and titled and filed you. Read `leadfuel-way:way` first; this is your part of it.
 
+**Your lane is a desk group from the owner's desk list, never ROUTER or CONDUCTOR** (those are tiers; a title starting with either is treated by the hooks as a coordinator and loses its edit tools in a git checkout). If your title carries one of them, or the lane does not match the files your task touches, say so to your router with `ASK:` and stop; do not retitle yourself to make the problem go away.
+
 ## Start
 1. **Know your brief.** It names the true source of the instruction (a session id the router can be asked about), the task id, the lane, the done-criteria, and your router's session id. If any of those is missing, ask your router (`ASK:` below) before you touch anything.
 2. **Check ownership.** Name the files you will change and check the owner's session map. If another desk owns them, hand off with `SendMessage` to that session by its full name and stop. Reading is always allowed.

@@ -362,12 +362,44 @@ def check_duplicates(ctx: Ctx) -> list[Result]:
     return out
 
 
+def check_handoff_archives(ctx: Ctx) -> Result:
+    """The handoff skill must END in the owner's self-archive step (2026-10-02): the last numbered
+    step archives the session, and only after `git ls-remote` shows nothing is unpushed. A static
+    check on text the doctor can read in full, so it is OK or FAIL, never UNKNOWN. Whether a live
+    session then does it is the desktop pilot's question: `archive_session` is a desktop-app tool and
+    does not exist in a headless `claude -p` run, so way_pilot.py cannot see it."""
+    name = "handoff skill ends in self-archive"
+    path = ctx.plugin_dir / "skills" / "handoff" / "SKILL.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return Result(name, FAIL, f"cannot read {path.name}: {type(exc).__name__}")
+    section = re.search(r"^## Steps\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    if not section:
+        return Result(name, FAIL, "the handoff skill has no '## Steps' section")
+    starts = [m.start() for m in re.finditer(r"^\d+\. ", section.group(1), re.M)]
+    if not starts:
+        return Result(name, FAIL, "the Steps section has no numbered steps")
+    last = section.group(1)[starts[-1]:]
+    low = last.lower()
+    missing = [what for what, ok in (("archive_session", "archive_session" in last), ("self", "`self`" in last),
+                                      ("git ls-remote", "git ls-remote" in last), ("'last act'", "last act" in low)) if not ok]
+    earlier = section.group(1)[:starts[-1]].lower()
+    if "push" not in earlier:
+        missing.append("a push step before it")
+    if missing:
+        return Result(name, FAIL, f"the last step ({len(starts)}) does not archive the session safely; missing: {', '.join(missing)}",
+                      "restore the self-archive step, or (if the owner withdraws the rule) change this check and its test together")
+    return Result(name, OK, f"step {len(starts)} is the last act: archive_session self, after git ls-remote verifies the push")
+
+
 # --- main ---------------------------------------------------------------------------------
 
 def run_all(ctx: Ctx) -> list[Result]:
     results: list[Result] = []
     results += check_python(ctx)
     results += check_manifests(ctx)
+    results.append(check_handoff_archives(ctx))
     results.append(check_validate(ctx))
     results += check_synthetic(ctx)
     results.append(check_enabled(ctx))

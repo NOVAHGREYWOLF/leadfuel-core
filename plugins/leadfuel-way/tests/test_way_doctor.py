@@ -304,3 +304,48 @@ def test_the_doctor_reports_an_active_override_but_not_an_expired_one(doc, ctx):
     assert r.status == doc.WARN and "40k" in r.detail and "clear" in r.fix
     path.write_text(json.dumps({"soft": 40_000, "hard": 90_000, "expires": time.time() - 1}), encoding="utf-8")
     assert not [r for r in doc.check_duplicates(ctx) if r.name == "forced caps active"]
+
+
+# --- the handoff skill must end in the owner's self-archive step ---------------------------
+
+def test_the_real_handoff_skill_ends_in_self_archive(doc, ctx):
+    r = doc.check_handoff_archives(ctx)
+    assert r.status == doc.OK, r.detail
+
+
+def _handoff_copy(plugin_copy, mutate):
+    p = plugin_copy / "skills" / "handoff" / "SKILL.md"
+    p.write_text(mutate(p.read_text(encoding="utf-8")), encoding="utf-8")
+
+
+def test_a_handoff_skill_without_the_archive_step_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t[: t.index("6. **Archive yourself")] + "\n## Where the note goes\n" + t.split("## Where the note goes\n", 1)[1])
+    r = doc.check_handoff_archives(ctx)
+    assert r.status == doc.FAIL and "archive_session" in r.detail
+
+
+def test_a_handoff_skill_that_archives_without_verifying_the_push_fails(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t.replace("git ls-remote", "git status"))
+    r = doc.check_handoff_archives(ctx)
+    assert r.status == doc.FAIL and "git ls-remote" in r.detail
+
+
+def test_archiving_that_is_not_the_last_step_fails(doc, plugin_copy, ctx):
+    """Steps after the archive would never run: the conversation ends with it."""
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t.replace("\n## Where the note goes", "7. Then tell the owner it went well.\n\n## Where the note goes", 1))
+    assert doc.check_handoff_archives(ctx).status == doc.FAIL
+
+
+def test_a_missing_or_stepless_handoff_skill_is_a_failure_not_unknown(doc, plugin_copy, ctx):
+    ctx.plugin_dir = plugin_copy
+    _handoff_copy(plugin_copy, lambda t: t.replace("## Steps", "## Procedure"))
+    assert doc.check_handoff_archives(ctx).status == doc.FAIL
+    (plugin_copy / "skills" / "handoff" / "SKILL.md").unlink()
+    assert doc.check_handoff_archives(ctx).status == doc.FAIL
+
+
+def test_the_doctor_run_includes_the_self_archive_check(doc, ctx):
+    assert any(r.name == "handoff skill ends in self-archive" for r in doc.run_all(ctx))

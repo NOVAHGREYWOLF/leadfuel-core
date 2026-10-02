@@ -21,8 +21,17 @@ def test_the_expected_skills_exist():
 
 def test_plugin_manifest():
     meta = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert meta["name"] == "leadfuel-way" and meta["version"] == "0.1.0"
+    assert meta["name"] == "leadfuel-way" and re.fullmatch(r"\d+\.\d+\.\d+", meta["version"])
     assert "@" not in json.dumps(meta)  # public repo: no email
+
+
+def test_every_place_that_states_the_version_agrees(hook):
+    """Claude Code caches an installed plugin by version, so a change that does not bump it never
+    reaches a machine that already installed the plugin. The three copies must move together."""
+    meta = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    market = json.loads((REPO / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+    [entry] = [p for p in market["plugins"] if p["name"] == "leadfuel-way"]
+    assert meta["version"] == entry["version"] == hook.VERSION
 
 
 def test_marketplace_lists_the_plugin_at_a_real_path():
