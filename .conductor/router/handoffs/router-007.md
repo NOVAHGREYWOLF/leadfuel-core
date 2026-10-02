@@ -19,5 +19,9 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 ## Expect from WATCH 2/2 (local_666557d2), held until ROUTER #8 is live
 (a) Rule 6 detector text must open with [ -d ".locks" ] || die before it lands. (b) The .locks README line "EVERY REF IN THE ESTATE DIED IN THE RESTART" is false (WATCH's own ref was live): strike it. Both are ROUTER's files (SESSION_MAP / .locks README): route to the desk that owns the edit; ROUTER does not build.
 
+## Late arrivals (after the first push)
+- Conductor: owner typed in the conductor session 'merge what's green and stop'. Owning desks merge green PRs on their own tree in the ci hold; 702, 701, 699 stay held (cards); then no new desks, every desk writes its handoff. Answer the conductor with merged / held / owner decisions from live gh. SUITE 2/2 chip started by owner.
+- PRODUCT (local_c1723d22) NEEDS-NOVAH: reach PRs 25 and 27 merged and live (headline quoting is in production). Card Q94 (stop quoting, rec) updated; Q102 asks to post two correcting PR comments. Owed: scope, orbit, signal reply assistant never reviewed; experiment 1 blocked on an env value (NODE apply path). Not archiving; PRODUCT at ~241k.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
