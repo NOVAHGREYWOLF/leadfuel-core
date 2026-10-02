@@ -32,5 +32,7 @@ SUITE old local_e618e2a6 (handoff pushed 3389a7b8; archive after SUITE 2/2 live)
 
 - D4-build-A (local_fbb1b69d): novahub PR 702 head 7337db9, draft. Its ASK (how to get a green run on the busy box) is UNANSWERED (send hit the cap): answer B, let CI on 702 be the verdict, no more local full runs, do not merge. Card Q104 asks the owner about merging (creates a prod table; PRIVACY has not reviewed the one-line data_rights change; PRIVACY 2/2 is live).
 
+- World lane (local_4c9e680a): novahub #703 MERGED (a98761b), CI green on the merged head per its own gh read; deployed. Its question: delete remote feat/world-subject-gate (c357034)? Decision: LEAVE it (irreversible, only artefact of the dead end); tell it so. It has nothing in flight; Q94 answered no-quote (it was not told), Q95 open. Not archive until Q95 is answered.
+
 ## Gotchas
 Send cap: 10 per owner turn; mid-turn owner messages do not reset it. Classifier refuses some archives and unarchives; never retry. Never delete ANTHROPIC_API_KEY. Page hides only status=withdrawn; unanswered cards show under Questions.
