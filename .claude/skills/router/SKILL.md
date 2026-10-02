@@ -72,12 +72,12 @@ Predecessor:
 1. Finish the message in hand. Do not start new work.
 2. Write `.conductor/router/handoffs/router-NNN.md` (< 300 words, ids only): done, roster summary with tokens, open `NEEDS YOU` items, pending fan-outs, gotchas. Commit and push to the router branch.
 3. `create_session` successor: model Sonnet (or per the model rule), source_url the leadfuel-core repo, source_revision the router branch, tags `router`, `incarnation:N+1`, `project:leadfuel-reports`, title `ROUTER #N+1: the one session to talk to`, prompt: `You are ROUTER #N+1. Read .claude/skills/router/SKILL.md and .conductor/router/handoffs/router-NNN.md, then run the Claim steps.`
-4. Update `router/current` with `next_session_id` and `status: "rotating"`. Reply one line with the successor id. End the turn. Do not archive yourself.
+4. Update `router/current` with `next_session_id` and `status: "rotating"`. Reply one line with the successor id (or, in local mode, the paste prompt). **Then archive yourself as your last act** (owner, 2026-10-02): `archive_session` with `self`, only after the push is verified with `git ls-remote` and nothing in your worktree is unpushed.
 Successor (**Claim**, idempotent, safe to run twice):
 1. `router/current` -> `{session_id: me, incarnation: N+1, predecessor, status: "active"}`; add tag `router:current` to me, remove it from the predecessor.
 2. `send_message` the new id, one line, to every child that is `doing` and under 300k tokens. Skip the rest.
 3. **Heartbeat.** The hourly heartbeat routine wakes the live router (owner approved 2026-10-01). It is bound to one session, so on every rotation: `delete_trigger` the predecessor's (id in `router/current.heartbeat_trigger_id`), then `create_trigger` a new one with `persistent_session_id` = me, cron `0 * * * *`, initiation `human_request`, prompt = `.conductor/router/HEARTBEAT_PROMPT.md` verbatim; store the new id in `router/current.heartbeat_trigger_id`.
-4. If `router/config.archive_predecessors` is true (owner approved 2026-10-01), `archive_session` the predecessor once steps 1-3 are done. Never archive yourself.
+4. The predecessor archives itself at handoff. Confirm it is gone; if it is not, and `router/config.archive_predecessors` is true (owner approved 2026-10-01), `archive_session` it once its handoff is pushed and steps 1-3 are done. Never archive a session whose work is unpushed.
 5. `PushNotification`: `Router #N+1 is live, use it from now on` plus the session link `https://claude.ai/code/<my session id>`.
 6. Post a 5-line digest in this thread: what carried over, what needs the owner.
 If the owner messages a predecessor after rotation, the predecessor forwards the message to `router/current.session_id` and replies with one line saying where to go.
