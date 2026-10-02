@@ -5,7 +5,11 @@ Expo/React Native cloud build, he enrols in the Apple Developer Program himself 
 scope "as much as we can", TestFlight only.
 
 ## Done
-- New repo `F:\Leadfuel\repos\leadfuel-ios`, local commit `aac0d8a`, **no remote yet**. Expo SDK 57.
+- New repo `F:\Leadfuel\repos\leadfuel-ios`, first commit `aac0d8a`. Expo SDK 57.
+- **Update (owner said "create the private github repo"): created `NOVAHGREYWOLF/leadfuel-ios`, private, and pushed
+  `main`; the server head was `d46e223` (checked with `ls-remote`). That includes another session's commit
+  `d46e223` (TUFTE-G9, money screen). Three more files in the working tree (`campaigns.tsx`, `sentences.ts`,
+  `sentences.test.ts`) were uncommitted and belong to that other session: not mine, not pushed, do not touch.**
 - Screens: Today, Approvals (read + reject), Ask, Inbox, More (campaigns, money, search, connections, account).
 - `tsc --noEmit` clean; jest 5 suites pass. I ran both.
 - Docs in that repo: README, `docs/SHIP.md` (Novah's steps), `docs/AUTH.md`.
