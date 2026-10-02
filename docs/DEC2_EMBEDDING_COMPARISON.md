@@ -93,3 +93,13 @@ instant and loses nothing but rows ingested after the cutover, which need re-emb
 Disk: roughly +33% over the current vectors while both columns exist. A second embed model is not
 kept resident, so Ollama load time at start. The 512-token window (above). Cloud nodes must run the
 same model and dimension: the node spec must change with it.
+
+## Chunk size vs the 512-token limit (checked, not a re-embed)
+Real token counts from Ollama (`truncate:false`, mxbai-embed-large) on 3,336 chunks of about 1,100
+chars: 1,500 uniformly sampled rows (1,788 chunks) plus 500 rows over 1,500 chars (1,548 chunks).
+Median 17 and 265 tokens; p99 364 and 451; largest passing chunk 489. **But 9 chunks (0.27%) were
+rejected as over the context limit**, down to 0.44 chars per token (dense, non-prose text). So
+about 1,100 chars is safe for typical prose and not guaranteed. **Rule for the chunker: size by tokens,
+not characters.** Count tokens per chunk and re-split any chunk above about 450, or cap dense text
+near 500 chars. Silent truncation otherwise returns no error. Sample is 2,000 rows, not the 5,000
+asked for: the box was starved and the first 5,000-row run did not finish.
