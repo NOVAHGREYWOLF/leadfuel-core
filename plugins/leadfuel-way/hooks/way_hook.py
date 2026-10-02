@@ -1,0 +1,348 @@
+#!/usr/bin/env python
+"""The way's hook: one script for every hook event, so the method is enforced, not remembered.
+
+Why: on 2026-10-02 no session on the owner's machine had ever been told to hand off. The guard
+existed, but only in one repo, behind a `python3` command that is the Microsoft Store stub on
+Windows (exit 49, a non-blocking error, so it read exactly like a small session). A skill is
+advice; this hook is the part that happens whether or not a session remembers the advice.
+
+Events (one entry point, dispatched on `hook_event_name`):
+    SessionStart      inject the banner: load the way, your role (from your title), your caps.
+    UserPromptSubmit  guard: past the soft cap, tell the session to finish the step and hand off.
+    PostToolUse       same guard.
+    Stop              past the soft cap with no handoff written since crossing it: block the stop
+                      once, with the reason. Hard cap: same, measured from the hard crossing.
+    PreToolUse        a CONDUCTOR or ROUTER #N session may not edit files inside a git checkout,
+                      except handoff notes and .conductor/ state. All work happens in desks.
+
+Caps follow the model the session runs on: Haiku 120k/150k (200k window), others 300k/450k.
+SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 disables the guard
+and the Stop gate; WAY_ENFORCE_ROLES=0 disables the PreToolUse rule.
+
+It never raises: a broken hook must not break the session it guards. What it cannot measure it
+reports as unknown, never as small.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+VERSION = "0.1.0"
+TAIL_BYTES = 768 * 1024
+REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
+CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
+WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
+SHELL_TOOLS = {"Bash", "PowerShell"}
+ROUTER_TITLE = re.compile(r"^\s*ROUTER\s*#\s*\d+", re.I)
+CONDUCTOR_TITLE = re.compile(r"^\s*CONDUCTOR\b", re.I)
+DESK_TITLE = re.compile(r"^\s*([A-Z][A-Z0-9_-]+)\s*·")
+# A Stop gate is satisfied by a handoff written after the crossing: a file write whose path says
+# handoff, a shell command that commits or pushes one, or a board write naming one.
+HANDOFF_WORD = re.compile(r"hand-?off", re.I)
+
+
+# --- transcript ---------------------------------------------------------------------------
+
+def _tail(path: str, nbytes: int = TAIL_BYTES) -> tuple[str, int]:
+    p = Path(path)
+    size = p.stat().st_size
+    with p.open("rb") as fh:
+        fh.seek(max(0, size - nbytes))
+        return fh.read().decode("utf-8", errors="replace"), size
+
+
+def _records(text: str):
+    for line in text.splitlines():
+        try:
+            yield json.loads(line)
+        except ValueError:
+            continue  # the first line of a tail may be cut mid-record
+
+
+def last_turn(transcript_path: str) -> tuple[int | None, str | None, int]:
+    """(context tokens the last main-thread turn sent, its model, transcript size).
+
+    Tokens are input + cache_read + cache_creation: the size of the context that turn sent.
+    None when the transcript is unreadable or has no main-thread turn yet (unknown, not zero).
+    """
+    try:
+        text, size = _tail(transcript_path)
+    except OSError:
+        return None, None, 0
+    for rec in reversed(list(_records(text))):
+        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+            continue
+        msg = rec.get("message") or {}
+        usage = msg.get("usage") or {}
+        total = sum(
+            int(usage.get(k) or 0)
+            for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
+        )
+        if total:
+            return total, msg.get("model"), size
+    return None, None, size
+
+
+def session_title(transcript_path: str) -> str | None:
+    """The newest title the app or the session gave itself, or None."""
+    try:
+        data = Path(transcript_path).read_bytes()
+    except OSError:
+        return None
+    title = None
+    for line in data.split(b"\n"):
+        if b'"custom-title"' not in line:
+            continue
+        try:
+            rec = json.loads(line.decode("utf-8", errors="replace"))
+        except ValueError:
+            continue
+        title = rec.get("customTitle") or title
+    return title
+
+
+def handoff_written_since(transcript_path: str, offset: int) -> bool:
+    """True if a main-thread tool call after byte `offset` wrote or pushed a handoff."""
+    try:
+        with Path(transcript_path).open("rb") as fh:
+            fh.seek(max(0, offset))
+            text = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    for rec in _records(text):
+        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = str(block.get("name") or "")
+            inp = block.get("input") or {}
+            if name in WRITE_TOOLS:
+                target = str(inp.get("file_path") or inp.get("notebook_path") or "")
+            elif name in SHELL_TOOLS:
+                target = str(inp.get("command") or "")
+            elif "ArtifactData" in name or "set_session_title" in name:
+                target = json.dumps(inp)
+            else:
+                continue
+            if HANDOFF_WORD.search(target):
+                return True
+    return False
+
+
+# --- policy (pure, so it can be tested) ---------------------------------------------------
+
+def role_of(title: str | None) -> tuple[str, str | None]:
+    """(CONDUCTOR | ROUTER | DESK | UNFILED, lane or None)."""
+    if not title:
+        return "UNFILED", None
+    if CONDUCTOR_TITLE.match(title):
+        return "CONDUCTOR", None
+    if ROUTER_TITLE.match(title):
+        return "ROUTER", None
+    m = DESK_TITLE.match(title)
+    if m:
+        return "DESK", m.group(1).upper()
+    return "UNFILED", None
+
+
+def caps_for(model: str | None) -> tuple[int, int]:
+    soft, hard = CAPS["haiku"] if model and "haiku" in model.lower() else CAPS["default"]
+    try:
+        soft = int(os.environ.get("SESSION_SOFT_TOKENS") or soft)
+        hard = int(os.environ.get("SESSION_HARD_TOKENS") or hard)
+    except ValueError:
+        pass
+    return soft, hard
+
+
+def guard_message(tokens: int, last_warned: int, soft: int, hard: int) -> tuple[str | None, int]:
+    """(message or None, new last_warned)."""
+    if tokens < soft:
+        return None, last_warned
+    if last_warned and tokens - last_warned < REWARN_EVERY:
+        return None, last_warned
+    k = tokens // 1000
+    if tokens >= hard:
+        return (
+            f"CONTEXT BUDGET: HARD CAP. This session is at ~{k}k tokens (cap {hard // 1000}k). "
+            "Start nothing. Run the `handoff` skill now: write the note, commit and push it, give the "
+            "owner the one prompt for a fresh session, end your turn."
+        ), tokens
+    return (
+        f"CONTEXT BUDGET: ~{k}k tokens (handoff point {soft // 1000}k, hard cap {hard // 1000}k). "
+        "Finish the step you are on, start nothing new, and run the `handoff` skill: write the note, "
+        "commit and push it, give the owner the one prompt for a fresh session, end your turn. "
+        "You will not be able to end a turn until a handoff note exists."
+    ), tokens
+
+
+def banner(source: str, title: str | None, role: str, lane: str | None, model: str | None,
+           tokens: int | None, soft: int, hard: int) -> str:
+    size = f"~{tokens // 1000}k tokens" if tokens else "not measured yet (no turn so far)"
+    lines = [
+        f"THE WAY (leadfuel-way plugin {VERSION}; this banner proves its hooks are live).",
+        f"Title: {title!r}. Role: {role}" + (f", desk lane {lane}." if lane else "."),
+        "1. Invoke the skill `leadfuel-way:way` now, before any work, then the skill for your role "
+        "(`leadfuel-way:conductor`, `leadfuel-way:router` or `leadfuel-way:desk`).",
+    ]
+    if role == "UNFILED":
+        lines.append(
+            "2. You are not filed. Before any work, title yourself `LANE · topic`, `ROUTER #N` or "
+            "`CONDUCTOR · topic` and move yourself into the sidebar group of that name."
+        )
+    else:
+        lines.append("2. Your title files you. Check you are in the sidebar group it names.")
+    lines.append(
+        f"3. Handoff guard is live for model {model or 'unknown'}: hand off at {soft // 1000}k, "
+        f"hard stop at {hard // 1000}k. Size now: {size}. Past {soft // 1000}k the Stop hook will "
+        "not let you end a turn until a handoff note exists."
+    )
+    if source == "compact":
+        lines.append("4. Your context was just compacted. Re-read your handoff and live state before acting.")
+    if source == "resume":
+        lines.append("4. Resumed session: re-read live state (gh, git ls-remote, the pages) before acting.")
+    lines.append("No banner at the start of a session means these hooks are not live: say so, and rotate by judgment.")
+    return "\n".join(lines)
+
+
+def in_git_checkout(path: str) -> bool:
+    try:
+        p = Path(path).resolve()
+    except (OSError, RuntimeError):
+        return False
+    for d in [p, *p.parents]:
+        if (d / ".git").exists():
+            return True
+    return False
+
+
+def write_allowed_for_coordinator(path: str) -> bool:
+    low = path.replace("\\", "/").lower()
+    if HANDOFF_WORD.search(low) or "/.conductor/" in low:
+        return True
+    return not in_git_checkout(path)
+
+
+# --- state --------------------------------------------------------------------------------
+
+def _state_path(session_id: str) -> Path:
+    safe = "".join(c for c in session_id if c.isalnum() or c in "-_")[:80] or "unknown"
+    d = Path(tempfile.gettempdir()) / "leadfuel-way"
+    d.mkdir(exist_ok=True)
+    return d / f"{safe}.json"
+
+
+def load_state(session_id: str) -> dict:
+    try:
+        return json.loads(_state_path(session_id).read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(session_id: str, state: dict) -> None:
+    try:
+        state["updated_at"] = time.time()
+        _state_path(session_id).write_text(json.dumps(state))
+    except OSError:
+        pass
+
+
+# --- dispatch -----------------------------------------------------------------------------
+
+def handle(event: dict) -> dict | None:
+    name = event.get("hook_event_name") or ""
+    sid = str(event.get("session_id") or "")
+    tpath = str(event.get("transcript_path") or "")
+    state = load_state(sid)
+    seen = state.setdefault("seen", {})
+    seen[name] = seen.get(name, 0) + 1
+    out: dict | None = None
+    guard_off = os.environ.get("SESSION_GUARD_OFF") == "1"
+
+    if name == "SessionStart":
+        title = session_title(tpath)
+        role, lane = role_of(title)
+        tokens, model, _ = last_turn(tpath)
+        soft, hard = caps_for(model)
+        state.update(title=title, role=role, lane=lane)
+        out = {"hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": banner(str(event.get("source") or "startup"), title, role, lane,
+                                        model, tokens, soft, hard),
+        }}
+
+    elif name in ("UserPromptSubmit", "PostToolUse") and not guard_off:
+        tokens, model, size = last_turn(tpath)
+        if tokens is not None:
+            soft, hard = caps_for(model)
+            state.update(tokens=tokens, model=model)
+            if tokens >= soft and "soft_crossed_at" not in state:
+                state["soft_crossed_at"] = size
+            if tokens >= hard and "hard_crossed_at" not in state:
+                state["hard_crossed_at"] = size
+            msg, state["last_warned"] = guard_message(tokens, int(state.get("last_warned") or 0), soft, hard)
+            if msg:
+                out = {"hookSpecificOutput": {"hookEventName": name, "additionalContext": msg}}
+
+    elif name == "Stop" and not guard_off:
+        tokens, model, size = last_turn(tpath)
+        if tokens is not None and not event.get("stop_hook_active"):
+            soft, hard = caps_for(model)
+            if tokens >= soft:
+                state.setdefault("soft_crossed_at", size)
+                if tokens >= hard:
+                    state.setdefault("hard_crossed_at", size)
+                key = "hard_crossed_at" if tokens >= hard else "soft_crossed_at"
+                if not handoff_written_since(tpath, int(state[key])):
+                    state["stops_blocked"] = int(state.get("stops_blocked") or 0) + 1
+                    out = {"decision": "block", "reason": (
+                        f"THE WAY: this session is at ~{tokens // 1000}k tokens, past its "
+                        f"{'hard cap ' + str(hard // 1000) if tokens >= hard else 'handoff point ' + str(soft // 1000)}k, "
+                        "and no handoff note has been written since. Run the `handoff` skill now: "
+                        "write the note (path containing 'handoff'), commit and push it, give the owner "
+                        "the one prompt for a fresh session, then end your turn."
+                    )}
+
+    elif name == "PreToolUse" and os.environ.get("WAY_ENFORCE_ROLES", "1") != "0":
+        tool = str(event.get("tool_name") or "")
+        inp = event.get("tool_input") or {}
+        path = str(inp.get("file_path") or inp.get("notebook_path") or "")
+        role = None
+        if tool in WRITE_TOOLS and path:
+            # Read the title fresh: a session can retitle itself after SessionStart.
+            role, lane = role_of(session_title(tpath))
+            state.update(role=role, lane=lane)
+        if role in ("CONDUCTOR", "ROUTER") and not write_allowed_for_coordinator(path):
+            out = {"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    f"THE WAY: a {role} does no work. Editing {path} belongs to a desk session: "
+                    "open one for this task (the `leadfuel-way:router` skill says how) and hand it over. "
+                    "Handoff notes and .conductor/ state are allowed."
+                ),
+            }}
+
+    save_state(sid, state)
+    return out
+
+
+def main() -> int:
+    try:
+        event = json.load(sys.stdin)
+        out = handle(event)
+        if out:
+            print(json.dumps(out))
+    except Exception:  # noqa: BLE001 - a guard must never break the session it guards
+        return 0
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
