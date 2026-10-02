@@ -145,3 +145,13 @@ def test_route_picks_the_model(route_mod, task, model):
 def test_route_ids_are_current(route_mod):
     assert set(route_mod.IDS) == {"opus", "sonnet", "haiku"}
     assert "haiku" in route_mod.IDS["haiku"]
+
+
+def test_skills_follow_the_self_archive_rule():
+    """Owner, 2026-10-02: a session archives itself as the last act of its handoff, after the push is
+    verified. An earlier draft of these skills said the opposite."""
+    for name in SKILLS:
+        text = (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert "do not archive yourself" not in text.lower() and "never archive yourself" not in text.lower(), name
+    handoff = (PLUGIN / "skills" / "handoff" / "SKILL.md").read_text(encoding="utf-8")
+    assert "archive_session" in handoff and "git ls-remote" in handoff

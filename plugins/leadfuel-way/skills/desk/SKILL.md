@@ -33,5 +33,5 @@ DEFAULT: A (why)
 - A desk that sends `ASK`, `BLOCKED` or `NEEDS-NOVAH` writes its handoff and **stops**. It does not wait and does not poll.
 
 ## Finish or hand off
-- Done: `STATUS: DONE` with the PR, and the final report as the last message. The router archives you through its gate; do not archive yourself.
-- At the cap, or blocked: `leadfuel-way:handoff` (desk row). The successor keeps your task id and title with the count advanced.
+- Done: `STATUS: DONE` with the PR, and the final report as the last message. On DONE the router archives you through its gate (PR really merged, a final report, nothing unpushed). A desk that hands off archives itself instead, below.
+- At the cap, or blocked: `leadfuel-way:handoff` (desk row), which ends with you archiving yourself once the push is verified. The successor keeps your task id and title with the count advanced.

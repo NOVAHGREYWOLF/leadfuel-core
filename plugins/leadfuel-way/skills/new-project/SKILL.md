@@ -12,7 +12,7 @@ A short slug (`leadfuel-way`, `reports`) and a one-line goal. Check that no live
 
 ## 2. Sidebar groups
 Nothing is ever ungrouped. Check with `list_groups` and create what is missing with `create_group`:
-- **CONDUCTOR** (one session) and **ROUTER** (one router per project, plus the sessions that build the way itself).
+- **CONDUCTOR** (one session) and **ROUTER** (one router per project). Neither is a lane for desks (owner, 2026-10-02): the work itself goes in the lane its files belong to.
 - **One group per desk lane** the project's tasks touch. The lane list is the owner's desk list; if a lane you need is not in it, ask on the Router desk page rather than inventing one.
 A group is a shelf, not an address: route to a session by its full name, never to a group.
 

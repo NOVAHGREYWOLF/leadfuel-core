@@ -75,12 +75,12 @@ Use `leadfuel-way:handoff` (router row), then:
 1. Finish the message in hand. Do not start new work.
 2. Write `.conductor/router/handoffs/router-NNN.md` (under 300 words, ids only): done, roster summary with sizes, open owner items, pending fan-outs, chips waiting, gotchas. Commit and push to the router branch. Save unfinished build material to a private board doc, never the public repo.
 3. Update `router/current` with `next_session_id` and `status: "rotating"`.
-4. Start the successor by `start_session` if it exists; otherwise give the owner the one prompt to paste into a fresh session: `You are ROUTER #N+1 · <project>. Invoke leadfuel-way:way and leadfuel-way:router, read .conductor/router/handoffs/router-NNN.md, re-read live state, then run the Claim steps.` Do not archive yourself.
+4. Start the successor by `start_session` if it exists; otherwise give the owner the one prompt to paste into a fresh session: `You are ROUTER #N+1 · <project>. Invoke leadfuel-way:way and leadfuel-way:router, read .conductor/router/handoffs/router-NNN.md, re-read live state, then run the Claim steps.` Reply with one line (the successor id, or the paste prompt). **Then archive yourself as your last act** (owner, 2026-10-02): `archive_session` with `self`, only after the push is verified with `git ls-remote` and nothing in your worktree is unpushed.
 
 **Claim** (successor, idempotent, safe to run twice):
 1. Title and file yourself (`ROUTER #N+1 · <project>`, ROUTER group). Set `router/current` to `{session_id: me, incarnation: N+1, predecessor, status: "active"}`.
 2. `SendMessage` one line to every desk that is `doing` and under 300k tokens. Skip the rest.
-3. If `router/config.archive_predecessors` is true, archive the predecessor once steps 1 and 2 are done (the archive gate applies). Never archive yourself.
+3. The predecessor archives itself at handoff. Confirm it is gone; if it is not, and `router/config.archive_predecessors` is true, archive it once its handoff is pushed and steps 1 and 2 are done. Never archive a session whose work is unpushed.
 4. `PushNotification`: `Router #N+1 is live, use it from now on`. Post a five-line digest: what carried over, what needs the owner.
 If the owner messages a predecessor after rotation, the predecessor forwards it to `router/current.session_id` and replies with one line saying where to go.
 
