@@ -45,7 +45,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -72,6 +72,8 @@ SHELL_WRITES = re.compile(
 # A desk title carries its task id and session count: `LANE · <task id> n/m · topic`.
 DESK_TASK = re.compile(r"·\s*(\S+)\s+(\d+)\s*/\s*\d+")
 SESSION_READS = ("list_sessions", "get_session")
+DEFAULT_LIST_LIMIT = 20  # list_sessions returns this many rows when no limit is given
+READ_FRESH_SECONDS = 600  # a session read older than this no longer says who has children
 
 
 # --- transcript ---------------------------------------------------------------------------
@@ -217,19 +219,37 @@ def _result_text(content) -> str:
     return ""
 
 
-def session_reads(transcript_path: str) -> tuple[list[dict], bool, str | None, set[str], list[dict]]:
-    """(rows, listed, own_id, detailed, listing). Every session row this session has read back with list_sessions /
-    get_session (main thread, within the transcript tail), oldest first; whether a list_sessions
-    call returned at all; this session's own id, if a get_session("self") result named it; the ids
-    of sessions read with get_session (`detailed`, the only read that carries parentSessionId); and
-    the rows list_sessions returned (`listing`).
-    A row is whatever the tool returned: it is judged by successor_in / live_children, which treat
-    a missing field as unknown, never as a pass."""
+def _epoch(stamp) -> float | None:
+    """A transcript record's ISO `timestamp` as epoch seconds, or None when absent or unreadable."""
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def session_reads(transcript_path: str, now: float | None = None
+                  ) -> tuple[list[dict], bool, str | None, set[str], list[dict]]:
+    """(rows, listed, own_id, detailed, listing): what this session has read back about sessions.
+
+    Only the main thread, within the transcript tail, and only reads FRESH enough: a result must
+    carry a timestamp no older than READ_FRESH_SECONDS (10 minutes) before `now`. A result with no
+    timestamp is stale (unknown), because a listing from an hour ago misses a child opened since.
+    - rows: every row any fresh list_sessions / get_session returned, oldest first.
+    - listed: a COMPLETE listing was read: no `group` filter, not `linked`, and fewer rows than its
+      `limit` (default 20). A filtered or full-page listing hides sessions, so it does not count.
+    - listing: the rows of the complete listings only.
+    - detailed: ids read with get_session, the only read that carries parentSessionId.
+    - own_id: this session's id, if a fresh get_session("self") named it.
+    A row is whatever the tool returned; a missing field is unknown, never a pass."""
+    now = time.time() if now is None else now
     try:
         text, _ = _tail(transcript_path)
     except OSError:
         return [], False, None, set(), []
-    asked: dict[str, tuple[str, str]] = {}
+    asked: dict[str, tuple[str, dict]] = {}
     rows: list[dict] = []
     listed = False
     own_id: str | None = None
@@ -238,28 +258,36 @@ def session_reads(transcript_path: str) -> tuple[list[dict], bool, str | None, s
     for rec in _records(text):
         if rec.get("isSidechain"):
             continue
+        stamp = _epoch(rec.get("timestamp"))
+        fresh = stamp is not None and 0 <= now - stamp <= READ_FRESH_SECONDS
         for block in (rec.get("message") or {}).get("content") or []:
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "tool_use" and str(block.get("name") or "").endswith(SESSION_READS):
-                arg = str((block.get("input") or {}).get("session_id") or "")
-                asked[str(block.get("id") or "")] = (str(block.get("name")), arg)
+                asked[str(block.get("id") or "")] = (str(block.get("name")), block.get("input") or {})
             elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asked:
-                if block.get("is_error"):
+                if block.get("is_error") or not fresh:
                     continue
-                tool, arg = asked[str(block.get("tool_use_id"))]
+                tool, args = asked[str(block.get("tool_use_id"))]
                 value = _json_in(_result_text(block.get("content")))
                 if isinstance(value, dict):
                     value = value.get("sessions", [value]) if isinstance(value.get("sessions"), list) else [value]
-                if isinstance(value, list):
-                    rows.extend(r for r in value if isinstance(r, dict))
-                    if tool.endswith("list_sessions"):
+                if not isinstance(value, list):
+                    continue
+                got = [r for r in value if isinstance(r, dict)]
+                rows.extend(got)
+                if tool.endswith("list_sessions"):
+                    try:
+                        limit = int(args.get("limit") or DEFAULT_LIST_LIMIT)
+                    except (TypeError, ValueError):
+                        limit = DEFAULT_LIST_LIMIT
+                    if not args.get("group") and not args.get("linked") and len(got) < limit:
                         listed = True
-                        listing.extend(r for r in value if isinstance(r, dict))
-                    else:
-                        detailed.update(str(r.get("sessionId")) for r in value if isinstance(r, dict) and r.get("sessionId"))
-                        if arg.lower() == "self" and value and isinstance(value[0], dict) and value[0].get("sessionId"):
-                            own_id = str(value[0]["sessionId"])
+                        listing.extend(got)
+                else:
+                    detailed.update(str(r.get("sessionId")) for r in got if r.get("sessionId"))
+                    if str(args.get("session_id") or "").lower() == "self" and got and got[0].get("sessionId"):
+                        own_id = str(got[0]["sessionId"])
     return rows, listed, own_id, detailed, listing
 
 
@@ -377,8 +405,8 @@ def descendants_refusal(target: str, rows: list[dict], listed: bool, own_id: str
         need = "`get_session` with session_id \"self\" and " if is_self and not own_id else ""
         return (
             "THE WAY: cannot tell whether this session has live children, so it may not be archived. "
-            f"Run {need}`list_sessions` (a high `limit`, `include_archived` false), then `get_session` on every "
-            "live row: only get_session shows `parentSessionId`. Archive only when none names this session "
+            f"Run {need}`list_sessions` with NO group filter and a `limit` above the row count (a filtered or full "
+            "page hides sessions), then `get_session` on every live row, all within the last 10 minutes: only get_session shows `parentSessionId`. Archive only when none names this session "
             "as its parent while live. Archiving sweeps idle child sessions that have no open PR."
         )
     kids = live_children(target_id, rows)

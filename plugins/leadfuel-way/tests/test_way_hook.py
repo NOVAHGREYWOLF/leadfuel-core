@@ -482,14 +482,20 @@ def refused(out) -> bool:
 _ids = iter(range(10_000))
 
 
+def stamp(age=0):
+    """An ISO timestamp `age` seconds ago, the way transcript records carry one."""
+    import datetime
+    return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=age)).isoformat()
+
+
 def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False,
-                 tool_input=None, detail=True):
+                 tool_input=None, detail=True, age=0):
     """Append a session read and its result, the way the transcript records them."""
     tid = f"ls{next(_ids)}"
     text = as_text if as_text is not None else json.dumps(rows)
     transcript.add(
-        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": tool_input or {"group": "x"}}]),
-        {"type": "user", "isSidechain": False, "message": {"content": [
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": tool_input if tool_input is not None else {"limit": 500}}]),
+        {"type": "user", "isSidechain": False, "timestamp": stamp(age), "message": {"content": [
             {"type": "tool_result", "tool_use_id": tid, "is_error": is_error, "content": [{"type": "text", "text": text}]}]}},
     )
     if detail and tool.endswith("list_sessions") and isinstance(rows, list) and not is_error:
@@ -656,6 +662,53 @@ def test_an_archived_listing_row_needs_no_get_session(hook, transcript):
     transcript.add(title_rec("ROUTER #12"))
     saw_sessions(transcript, [{**real_listing_row("local_old"), "isArchived": True}], detail=False)
     assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_group_filtered_listing_hides_children_and_does_not_clear(hook, transcript):
+    """List ROUTER, read the router, archive the predecessor: a child filed in DOORS is invisible."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_r12")], tool_input={"group": "ROUTER", "limit": 500})
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_full_page_listing_hides_children_and_does_not_clear(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row(f"local_{i}") for i in range(20)], tool_input={})  # default limit 20: full page
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_listing_below_its_limit_with_no_filter_is_complete(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], tool_input={"limit": 50})
+    assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_listing_read_an_hour_ago_does_not_clear(hook, transcript):
+    """A child opened since a stale listing is invisible to it."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], age=3600)
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_a_stale_get_session_does_not_clear_a_fresh_listing(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], detail=False)
+    saw_sessions(transcript, real_listing_row("local_a"), tool="mcp__ccd_session_mgmt__get_session",
+                 tool_input={"session_id": "local_a"}, detail=False, age=3600)
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_a_read_with_no_timestamp_is_stale(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    tid = "nots"
+    transcript.add(
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"limit": 500}}]),
+        {"type": "user", "isSidechain": False, "message": {"content": [
+            {"type": "tool_result", "tool_use_id": tid, "content": [{"type": "text", "text": "[]"}]}]}},
+    )
+    assert refused(archive(hook, transcript, target="local_pred"))
 
 
 def test_no_listing_read_means_unknown_and_refuses(hook, transcript):
