@@ -17,7 +17,7 @@ Ids only (public repo). This session: local_da515743, branch claude/hungry-spenc
 When ONE-PLACE-SURVEY reports, turn its plan into page tasks and ask the owner what to queue.
 
 ## Owed
-- Owner: clear the D4-build-A prompt; Router desk cards q154-q168 plus ATLAS-B1's; whether ROUTER #12 should sweep live sessions for unanswered questions (asked, unanswered).
+- Owner: clear the D4-build-A prompt; Router desk cards q154-q168 plus ATLAS-B1's; owner said YES to ROUTER #12 sweeping live sessions for unanswered owner questions into cards; brief sent (queued at #12), result comes to 008.
 - Carried from 006: credential exposure in the CENSUS-1 transcript, unrevoked GSC key, apex cert check 2026-10-14, gateway tokens.
 
 ## Gotchas
