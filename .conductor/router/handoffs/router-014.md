@@ -59,3 +59,7 @@ ASK-503 local_85c7e2e5, MONEY dup local_af080d34, WATCH Q189-SYNC-LOG local_5940
 - ci-novahub order: SURFACE ATLAS-ACT 2/2 (#739) holds/was offered it; next offer ATLAS-green tickets first (ATLAS-B2 #728, then #726, #740), then the oldest green tickets.
 - CLOUD-LOCAL 198-204 + WAY-POSITIVE-CONTROL still held behind ATLAS-GREEN (q202 pending).
 - Open cards: q200-q205. q203/q204 answers go to conductor 009.
+
+## Addendum 5 (final)
+- ROUTER #15 is live: local_8e21f892 (ROUTER group). Forwarded to it (queued): ATLAS-INFRA-MEASURE local_305f9cf3 DONE report, and q206 (NovahPrime briefing samples, from ATLAS-PRIME local_77fba291).
+- #14 does nothing further; #15 archives #14 through the gate.
