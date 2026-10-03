@@ -13,6 +13,12 @@ Ids only (public repo). This session: local_e8701502, branch claude/hopeful-rosa
 - Owner said "keep" on ROUTER #13: do not archive it. Do not archive 005, #11 or #12.
 - SIDEBAR-SWEEP local_678d9904 is open and BLOCKED; handoff 98d0f31.
 
+## Addendum (~16:45 UTC)
+- Owner atlas order ("everything green, right now"): 12 ATLAS-* tasks queued at ranks -29.90 to -29.35, plus ATLAS-DATA-REFRESH (DESIGN, -29.34). Source: Flow Atlas v3 DATA UCCG9zfCDWeveQMuT1MFZ5. ATLAS-INFRA-MEASURE is DONE.
+- Queued: CI-SERVER-PRICING (MONEY, -29.3), now DONE with card q208 (buy which server). WIP-CAP (-29.97): desk local_92f6b333, card q207. CI-LANE (-29.96): DONE. Q201-SYNC-STATUS-POST (VAULT, 208).
+- Filed, not queued: SLOW-TESTS-SPEEDUP (SUITE).
+- q202=A, q203=B, q204=B (keep both), q201=B, all filed. ROUTER #15 local_8e21f892 is live and holds #14 until its chip children are done.
+
 ## Owed
 - Asked ROUTER #14 to post 3 owner cards: open the 8 held desks now; rank WIP-CAP and CI-LANE; archive 6ce737c5 and f6a9997a. File the answers on the Conductor desk.
 - Owner cards still open: q148, q193, q200, q201; q191 is his own CLAUDE.md edit.
