@@ -8,11 +8,11 @@ Session local_15e83b97-650c-4caa-8a40-169e7935a8ba (conversation f0122e34). Sour
 - Delivered: 1080p (78 MB) and 720p (25 MB), desktop app only; the 720p in three parts (11, 8, 7 MB) reached Remote Control.
 
 ## State
-- Files exist only in this conversation's scratchpad, folder `atlas-video`: the render kit (`cdp.mjs`, `vt.js`, `overlay.js`, `render.mjs`), `frames/`, and the mp4s. The scratchpad is temporary.
+- Copied out of the temporary scratchpad to `F:\novah\media\flow-atlas-demo\` (local, not synced): the mp4s (1080p, 720p, three parts) and `kit\` (`render.mjs`, `cdp.mjs`, `vt.js`, `overlay.js`, `atlas-src.html`). The 1080p sha256 matches the original. The kit runs from that folder: `node kit\render.mjs` re-renders the frames into `kit\frames`. The frames were not copied (2.2 GB, re-renderable).
 - Verified myself: no page errors, every scripted target found, frames sampled from the preview, the final and the 720p. Not watched end to end at speed.
 
 ## Next
-The owner asked, in this session: add a voice track, and save the files in a OneDrive "marketing" folder. The owner also said to route it through the router and the conductor, so it was sent to ROUTER #13 (local_21748811) and CONDUCTOR · system build (local_e8701502) as msg 13e21fd8 and 4d3f3122. Both were queued; neither has been confirmed read. The voice must come from an offline Windows voice only (no cloud TTS, Law 9). Copy the kit out of the scratchpad first.
+The owner asked, in this session: add a voice track, and save the files in a OneDrive "marketing" folder. The owner also said to route it through the router and the conductor, so it was sent to ROUTER #13 (local_21748811) and CONDUCTOR · system build (local_e8701502) as msg 13e21fd8 and 4d3f3122. Both were queued; neither has been confirmed read. The conductor filed it as ATLAS-VIDEO-VOICE (rank 207); ROUTER #13 opens the desk. The voice must come from an offline Windows voice only (no cloud TTS, Law 9).
 
 ## Owed
 - Owner: which OneDrive Marketing folder. There is no top-level one; the router is posting a card with a default (create one at the top of the business OneDrive).
