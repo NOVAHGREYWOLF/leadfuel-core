@@ -31,10 +31,10 @@ jobs:
 
       # The runner image ships Python 3.12; actions/setup-python re-downloads it over the shared
       # ~5 Mbps link and hung past the old 15-minute limit (run 37086999422), so it is not used.
-      - name: Install pytest into a venv
+      - name: Install pytest and this package into a venv
         run: |
           python3 -m venv .venv
-          .venv/bin/pip install pytest
+          .venv/bin/pip install pytest .
 
       - name: pytest (bare, from the repo root)
         run: |
