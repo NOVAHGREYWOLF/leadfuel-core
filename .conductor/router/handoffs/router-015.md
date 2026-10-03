@@ -54,3 +54,6 @@ Mind the box: CI is down and the CPU is starved. Open in rank order as desks fin
 
 ## Addendum 4 (~20:05 UTC)
 - NODE ATLAS-FLAGS-APPLY local_27c655ce (chip started; #16: confirm its model is Opus): deploy-config draft hub #756. MAIL_SIGNALS and IDENTITY_MINING are already "1" live (measured); GOALPLAN live = "1" (q215 answered); the only real flip is SELF_CAPTURE_ENABLED. WARNING: GITHUB_READ_TOKEN is live but undeclared in railway.ts, so ANY `railway config apply` deletes it. Declare it preserve() first (check #742 owner) before any apply. No desk is assigned to apply. Show #756 to the owner as a card; do not merge or apply until it is answered.
+
+## Addendum 5 (~20:10 UTC)
+- ARMS LUCID-DAY-SUBMIT local_36d20e10 (#16: confirm it is filed in ARMS on Sonnet): lucid #128, lucid half done (local gates and bare pytest green, CI pending). ASK: the hub side of /api/report/submit never calls day_shape.accept. Default A: open a hub desk (check SESSION_MAP for the lane that owns the report route) plus a SENSORS sources.py flip of lucid:day DORMANT->RECURRING once rows land. Owner card: activate n8n/lucid-hub-report.json (imported inactive), without which hub-report-all never runs (deploy config, so the owner decides).
