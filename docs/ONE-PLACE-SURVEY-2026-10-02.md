@@ -56,20 +56,33 @@ route or page; "trust" means a session, PR body or page said it and I did not re
 
 One route family, one shell, one acting account per session (Q4 = A), two modes.
 
-- **Shell** `/command` (one page; `/goal` and `/admin/wall` become views in it). Top bar: mark, apex state pill, **mode** user | admin, **register** plain | operator | developer, clock, **Ask box with a mic**. Skin: v7 with fonts self-hosted under `static/fonts/` and no external asset; one tokens file.
+**The owner's rule (card q157, 2026-10-02, relayed by ROUTER #12):** the whole command system has
+a user mode and an admin mode; an admin gets the boards and needs an admin has, has admin rights
+to the LeadFuel site and nothing more, and can never see someone else's information; remember
+superuser. Card q166: the current page stays, the one place is the beta look, both reachable
+until the beta is known usable. The earlier rulings this rests on, as recorded in the repos (the
+transcript search for the chats themselves timed out four times; a successor should re-run it):
+Q112 `own_only` (hub #713: one command center for everyone, each person their own admin over
+their own estate, the owner keeps the estate layer on top), ATLAS-ACT Q4 = A (one registered
+setting names the acting account), CWC-S16 (the wall as the person's main page, plain register,
+public home untouched; now answered A), and `tests/test_nav_command_center_link.py` on main
+("the product is per-user, so the button is too"). Still open and not assumed here: q172-q174
+(one lane per goal or per root; does a goal belong to a tenant; how much history hydrate reads).
+
+- **Shell** `/command` as the **beta** beside `/goal` and `/admin/wall`, with a toggle between the stable view and the beta; the old pages redirect in only after the beta passes a stated check (q166). Top bar: mark, apex state pill, **mode** user | admin, **register** plain | operator | developer, clock, **Ask box with a mic**. Skin: v7 with fonts self-hosted under `static/fonts/` and no external asset; one tokens file.
 - **Views** (the v7 tab row):
   - **TODAY**: needs (the ME ladders), what is waiting on you (approvals with ages), goals worst first, what's on today. This is the iPhone Command tab's content; same JSON.
   - **MAP**: the atlas crystal (#730), live counts (#736), the part panel with SAFE/CHANGE/OUTWARD/FIX actions (#739 part 2).
   - **WALL**: the focus-and-neighbourhood renderer that exists, lenses system/me/connections/goal; the tree stays the engineering view.
   - **ACT**: the approval queue and the act audit; every outward step a proposal; disposition before the click.
   - **ASK**: a conversation over the person's brain; every answer cites the rows it read; the mic is an input to it; speech out is on-device.
-- **Modes**: user = the person's own tree (#713's allow-list readers); admin = the estate boards plus the admin's own needs, never anyone else's information.
+- **Modes**: user = the person's own tree (#713's allow-list readers); admin = the estate boards plus the admin's own needs, admin rights to the site and nothing more, never anyone else's information; superuser is the owner's own account in admin mode, not a third mode. The mode is a property of the signed-in account, never of the request (the ATLAS-ACT rule), so the toggle shows only what the account is allowed.
 - **Data**: in-process composition on the hub (the 60 s snapshot), one session-authed JSON per view on a non-`/api` path (this is the ON4 decision), so the phone and a kiosk read the same feed.
 - **Rules the shell keeps**: four states never folded; unknown never zero; a parent never greener than its worst child; nothing outward without the queue; colour only for exceptions and always with a word; reduced motion is a cut.
 
 ## 4. Fastest honest path to usable now
 
-- **Online today, no work**: sign in at `leadfuel.cloud/admin/login` and open `/admin/wall` (bare admin). It renders the focus view with the four lenses and wall mode. `/goal` is live for any signed-in user. Honest caveats: most boards read UNKNOWN until the production migration (ON5); Finance and Connectors can read Ready during an incident (audit); it is not the futuristic skin and has no atlas.
+- **Online today, no work**: sign in at `leadfuel.cloud/admin/login` and open `/admin/wall` (bare admin). It renders the focus view with the four lenses and wall mode; the owner's reading today (row A1) shows an honest BROKEN apex with 64 of 175 unknown and the whole Mission branch unknown. `/goal` is live for any signed-in user. Per q166 these two stay the **stable view**; the one place ships as a **beta beside them with a toggle**, both reachable, the old one retired only when the beta passes a stated check. Honest caveats: most boards read UNKNOWN until the production migration (ON5); Finance and Connectors can read Ready during an incident (audit); it is not the futuristic skin and has no atlas.
 - **On the owner's computer this week (the real fastest)**: a local run of the `atlas-live-flows` head (it contains #730) with the CWC section 7 recipe: SQLite, `NOVAHUB_OWNS_LOGIN=1`, a generated admin, port 5057. That shows `/admin/wall`, `/goal`, `/goal/atlas` with the crystal and live counts, all offline, without merging anything. OF1 (write the recipe into the repo as one command) is the only task it needs, and it is small.
 - **Online with the atlas**: the merge train #720 → #719 → #713 → #730 → #736, each under the ci-novahub hold. The hold has been held by D4-build-A since 21:30 UTC with 16 waiters; the owner clearing that prompt is the only thing on the critical path today. One to two days of CI after that. No owner approval is needed for the merges themselves.
 - **Not fast**: the skin, the ask box and voice. None of those exists in the hub today.
@@ -117,7 +130,7 @@ Do not repost q154-q158 (ATLAS-ACT Q1-Q5, answered) or q159-q168 (CWC owner item
 
 | id | Title | Options | Default | Why |
 |---|---|---|---|---|
-| C1 | Where the one place lives | A) new `/command` hosting every view; `/goal` and `/admin/wall` redirect into it. B) grow `/goal` into it. C) keep three pages and link them | **A** | one URL everyone sees; Q4's two modes map onto it; it answers S16 |
+| C1 | Where the beta lives (q166 already settled: beta beside the stable view, with a toggle) | A) new `/command` as the beta, toggle on both old pages, redirect only after the stated check. B) grow `/goal` into the beta. C) a separate host or page outside the hub | **A** | one URL everyone sees; Q4's two modes map onto it; the stable pages keep working |
 | C2 | The skin | A) v7 LeadFuel Command, fonts self-hosted. B) the Novah tokens (as the atlas). C) a new skin from DESIGN | **A** | the wall already half-implements it and it is the futuristic, deep one; self-hosting keeps zero external assets |
 | C3 | Where the atlas lives | A) in the hub as the MAP view (#730/#736); Atlas Live stays a debugging mirror. B) a claude.ai page only (SPATIAL-1). C) both, fully | **A** | one live model with first-hand states; drops a duplicate build |
 | C4 | How the phone and a kiosk read the wall (ON4) | A) session-authed JSON per view on a non-`/api` path. B) server-rendered only | **A** | nothing client-side can exist otherwise |
