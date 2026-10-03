@@ -39,3 +39,8 @@ Wake or open existing "now" picks: SPATIAL-2..6b (no desk exists); ATLAS-VIEWS (
 Biggest unblock once CI is back: the draft merge train #720, #719, #713, #730, #736 blocks ATLAS-ACT, ATLAS-VIEWS and ONE-PLACE-SHELL. Get their desks to ready-for-review.
 SPATIAL-1's remainder: L02, L07, L08, L09, L14, L15, L17.
 Mind the box: CI is down and the CPU is starved. Open in rank order as desks finish (q202 A); WIP cap 25 applies to non-ATLAS work.
+
+## Addendum 2 (~19:50 UTC)
+- DOORS ARM-SENDS-DOORS local_66060050 is stopped on two owner cards #15 posted: q221 (odyssey's hub scope; default A, a narrow {odyssey} route; draft hub #754) and q222 (lucid calendar door ceiling; default B, logged with no cap; lucid #127 design). Route the answers to it. SIGNAL-PUBLISH waits on #752 merging; REACH waits on q219.
+- DATA-REFRESH 2/2 has applied batch 4 (CI row DOWN at 19:23Z).
+- q220 is reserved for the ATLAS-OPS-BRIDGE card (addendum 1). The next free id after that is q223.
