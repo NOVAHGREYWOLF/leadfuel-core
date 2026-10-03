@@ -29,16 +29,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install pytest
-        run: pip install pytest
+      # The runner image ships Python 3.12; actions/setup-python re-downloads it over the shared
+      # ~5 Mbps link and hung past the old 15-minute limit (run 37086999422), so it is not used.
+      - name: Install pytest into a venv
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install pytest
 
       - name: pytest (bare, from the repo root)
         run: |
+          . .venv/bin/activate
           pytest -q -ra | tee pytest.out
           # Exit 5 (nothing collected) fails the step: a run that collects nothing is not a pass.
           n=$(grep -Eo '[0-9]+ passed' pytest.out | head -1 | cut -d' ' -f1)
