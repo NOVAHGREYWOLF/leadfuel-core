@@ -18,4 +18,6 @@ Owner, in that session, about Atlas Live (https://claude.ai/artifact/6LEvF7K9u9q
 - Depends on Build A's adapter. B can start on the route and the template shell in parallel.
 
 ## Owed
-- Neither build was started here. Conductor 007 (local_da515743) holds the task list and is told separately.
+- Neither build was started here. Start cards: Build A task_5266e378, Build B task_9e9c7a2d (each starts when the owner clicks).
+- Conductor 007 (local_da515743) is archived; the send to it bounced. Re-sent to the most recently active CONDUCTOR session, local_b666d711: delivered, its turn started on it, not confirmed read.
+- Still two sessions titled CONDUCTOR · system build (local_b666d711, local_083bdfe0); the rule is exactly one.
