@@ -1,11 +1,12 @@
 name: test
 
-# Bare `pytest` from the repo root, on the self-hosted runner (the $0 Actions spending cap stays
-# set, so a GitHub-hosted job never starts). Bare, not `pytest tests/`: an explicit path
-# overrides testpaths and silently drops suites such as plugins/leadfuel-way/tests.
+# Bare `pytest` from the repo root, on a GitHub-hosted runner: this repo is public, so hosted
+# minutes are free and unmetered, and the job no longer queues behind the self-hosted box
+# (CI-OVERFLOW). Bare, not `pytest tests/`: an explicit path overrides testpaths and silently
+# drops suites such as plugins/leadfuel-way/tests.
 #
-# The repo is PUBLIC and the runner is this PC. A fork PR must never reach it, so every job
-# carries an explicit same-repo guard in addition to the repo's fork-approval setting.
+# No secrets are used here, and none may be: a hosted runner is not ours. The same-repo guard
+# stays so a fork PR does not run at all.
 
 on:
   pull_request:
@@ -24,13 +25,12 @@ jobs:
     name: pytest
     # push events have no pull_request payload, so they pass; a PR must come from this repo.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, novah]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      # The runner image ships Python 3.12; actions/setup-python re-downloads it over the shared
-      # ~5 Mbps link and hung past the old 15-minute limit (run 37086999422), so it is not used.
+      # ubuntu-latest ships a system python3, so actions/setup-python is not used.
       - name: Install pytest and this package into a venv
         run: |
           python3 -m venv .venv
