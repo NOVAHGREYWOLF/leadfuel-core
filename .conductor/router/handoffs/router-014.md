@@ -35,3 +35,9 @@ ASK-503 local_85c7e2e5, MONEY dup local_af080d34, WATCH Q189-SYNC-LOG local_5940
 - ARMS MCP tool floor local_fdfd3d2f: archive after the 04:30 PT VAULT sync is verified.
 - Security findings from #747 section 6 sent to conductor as unqueued tasks.
 - Gotcha: cowork transcript search times out; use list_sessions by group.
+
+## Addendum 1 (~16:10 UTC)
+- Correction: do NOT archive ATLAS-3D 2/2 local_48e12d7e while CI-STARVATION local_5bc2f56b uses the same worktree (confident-rubin-a86be7); archiving removes it.
+- Q198 local_0512141a DONE: box rebooted 15:34Z, 0 pytest left, nothing stopped. CPU still 100% (claude, OneDrive sync, an Ollama installer). Archive refused once for "live work"; retry.
+- Conductor 009 posted q202 (open the 8 held desks: A as CPU frees / B now; router acts), q203 (WIP-CAP, CI-LANE rank) and q204 (archive Railway spend review local_6ce737c5 and WATCH Resend run local_f6a9997a). Relay q203/q204 answers to 009. Next card number is q205.
+- ROUTER #13: owner now says archive it once hub #714 is merged and the gate holds (handoff f6acb22 pushed, worktree suspicious-hypatia-1e600a clean, no unfinished child desk; detach chip children first).
