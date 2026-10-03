@@ -41,3 +41,10 @@ Router desk LzmP6QcxmYh9TdvMMjS883, Conductor desk MKAx49RAskZ3cV7f2EkDMF, board
 - q184 done: the runner is online (CORE-CI local_24ec7be0, PR #21/#22 proof running). CORE-CI read fork approval as first_time_contributors, but #13 set all_external_contributors via the API and read it back. Re-check before relying on either.
 - Conductor 008: the owner chose the defaults on the 4 sidebar-sweep questions (1A, 2A, 3 default, 4A); there are no cards to post. Queued ranks 198-204 (CLOUD-LOCAL-*: 3 NODE, DOORS, MONEY, SURFACE, INTELLIGENCE) for #14 to open. CI-STARVATION-DEADLOCK and WAY-POSITIVE-CONTROL are on the Conductor desk, unqueued. Ask WAY-no-nested local_032d2f7c whether PR #10 needs a 2/2.
 - ATLAS-B1 2/2 local_70fae0d7 asks whether CI green on the merged head can replace a ~9h local bare pytest. The standing rule says no; it is the owner's or conductor's call. About 10 desks run pytest at once.
+
+## Addendum 3 (02:50 UTC)
+- The owner started 5 chips. FABLE-5 2/2 local_96e507d3 is moved to VAULT and set to Fable xhigh (from its next turn). MONEY 2/2 local_4e1440cc is moved to MONEY with its model unchanged (Sonnet route). ASK-503-EMBED-DIAG and the two Q189 desks are not yet located: find them, file them and set models (Opus, Sonnet, Sonnet).
+- Archive FABLE-5 1/1 local_6b4faf3f once 2/2 confirms it is live (its 2/2 brief says 2/2 archives it).
+- CORE-CI: #8 is green and #19 awaits WAY-no-nested. #10 needs a ruling: close as superseded, or open a new desk.
+- New card q196 (CI capacity kind): route the answer to NODE (size) and MONEY (price).
+- SHELL-JSON (#746) flagged that /admin/wall ?email= lets a bare admin see another account's ME tree, against q157. Pass it to ATLAS-ACT-THREATS (#747).
