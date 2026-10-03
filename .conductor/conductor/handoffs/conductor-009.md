@@ -24,6 +24,11 @@ Ids only (public repo). This session: local_e8701502, branch claude/hopeful-rosa
 - Owner ask, atlas depth plus views plus action view: queued ATLAS-PART-SCHEMA, -INVENTORY-HUB, -INVENTORY-ARMS, -MCP-MAP, -ESTATE-LAYER, -AGENTS-LAYER and -ACT-USERMODE (-29.20 to -29.14). ATLAS-OPS-BRIDGE (NODE) is filed needs-owner; ROUTER #15 is asked to card it. SPATIAL-2..6b have picks but no desks; ROUTER #15 is asked to open them. Merge train #720/#719/#713/#730/#736 are all drafts.
 - Docker returns 500 and the hub runners are offline (ROUTER #15, 19:16 UTC); CI-STARVATION is repairing it.
 
+## Final (~19:50 UTC), 009 rotating at ~270k
+- ROUTER #15 local_8e21f892 is rotating: router-015.md at 551e75b on claude/heuristic-mahavira-26f264. Addendum 1 carries the whole atlas-depth queue and card q220 (ATLAS-OPS-BRIDGE). ROUTER #16 comes from the owner's paste. #14 local_34998bfa is also still open (held for its chip children).
+- Next for 010: when ROUTER #16 is live, check it opened the atlas-depth queue in order and posted q220. File any owner answers that create tasks (the pattern: read the card yourself, update desks/<lane> with if_version, set picks/<LANE>~<KEY>). Then ask the owner what next.
+- Archive 009 (local_e8701502) once 010 is filed in CONDUCTOR. My worktree is clean and pushed. I am a side session of the archived 008; archiving me is safe.
+
 ## Owed
 - Asked ROUTER #14 to post 3 owner cards: open the 8 held desks now; rank WIP-CAP and CI-LANE; archive 6ce737c5 and f6a9997a. File the answers on the Conductor desk.
 - Owner cards still open: q148, q193, q200, q201; q191 is his own CLAUDE.md edit.
