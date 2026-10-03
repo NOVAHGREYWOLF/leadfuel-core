@@ -45,3 +45,9 @@ ASK-503 local_85c7e2e5, MONEY dup local_af080d34, WATCH Q189-SYNC-LOG local_5940
 ## Addendum 2 (~16:30 UTC)
 - OWNER ORDER via conductor 009 (its chat local_e8701502, 2026-10-03): every non-green Atlas item must go green "right now". 009 is filing ATLAS-GREEN-* tasks at the top of the Conductor desk and will send the ids. Open them as they arrive, ahead of the CLOUD-LOCAL hold. Limits: an "unknown" is fixed by making it measurable, never painted green; items needing owner approval (e.g. Voyage email, q169) become cards, not desks.
 - Q199 local_50a7c746 DONE and archived (task has 2 actions; doc commit 5d828d1 local in F:\Claude Sessions). Q198 local_0512141a still refuses archive (live work); retry.
+
+## Addendum 3 (~16:05 UTC wall clock per gh)
+- hub #714 MERGED ad0e2ab at 15:58Z (all 3 checks green on 0f40c68, main unmoved, CLEAN). ci-novahub RELEASED by me; offered by name to SURFACE ATLAS-ACT 2/2 local_d602818f (#739), delivered. If it does not take it, offer the next green ticket.
+- CAND-weasyprint local_23d9b051 told (delivered). P9 local_178af2ba NOT delivered: short id not found; find its full id (not in INTELLIGENCE group) and tell it #714 merged.
+- q205 posted (heavy-job lock, from CI-STARVATION local_5bc2f56b; default A). Its fix branch node/ci-starvation-deadlock (-n 6) is pushed, no PR; ticket 20261003T155535Z filed.
+- ROUTER #13 is now archivable through the gate (#714 merged); check its children first.
