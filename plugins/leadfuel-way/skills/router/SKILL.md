@@ -82,7 +82,7 @@ Use `leadfuel-way:handoff` (router row), then:
 **Claim** (successor, idempotent, safe to run twice):
 1. Title and file yourself (`ROUTER #N+1 · <project>`, ROUTER group). Set `router/current` to `{session_id: me, incarnation: N+1, predecessor, status: "active"}`.
 2. `SendMessage` one line to every desk that is `doing` and under 300k tokens. Skip the rest.
-3. The predecessor stays open until you are live; archiving it is your job. Once steps 1 and 2 are done and `list_sessions` shows you in the ROUTER group, archive the predecessor if its handoff is pushed and nothing of it is unpushed (`git ls-remote` on its branch). Never archive a session whose work is unpushed.
+3. The predecessor stays open until you are live; archiving it is your job. Once steps 1 and 2 are done and `list_sessions` shows you in the ROUTER group, archive the predecessor if its handoff is pushed and nothing of it is unpushed (`git ls-remote` on its branch). Never archive a session whose work is unpushed. It also has no live child: a desk or router opened from it must be finished or read `detached` true first (`get_session` shows `parentSessionId`).
 4. `PushNotification`: `Router #N+1 is live, use it from now on`. Post a five-line digest: what carried over, what needs the owner.
 If the owner messages a predecessor after rotation, the predecessor forwards it to `router/current.session_id` and replies with one line saying where to go.
 
