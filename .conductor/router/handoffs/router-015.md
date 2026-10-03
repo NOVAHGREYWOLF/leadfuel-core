@@ -29,3 +29,13 @@ CLOUD-LOCAL 198-204, WAY-POSITIVE-CONTROL 206, Q201-SYNC-STATUS-POST 208: open a
 - ROUTER #14 local_34998bfa: gate holds, but the ATLAS chip desks are nested under it; archive once they're done. #13 local_21748811: when none of its desks is unfinished.
 - Archived by #15 (gate checked): INFRA-MEASURE, PRIME, FLAGS, ATLAS-ACT 2/2, DATA-REFRESH 1/1, CI-LANE, CI-SERVER-PRICING, WIP-CAP 1/1, the old Railway desk local_3efbaec1.
 - Gotchas: chips are owner-placed, so detach_session refuses. Short ids fail on send_message; use full ids.
+
+## Addendum 1 (~19:40 UTC): ATLAS-DEPTH, queued by conductor 009 AFTER #15's handoff, so it is #16's to open
+Owner ask (009's chat, ~19:30Z): the atlas breaks down as far as it can (click into every part, all agents), plus other views and an action view. Survey: 2 levels and 95 parts; 58/374 hub modules; 0 routes, 1/49 crons, 0 tables, 0 flags, 0 sessions; nothing operable.
+Open in order (ranks -29.20..-29.14, after ATLAS-GREEN; read each on the Conductor desk):
+1 ATLAS-PART-SCHEMA (DESIGN), first, because the others fill it. 2 ATLAS-INVENTORY-HUB (SURFACE), after #730. 3 ATLAS-INVENTORY-ARMS (ARMS). 4 ATLAS-MCP-MAP (SURFACE). 5 ATLAS-ESTATE-LAYER (NODE, read-only). 6 ATLAS-AGENTS-LAYER (NODE, ids, titles and status only). 7 ATLAS-ACT-USERMODE (INTELLIGENCE, slice 0), after #713.
+OWNER CARD needed (not a desk): ATLAS-OPS-BRIDGE (NODE), a local queue-gated operator for deploy, restart, rollback, CI re-run and merge; it touches deploys and Law 9. Options: A) design only first, B) not now. Post as q220.
+Wake or open existing "now" picks: SPATIAL-2..6b (no desk exists); ATLAS-VIEWS (14-view switcher, waits on #736); ATLAS-ACT slice 1 SAFE+FIX (after #736); finish hub #747 (ACT threats, VAULT local_18e77f32, red on pip-audit only).
+Biggest unblock once CI is back: the draft merge train #720, #719, #713, #730, #736 blocks ATLAS-ACT, ATLAS-VIEWS and ONE-PLACE-SHELL. Get their desks to ready-for-review.
+SPATIAL-1's remainder: L02, L07, L08, L09, L14, L15, L17.
+Mind the box: CI is down and the CPU is starved. Open in rank order as desks finish (q202 A); WIP cap 25 applies to non-ATLAS work.
