@@ -18,8 +18,15 @@ Session local_0f7bb7a2-78ca-4492-87fc-6429dccd1629 (`DESIGN · ATLAS-3D 1/1 · A
 - **Peer says:** the hub CSP is `script-src 'self'`, so CDN three.js will not load there. #736's feed is keyed `"from>to": {count, state, unit, reader, note}`. That is the shape to target if the hub adapter stays.
 - **So, before building:** ask ROUTER #13 whether Build A still stands as briefed, and whether its scope shrinks now that the hub owns the MAP view. Do not assume either answer.
 
+## DECISION: option B (Novah, in this desk's chat, 2026-10-03)
+Add 3D mode to **Atlas Live** (6LEvF7K9u9qnSxh68VWsfA), the debugging mirror. Connector only, no hub adapter. It opens in 2D. The 3D Flow Atlas (UCCG9zfCDWeveQMuT1MFZ5) is not changed. ROUTER #13 has been told. The private plan's DECISION section gives the details.
+
 ## Next
-The successor first gets ROUTER #13's answer (above). If Build A stands, it runs `Artifact read` on both pages (every line of the saved Flow Atlas file) and builds from the plan. It checks the page once locally at desktop and phone width, with the hub adapter fed stub JSON. It then publishes to UCCG9zfCDWeveQMuT1MFZ5 with the plan's mcp declaration and writes atlas-3d-002.md.
+Build option B from the plan:
+1. Run `Artifact read` on both pages, reading every line of the saved Flow Atlas file.
+2. Check the page once locally at desktop and at phone width, with stub data fed in through the adapter seam.
+3. Republish Atlas Live (6LEvF7K9u9qnSxh68VWsfA), keeping its stored mcp declaration.
+4. Write atlas-3d-002.md.
 
 ## Owed
 - Build B (INTELLIGENCE, task_9e9c7a2d) depends on this adapter. The hub stub switches on when the page defines `window.ATLAS_HUB`.
