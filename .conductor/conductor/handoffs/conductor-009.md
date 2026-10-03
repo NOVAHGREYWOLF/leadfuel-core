@@ -19,6 +19,11 @@ Ids only (public repo). This session: local_e8701502, branch claude/hopeful-rosa
 - Filed, not queued: SLOW-TESTS-SPEEDUP (SUITE).
 - q202=A, q203=B, q204=B (keep both), q201=B, all filed. ROUTER #15 local_8e21f892 is live and holds #14 until its chip children are done.
 
+## Addendum 2 (~19:40 UTC)
+- Queued the DOORS splits of ATLAS-ARM-SENDS (-29.81 to -29.78; REACH waits for q219), SIGNAL-WORLD-CONSTRAINT (q214, -29.33) and LUCID-DAY-SUBMIT (q216, -29.32).
+- Owner ask, atlas depth plus views plus action view: queued ATLAS-PART-SCHEMA, -INVENTORY-HUB, -INVENTORY-ARMS, -MCP-MAP, -ESTATE-LAYER, -AGENTS-LAYER and -ACT-USERMODE (-29.20 to -29.14). ATLAS-OPS-BRIDGE (NODE) is filed needs-owner; ROUTER #15 is asked to card it. SPATIAL-2..6b have picks but no desks; ROUTER #15 is asked to open them. Merge train #720/#719/#713/#730/#736 are all drafts.
+- Docker returns 500 and the hub runners are offline (ROUTER #15, 19:16 UTC); CI-STARVATION is repairing it.
+
 ## Owed
 - Asked ROUTER #14 to post 3 owner cards: open the 8 held desks now; rank WIP-CAP and CI-LANE; archive 6ce737c5 and f6a9997a. File the answers on the Conductor desk.
 - Owner cards still open: q148, q193, q200, q201; q191 is his own CLAUDE.md edit.
