@@ -34,3 +34,10 @@ Router desk LzmP6QcxmYh9TdvMMjS883, Conductor desk MKAx49RAskZ3cV7f2EkDMF, board
 - q193 settled: the owner answered B in DESIGN ATLAS-3D chat (local_0f7bb7a2); its 2/2 builds it. Archive 1/1 once 2/2 is live.
 - hub #714 CI still running at head 9ebe4f0; #13 merges it on green and releases ci-novahub.
 - Paste prompt for #14 was given to the owner in #13 chat.
+
+## Addendum 2 (02:50 UTC): supersedes "Owed" on Set A
+- Set A belongs to NODE Railway config-as-code local_3efbaec1, which says nobody else touches these PRs. scope#23 is MERGED 65ee909 (desk-verified). #14 does NOT merge Set A; the owner's q187 go goes to that desk one PR at a time (hub #699 last).
+- Set B: MERGE-ALL-GREEN local_874ae11a merged signal#31 (4633b82); auto mode refused `railway config apply`, so it is not applied. The other 6 are untouched. Railway apply is the owner's (PowerShell at e9237eb on claude/optimistic-ardinghelli-c2be56).
+- q184 done: the runner is online (CORE-CI local_24ec7be0, PR #21/#22 proof running). CORE-CI read fork approval as first_time_contributors, but #13 set all_external_contributors via the API and read it back. Re-check before relying on either.
+- Conductor 008: the owner chose the defaults on the 4 sidebar-sweep questions (1A, 2A, 3 default, 4A); there are no cards to post. Queued ranks 198-204 (CLOUD-LOCAL-*: 3 NODE, DOORS, MONEY, SURFACE, INTELLIGENCE) for #14 to open. CI-STARVATION-DEADLOCK and WAY-POSITIVE-CONTROL are on the Conductor desk, unqueued. Ask WAY-no-nested local_032d2f7c whether PR #10 needs a 2/2.
+- ATLAS-B1 2/2 local_70fae0d7 asks whether CI green on the merged head can replace a ~9h local bare pytest. The standing rule says no; it is the owner's or conductor's call. About 10 desks run pytest at once.
