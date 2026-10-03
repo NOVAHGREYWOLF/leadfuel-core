@@ -51,3 +51,6 @@ Mind the box: CI is down and the CPU is starved. Open in rank order as desks fin
 ## Addendum 3 (~20:00 UTC)
 - CI-STARVATION local_5bc2f56b: Docker Desktop has been wedged since ~18:04Z. The OWNER must Quit Docker Desktop (tray) and relaunch it; the desk was refused a force-stop. Then a NODE desk runs the NOTES health check and confirms a queued hub job starts.
 - Heavy-job lock (q205 A) is built in hub #755 (17 tests). Its -n 6 hunk contradicts NOTES.md, so the desk drops it unless the owner approves: post a card. Desk handoff: .conductor/desks/handoffs/CI-STARVATION-DEADLOCK-001.md.
+
+## Addendum 4 (~20:05 UTC)
+- NODE ATLAS-FLAGS-APPLY local_27c655ce (chip started; #16: confirm its model is Opus): deploy-config draft hub #756. MAIL_SIGNALS and IDENTITY_MINING are already "1" live (measured); GOALPLAN live = "1" (q215 answered); the only real flip is SELF_CAPTURE_ENABLED. WARNING: GITHUB_READ_TOKEN is live but undeclared in railway.ts, so ANY `railway config apply` deletes it. Declare it preserve() first (check #742 owner) before any apply. No desk is assigned to apply. Show #756 to the owner as a card; do not merge or apply until it is answered.
