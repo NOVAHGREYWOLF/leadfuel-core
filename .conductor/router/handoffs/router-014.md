@@ -51,3 +51,11 @@ ASK-503 local_85c7e2e5, MONEY dup local_af080d34, WATCH Q189-SYNC-LOG local_5940
 - CAND-weasyprint local_23d9b051 told (delivered). P9 local_178af2ba NOT delivered: short id not found; find its full id (not in INTELLIGENCE group) and tell it #714 merged.
 - q205 posted (heavy-job lock, from CI-STARVATION local_5bc2f56b; default A). Its fix branch node/ci-starvation-deadlock (-n 6) is pushed, no PR; ticket 20261003T155535Z filed.
 - ROUTER #13 is now archivable through the gate (#714 merged); check its children first.
+
+## Addendum 4 (~16:30 UTC) - ROTATING, #14 at ~290k
+- ATLAS-GREEN order (12 tasks, ranks -29.90..-29.35, queued by conductor 009, "right now"):
+  - Woken (existing desks, delivered): ATLAS-CITE -> INTELLIGENCE ATLAS-B2 local_b0fbc21c (#728 rebased on ad0e2ab, ticket 7th, asks to be offered ci-novahub by name); ATLAS-QBO -> SENSORS QBO-REAUTH local_6343c1fa (#726); ATLAS-EMBED -> DOORS ATLAS-B1 local_70fae0d7 (#740, #721 with DEL-SCRIPT local_488a9a7c). Each told: reply "too big" if over 300k -> then open fresh.
+  - Chips waiting for the owner's click (title/file/model when they start): ATLAS-DOORS (Opus), ATLAS-ARM-SENDS, ATLAS-SENSOR-REG, ATLAS-BRAIN-MEASURE, ATLAS-COMMS, ATLAS-VAULT-RAW (FIELD; coordinate #705 with SENSORS A6 local_bb561b81), ATLAS-INFRA-MEASURE, ATLAS-PRIME, ATLAS-FLAGS (all Sonnet).
+- ci-novahub order: SURFACE ATLAS-ACT 2/2 (#739) holds/was offered it; next offer ATLAS-green tickets first (ATLAS-B2 #728, then #726, #740), then the oldest green tickets.
+- CLOUD-LOCAL 198-204 + WAY-POSITIVE-CONTROL still held behind ATLAS-GREEN (q202 pending).
+- Open cards: q200-q205. q203/q204 answers go to conductor 009.
