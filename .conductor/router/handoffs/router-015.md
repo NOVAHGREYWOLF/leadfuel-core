@@ -57,3 +57,7 @@ Mind the box: CI is down and the CPU is starved. Open in rank order as desks fin
 
 ## Addendum 5 (~20:10 UTC)
 - ARMS LUCID-DAY-SUBMIT local_36d20e10 (#16: confirm it is filed in ARMS on Sonnet): lucid #128, lucid half done (local gates and bare pytest green, CI pending). ASK: the hub side of /api/report/submit never calls day_shape.accept. Default A: open a hub desk (check SESSION_MAP for the lane that owns the report route) plus a SENSORS sources.py flip of lucid:day DORMANT->RECURRING once rows land. Owner card: activate n8n/lucid-hub-report.json (imported inactive), without which hub-report-all never runs (deploy config, so the owner decides).
+
+## Addendum 6 (~20:17 UTC)
+- All 3 chips started; #15 titled-checked and set their models: NODE ATLAS-FLAGS-APPLY local_27c655ce (Opus, hub #756), INTELLIGENCE SIGNAL-WORLD-CONSTRAINT local_59345d5d (Sonnet, hub #757, no report to #15 yet), ARMS LUCID-DAY-SUBMIT local_36d20e10 (Sonnet, lucid #128). All filed in their lanes.
+- CI-STARVATION #755 is open (heavy lock). The owner still has to quit and relaunch Docker Desktop.
