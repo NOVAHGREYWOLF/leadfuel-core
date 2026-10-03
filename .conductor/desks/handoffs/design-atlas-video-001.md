@@ -12,11 +12,11 @@ Session local_15e83b97-650c-4caa-8a40-169e7935a8ba (conversation f0122e34). Sour
 - Verified myself: no page errors, every scripted target found, frames sampled from the preview, the final and the 720p. Not watched end to end at speed.
 
 ## Next
-Nothing queued. Wait for the owner.
+The owner asked, in this session: add a voice track, and save the files in a OneDrive "marketing" folder. The owner also said to route it through the router and the conductor, so it was sent to ROUTER #13 (local_21748811) and CONDUCTOR · system build (local_e8701502) as msg 13e21fd8 and 4d3f3122. Both were queued; neither has been confirmed read. The voice must come from an offline Windows voice only (no cloud TTS, Law 9). Copy the kit out of the scratchpad first.
 
 ## Owed
-- Owner: where to keep the video and the kit (not this public repo).
-- Offered, not asked for: an offline voice track; an Atlas Live segment (it would record live connector data, so it needs the owner's yes); a fix for the QuickBooks balances panel clipping "asked every 15 min, written on change" (`.nums td` nowrap).
+- Owner: which OneDrive Marketing folder. There is no top-level one; the router is posting a card with a default (create one at the top of the business OneDrive).
+- Offered, not asked for: an Atlas Live segment (it would record live connector data, so it needs the owner's yes); a fix for the QuickBooks balances panel clipping "asked every 15 min, written on change" (`.nums td` nowrap).
 - Reported to the owner: eight concurrent pytest runs at about 18:30 PDT, six of them `pytest tests/`.
 
 ## Gotchas
