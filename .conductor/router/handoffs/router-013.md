@@ -29,3 +29,8 @@ Router desk LzmP6QcxmYh9TdvMMjS883, Conductor desk MKAx49RAskZ3cV7f2EkDMF, board
 - CI deadlock (SENSORS A6 local_bb561b81): the box is starved, so checks fail on infrastructure (8m gates timeout, pip-audit DNS, checkout curl 56). Nothing reaches all-green. Root cause is many concurrent local gates.sh runs, against the one-heavy-job rule. Candidate owner or conductor item.
 - My own id was misquoted as local_c1cefaee early on (that is the scratchpad uuid). Use local_21748811.
 - Auto mode refused: docker run (runner), set_session_model on one desk, and reading CHILD_PROTOCOL.md via git show. Briefs inline the protocol instead.
+
+## Addendum (02:35 UTC)
+- q193 settled: the owner answered B in DESIGN ATLAS-3D chat (local_0f7bb7a2); its 2/2 builds it. Archive 1/1 once 2/2 is live.
+- hub #714 CI still running at head 9ebe4f0; #13 merges it on green and releases ci-novahub.
+- Paste prompt for #14 was given to the owner in #13 chat.
