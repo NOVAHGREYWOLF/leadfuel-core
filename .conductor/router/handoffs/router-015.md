@@ -44,3 +44,6 @@ Mind the box: CI is down and the CPU is starved. Open in rank order as desks fin
 - DOORS ARM-SENDS-DOORS local_66060050 is stopped on two owner cards #15 posted: q221 (odyssey's hub scope; default A, a narrow {odyssey} route; draft hub #754) and q222 (lucid calendar door ceiling; default B, logged with no cap; lucid #127 design). Route the answers to it. SIGNAL-PUBLISH waits on #752 merging; REACH waits on q219.
 - DATA-REFRESH 2/2 has applied batch 4 (CI row DOWN at 19:23Z).
 - q220 is reserved for the ATLAS-OPS-BRIDGE card (addendum 1). The next free id after that is q223.
+
+## Final (~19:55 UTC)
+#15 crossed 300k. It starts nothing more and stays open until #16 is live; #16 archives it.
