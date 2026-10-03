@@ -21,3 +21,7 @@ Owner, in that session, about Atlas Live (https://claude.ai/artifact/6LEvF7K9u9q
 - Neither build was started here. Start cards: Build A task_5266e378, Build B task_9e9c7a2d (each starts when the owner clicks).
 - Conductor 007 (local_da515743) is archived; the send to it bounced. Re-sent to the most recently active CONDUCTOR session, local_b666d711: delivered, its turn started on it, not confirmed read.
 - Still two sessions titled CONDUCTOR · system build (local_b666d711, local_083bdfe0); the rule is exactly one.
+
+## Status read 2026-10-03 ~02:15 UTC
+- Build B stood down (ATLAS-HUB-001.md on hub branch claude/nice-rhodes-c5c334 @ 8d79a3d): on ROUTER #13's relay of owner answer q177, the atlas lives in the hub as the map view, hub PR #730 (/goal/atlas) and #736 (/goal/atlas/live). Verified here with gh: #730 open draft, CLEAN; #719 open draft. #713, #720 and #736 not read (gh timed out). Follow-up link from /admin/wall went to ROUTER #13.
+- Build A: ATLAS-3D 1/1 (local_0f7bb7a2) settled the design and published nothing; handed off at 300k (atlas-3d-001.md) and asks ROUTER #13 first whether 3D still goes ahead beside the hub map view. No successor seen in the DESIGN group at this read.
