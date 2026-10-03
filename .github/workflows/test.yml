@@ -38,6 +38,7 @@ jobs:
 
       - name: pytest (bare, from the repo root)
         run: |
+          set -o pipefail
           . .venv/bin/activate
           pytest -q -ra | tee pytest.out
           # Exit 5 (nothing collected) fails the step: a run that collects nothing is not a pass.
