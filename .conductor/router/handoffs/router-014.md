@@ -41,3 +41,7 @@ ASK-503 local_85c7e2e5, MONEY dup local_af080d34, WATCH Q189-SYNC-LOG local_5940
 - Q198 local_0512141a DONE: box rebooted 15:34Z, 0 pytest left, nothing stopped. CPU still 100% (claude, OneDrive sync, an Ollama installer). Archive refused once for "live work"; retry.
 - Conductor 009 posted q202 (open the 8 held desks: A as CPU frees / B now; router acts), q203 (WIP-CAP, CI-LANE rank) and q204 (archive Railway spend review local_6ce737c5 and WATCH Resend run local_f6a9997a). Relay q203/q204 answers to 009. Next card number is q205.
 - ROUTER #13: owner now says archive it once hub #714 is merged and the gate holds (handoff f6acb22 pushed, worktree suspicious-hypatia-1e600a clean, no unfinished child desk; detach chip children first).
+
+## Addendum 2 (~16:30 UTC)
+- OWNER ORDER via conductor 009 (its chat local_e8701502, 2026-10-03): every non-green Atlas item must go green "right now". 009 is filing ATLAS-GREEN-* tasks at the top of the Conductor desk and will send the ids. Open them as they arrive, ahead of the CLOUD-LOCAL hold. Limits: an "unknown" is fixed by making it measurable, never painted green; items needing owner approval (e.g. Voyage email, q169) become cards, not desks.
+- Q199 local_50a7c746 DONE and archived (task has 2 actions; doc commit 5d828d1 local in F:\Claude Sessions). Q198 local_0512141a still refuses archive (live work); retry.
