@@ -56,7 +56,47 @@ gh pr merge 30 -R NOVAHGREYWOLF/orbit --squash
 gh pr merge 126 -R NOVAHGREYWOLF/lucid --squash
 ```
 
+### Set B status, 2026-10-03 ~01:30Z (the owner asked me to run it)
+
+- **signal#31: MERGED 4633b82, NOT APPLIED.** The plan was read twice, from the PR head and from merged main (railway.ts identical). Both read `0 to add, 2 to change, 0 to destroy`: NovaHound `source.checkSuites` null → true, `deploy.numReplicas` null → 1 (pinned in the file; the service runs 1), and `deploy.restartPolicyType` null → ON_FAILURE (the known default line). The auto-mode classifier denied my `railway config apply` ("Blind Apply"), and I stopped Set B there. The other six (novahub-mcp#38, odyssey#51, echo#56, scope#26, orbit#32, reach#37) are untouched, and hub #737 stays held.
+- **The PR-body commands fail on this machine.** `railway/iac` 3.11.0 checks the CLI version by running `$env:_` (or bare `railway`) without a shell. On Windows that cannot launch the npm `railway.cmd` shim, so it reports "requires Railway CLI 5.42.1 or newer" even on 5.43.1. Setting `$env:_` to the real `railway.exe` fixes it, as in the blocks below. The file also needs `node_modules/railway` next to it.
+- **Merges reported earlier by ROUTER #13:** it took Set A itself (owner's "go ahead and merge" on card q187, relayed). I have not checked those nine.
+
+Signal, apply only (the merge is done; the temp worktree at merged main 4633b82 still exists):
+```powershell
+$env:_ = "$env:APPDATA\npm\node_modules\@railway\cli\bin\railway.exe"
+$W = "C:\Users\novah\AppData\Local\Temp\claude\F--Leadfuel-repos-leadfuel-core--claude-worktrees-hungry-neumann-8e77fa\62af3aac-0599-430b-8aff-1df4d842262f\scratchpad\rw-signal"
+Push-Location F:\Leadfuel\repos\signal
+& $env:_ config plan --verbose --file "$W\.railway\railway.ts"   # expect exactly the 3 lines above, 0 to destroy
+& $env:_ config apply --file "$W\.railway\railway.ts"
+Pop-Location
+git -C F:\Leadfuel\repos\signal worktree remove --force $W
+```
+
 ### Set B: wait for CI before deploying (`checkSuites: true` in `.railway/railway.ts`). Merge, then plan and apply.
+
+**Use this block, not the simpler one further down**, because of the SDK version-check bug described above. Plan from the linked checkout with `--file`, so no relinking is needed. Every repo's file is a named partial that names its own project and service.
+
+```powershell
+$repo='novahub-mcp'; $n=38
+$env:_ = "$env:APPDATA\npm\node_modules\@railway\cli\bin\railway.exe"
+$W = "$env:TEMP\rw-$repo"
+gh pr ready $n -R NOVAHGREYWOLF/$repo
+gh pr update-branch $n -R NOVAHGREYWOLF/$repo     # only if behind main; then wait for CI:
+gh pr checks $n -R NOVAHGREYWOLF/$repo --watch
+gh pr merge $n -R NOVAHGREYWOLF/$repo --squash
+git -C "F:\Leadfuel\repos\$repo" fetch origin main
+git -C "F:\Leadfuel\repos\$repo" worktree add --detach $W origin/main
+npm install --no-save --prefix $W railway
+Push-Location "F:\Leadfuel\repos\$repo"
+& $env:_ config plan --verbose --file "$W\.railway\railway.ts"   # must read 0 to destroy; only checkSuites plus default-null lines
+& $env:_ config apply --file "$W\.railway\railway.ts"
+Pop-Location
+git -C "F:\Leadfuel\repos\$repo" worktree remove --force $W
+```
+Values: `odyssey 51`, `echo 56`, `scope 26`, `orbit 32`, `reach 37`. Last, after the runner rebuild: `novahub 737`. On 2026-10-03 novahub-mcp#38 was 1 behind main; signal#31, scope#26 and reach#37 were level; the rest were unknown because GitHub API calls timed out.
+
+Original simpler block (fails here on the SDK check unless `$env:_` is set):
 
 Each PR changes one file, `.railway/railway.ts`, and sets `source.checkSuites` from null to true. Merging alone changes nothing. The switch takes effect at `railway config apply`. **The plan must read `0 to destroy`; an apply deletes any variable the .ts does not name.** All are drafts, so each starts with `gh pr ready`.
 
