@@ -47,3 +47,7 @@ Mind the box: CI is down and the CPU is starved. Open in rank order as desks fin
 
 ## Final (~19:55 UTC)
 #15 crossed 300k. It starts nothing more and stays open until #16 is live; #16 archives it.
+
+## Addendum 3 (~20:00 UTC)
+- CI-STARVATION local_5bc2f56b: Docker Desktop has been wedged since ~18:04Z. The OWNER must Quit Docker Desktop (tray) and relaunch it; the desk was refused a force-stop. Then a NODE desk runs the NOTES health check and confirms a queued hub job starts.
+- Heavy-job lock (q205 A) is built in hub #755 (17 tests). Its -n 6 hunk contradicts NOTES.md, so the desk drops it unless the owner approves: post a card. Desk handoff: .conductor/desks/handoffs/CI-STARVATION-DEADLOCK-001.md.
