@@ -35,3 +35,7 @@ When ROUTER #14 is live, brief it with every rank queued since router-013 was wr
 ## Gotchas
 - Desk docs are collection `desks`, one document per lane with `tasks{}`. Write the whole document with if_version.
 - gh times out under load; use `timeout 60`.
+
+## Arrived after handoff (for 009, not acted on by 008)
+- SIDEBAR-SWEEP local_678d9904: BLOCKED, 42 rows laned, 0 applied (claude.ai/code hangs under CPU). Default A = retry under 90% CPU. List in private scratch apply-list-2026-10-03.md.
+- NODE · going faster local_d408fa71 relays owner yes (~02:30 UTC, verify with list_events there): add 4 tasks WIP-CAP, CI-LANE (overlaps CI-STARVATION-DEADLOCK -30 and CWC-ON8; merge if same), MODEL-FIT, PROCESS-PAUSE; card q196 (buy CI capacity, which kind) posted. Owner said "as much done as possible": ask him whether CI-LANE and WIP-CAP go to the top.
