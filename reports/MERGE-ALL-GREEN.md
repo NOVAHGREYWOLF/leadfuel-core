@@ -56,7 +56,17 @@ gh pr merge 30 -R NOVAHGREYWOLF/orbit --squash
 gh pr merge 126 -R NOVAHGREYWOLF/lucid --squash
 ```
 
-### Set B status, 2026-10-03 ~01:30Z (the owner asked me to run it)
+### Set B status, 2026-10-05 ~09:50Z (owner "try again")
+
+Merged with main in, CI green, plan 0 destroy (only `checkSuites` plus default-null lines), applied, and the re-plan shows `checkSuites` gone:
+- signal#31 (4633b82): deploy 250a640c SUCCESS, /healthz 200.
+- scope#26 (2938e6e): deploy 6c4578cf SUCCESS.
+- orbit#32 (894dc71): deploy 589e8025 SUCCESS.
+- echo#56 (a35d5c9): applied; deploy not confirmed.
+
+reach#37 was done by NODE · RAILWAY-SET-A (ROUTER #19). Left: odyssey#51, novahub-mcp#38, and hub #737 (held). See handoff/MERGE-ALL-GREEN-1of2.md.
+
+### Set B status, 2026-10-03 ~01:30Z (superseded above)
 
 - **signal#31: MERGED 4633b82, NOT APPLIED.** The plan was read twice, from the PR head and from merged main (railway.ts identical). Both read `0 to add, 2 to change, 0 to destroy`: NovaHound `source.checkSuites` null → true, `deploy.numReplicas` null → 1 (pinned in the file; the service runs 1), and `deploy.restartPolicyType` null → ON_FAILURE (the known default line). The auto-mode classifier denied my `railway config apply` ("Blind Apply"), and I stopped Set B there. The other six (novahub-mcp#38, odyssey#51, echo#56, scope#26, orbit#32, reach#37) are untouched, and hub #737 stays held.
 - **The PR-body commands fail on this machine.** `railway/iac` 3.11.0 checks the CLI version by running `$env:_` (or bare `railway`) without a shell. On Windows that cannot launch the npm `railway.cmd` shim, so it reports "requires Railway CLI 5.42.1 or newer" even on 5.43.1. Setting `$env:_` to the real `railway.exe` fixes it, as in the blocks below. The file also needs `node_modules/railway` next to it.
