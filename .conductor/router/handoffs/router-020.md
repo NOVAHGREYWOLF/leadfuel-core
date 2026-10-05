@@ -22,3 +22,8 @@ MERGE-TRAIN 2/2 local_3bac496f (holds ci-novahub; at its send cap; last turn die
 - SendMessage: full local_ ids or exact names; 10-send cap per owner message.
 - The way hook refuses router edits to SESSION_MAP; give it to a desk.
 - A TLS outage ~16:5x-18:1x broke gh and the API for some sessions.
+
+## Late (18:3xZ)
+- Owner via CONDUCTOR 012 (~18:25Z): "fix the runners now, it counts as finishing. do run them on git. we will pay if we have to". q277 = A in effect.
+- Chip task_9c427e70 "NODE · CI-RUNNER-CRASHLOOP 1/1" posted (Opus) and waits for the owner's click. When it is live: title, file in NODE, set the model, verify.
+- NOT opened yet: NODE CI-HUB-HOSTED-TESTS (hub tests on ubuntu-latest with self-hosted fallback; no secrets on the hosted path; passed=true, never steps=0; if minutes run out, an owner card for the billing cap). Open it next.
