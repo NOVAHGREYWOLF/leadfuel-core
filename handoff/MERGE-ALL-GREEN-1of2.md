@@ -15,7 +15,7 @@ Re-read every state line below with gh, git ls-remote and the lock dirs before a
   - signal#31: 4633b82; applied 2026-10-05; deploy 250a640c SUCCESS.
   - scope#26: 2938e6e; deploy 6c4578cf SUCCESS.
   - orbit#32: 894dc71; deploy check was running.
-  - echo#56: a35d5c9; applied ~09:45Z. Its deploy was NOT confirmed: check `railway deployment list --service echo` from F:eadfueleposecho.
+  - echo#56: a35d5c9; applied ~09:45Z. Its deploy was NOT confirmed: check `railway deployment list --service echo` from F:\Leadfuel\repos\echo. rw.ps1 and wait_ci.sh are copied next to this note.eposecho.
 - reach#37: merged and applied by NODE · RAILWAY-SET-A 2/2 (ROUTER #19), not by me.
 - Set A (remove railway.toml): ROUTER #13 took these on the owner's card q187. I have not verified them.
 
