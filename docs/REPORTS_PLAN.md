@@ -42,3 +42,27 @@ Steps 1 and 2 are independent. 3 to 6 run in order.
 - Confirm the problem still exists before changing anything.
 - Branch, tests and lint, draft PR, then stop. Never merge or deploy.
 - Spend approvals stay a separate immediate email but must be sent from Prime.
+
+## Completion status (reconciled 2026-10-02 UTC, task PR-leadfuel-core-7)
+Public repo: ids, titles and status only. "Verified" = read with `gh` against `NOVAHGREYWOLF/novahub` on this date; "reported" = taken from the named desk's session, not re-checked. Statuses move; re-read before acting.
+
+The plan's steps 1 to 6 above map to the conductor tasks below. Steps 3 and 4 shipped before this reconciliation (novahub #672, #680, #683). The old `.conductor/` state branch (leadfuel-core PR 7) is stale: it still lists P6 as in review and P7 as in progress.
+
+| Task | What | State | Basis |
+|---|---|---|---|
+| P5-F4 | auto-archive line in the briefing (novahub#692) | merged | verified |
+| P6 | Scope and Core daily reports (novahub#694) | merged | verified; the "dormant" test failure noted earlier is moot, ask the reports desk only if it recurs |
+| P7 | Estate weekly report (novahub#696) | merged | verified; do not redo |
+| P8 | DMARC parser and Deliverability report (novahub#695) | open draft, checks green | verified. Still owed: an ingest that delivers the report mail; where reports land (Router card Q23) is unanswered. P8 desk owns #695 |
+| P5-F5 | scan source coverage once per pull (novahub#700) | open draft | verified state; the citation-mislabel half is reported as not yet reproduced |
+| P9 | attach every report as a PDF | no PR | verified (none open). PDF look and engine is an owner decision (Router card Q33) |
+| P10 | end-to-end check, briefing lands with every attachment | closed as links-only | reported by its desk: the briefing sends signed links, no attachments; PDF check unbuilt; live-inbox send not run (needs owner approval). Re-open after P9 |
+
+## What is left, in order
+1. **P8 ingest** (blocked on Q23): land #695 once the owner says where reports arrive, then build the ingest.
+2. **Q33**: owner picks the PDF engine and look. Nothing in P9 starts before this.
+3. **P9**: one PDF per report, Ops combined, built on the chosen engine. The HTML attachments stay off (#513, junked by the mail filter).
+4. **P10 re-open**: one real briefing to the owner's inbox with every attachment. This leaves the machine, so it needs the owner's approval first.
+5. **P5-F5**: finish #700 and say what the gates mean on its head before merge.
+
+Rules that still hold: draft PRs, bare `pytest` plus the repo gate script, never merge on a stale base, nothing transmits without the owner.
