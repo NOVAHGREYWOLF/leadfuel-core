@@ -1,0 +1,280 @@
+<title>Sessions Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column, same family as the Merge desk. Keeper freshness line, stage strip, keeper flags, filters, then sidebar groups of session rows.
+   Colour: the Merge desk's cool paper greys and teal accent; stage colours carry meaning (blue = working, amber = waiting on a person, purple = waiting for a CI slot, green = done, grey = idle). */
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --ink:#15201f; --muted:#566562; --line:#d3dbd9; --line-soft:#e5eae8;
+  --accent:#0a6e6a; --accent-ink:#ffffff; --accent-soft:#dcf0ee;
+  --go:#2f6b1f; --go-soft:#e1f0da; --run:#31506d; --run-soft:#e2ebf4; --bad:#a8261d; --bad-soft:#fbe6e3; --wait:#9a5400; --wait-soft:#fcefd9; --idle:#5d6663; --idle-soft:#eceeed; --train:#5b3f8c; --train-soft:#ece6f6;
+  --font-body:'Hanken Grotesk','Segoe UI',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1413; --surface:#161d1c; --ink:#e4ecea; --muted:#9bacaa; --line:#2a3634; --line-soft:#212b29;
+    --accent:#4fc1ba; --accent-ink:#06201e; --accent-soft:#15302e;
+    --go:#8fd37a; --go-soft:#1c2e17; --run:#8fb6dc; --run-soft:#17283a; --bad:#ff9087; --bad-soft:#34191a; --wait:#f0b15c; --wait-soft:#2e2312; --idle:#a2b0ad; --idle-soft:#1f2927; --train:#c4a8f0; --train-soft:#2a2040;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1413; --surface:#161d1c; --ink:#e4ecea; --muted:#9bacaa; --line:#2a3634; --line-soft:#212b29;
+  --accent:#4fc1ba; --accent-ink:#06201e; --accent-soft:#15302e;
+  --go:#8fd37a; --go-soft:#1c2e17; --run:#8fb6dc; --run-soft:#17283a; --bad:#ff9087; --bad-soft:#34191a; --wait:#f0b15c; --wait-soft:#2e2312; --idle:#a2b0ad; --idle-soft:#1f2927; --train:#c4a8f0; --train-soft:#2a2040;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;padding-inline:16px}
+.wrap{max-width:1000px;margin-inline:auto;padding-block:20px 64px}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+h3{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-size:.84em}
+.mast{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px;max-width:72ch}
+.fresh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:12px;font-size:13.5px;color:var(--muted)}
+.fresh .pill{padding:2px 10px;border-radius:999px;font-weight:600;font-size:12.5px}
+.fresh .ok{background:var(--go-soft);color:var(--go)}
+.fresh .stale{background:var(--bad-soft);color:var(--bad)}
+.fresh .unk{background:var(--idle-soft);color:var(--idle)}
+.banner{margin-block:10px;padding:10px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad);font-size:14px}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-block:16px 12px}
+.stat{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0;text-align:left}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:12.5px;color:var(--muted)}
+.stat.working b{color:var(--run)}.stat.waiting-owner b{color:var(--wait)}.stat.waiting-ci b{color:var(--train)}.stat.done b{color:var(--go)}
+.stat[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.flags{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+.flagrow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;font-size:13.5px}
+.flagrow .what{min-width:0;flex:1 1 260px;color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:10px}
+.tools input[type=search]{flex:1 1 200px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.tools select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
+.fchip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600}
+.fchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fchip .c{opacity:.75;margin-left:4px;font-variant-numeric:tabular-nums}
+.grp{margin-bottom:18px}
+.grp>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding-block:4px}
+.grp>summary .n{font-family:var(--font-mono);font-size:12.5px;color:var(--muted)}
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;margin-top:6px}
+.row{border-top:1px solid var(--line-soft);padding:11px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.row:first-child{border-top:0}
+.row.flagged{background:var(--wait-soft)}
+.title{overflow-wrap:anywhere;font-weight:600}
+.title .sid{font-family:var(--font-mono);font-size:.8em;font-weight:400;color:var(--muted);margin-right:8px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:12px;padding:1px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;font-weight:600}
+.s-working{background:var(--run-soft);color:var(--run);border-color:transparent}
+.s-waiting-owner{background:var(--wait-soft);color:var(--wait);border-color:transparent}
+.s-waiting-ci{background:var(--train-soft);color:var(--train);border-color:transparent}
+.s-pr-open{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.s-done{background:var(--go-soft);color:var(--go);border:1px solid var(--go)}
+.s-idle-stale{background:var(--idle-soft);color:var(--idle);border-color:transparent}
+.v-keep{background:none;color:var(--muted)}
+.v-rotate{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.v-archive{background:var(--go-soft);color:var(--go);border-color:transparent}
+.f{background:var(--wait-soft);color:var(--wait);border-color:transparent}
+.r-role{background:none;border-style:dashed}
+.bar{position:relative;height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;width:120px;max-width:40vw;display:inline-block;vertical-align:middle;margin-right:6px}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
+.bar.over i{background:var(--bad)}
+.status{font-family:var(--font-mono);font-size:12.5px;overflow-wrap:anywhere;color:var(--ink);background:var(--bg);border-radius:6px;padding:4px 8px}
+.more{border:0;background:none;color:var(--accent);padding:0;font-size:13px;text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
+.why{font-size:13px;color:var(--muted);overflow-wrap:anywhere;border-left:2px solid var(--line);padding-left:10px;display:flex;flex-direction:column;gap:2px}
+.gate{display:flex;flex-wrap:wrap;gap:6px}
+.g-yes{background:var(--go-soft);color:var(--go);border-color:transparent}
+.g-no{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.empty{padding:22px 16px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.feed{margin-top:28px;display:flex;flex-direction:column;gap:8px}
+.feed pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--font-mono);font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+footer{margin-top:24px;font-size:12.5px;color:var(--muted);max-width:75ch;display:flex;flex-direction:column;gap:6px}
+footer ol{margin:0;padding-left:18px}
+@media (prefers-reduced-motion:no-preference){.fchip,.stat{transition:background .12s,border-color .12s}}
+</style>
+
+<div class="wrap">
+  <div class="mast"><h1>Sessions desk</h1><span class="mono" id="clock"></span></div>
+  <p class="sub">Every local session, filed by sidebar group: what it is doing and how far it is toward done. A keeper refreshes it every 30 minutes. Nothing here archives, stops or messages a session; flagged sessions go to the router.</p>
+  <div class="fresh" id="fresh"></div>
+  <div id="banner" class="banner" hidden></div>
+  <div class="strip" id="strip"></div>
+  <div class="flags" id="flags" hidden></div>
+  <div class="tools">
+    <input type="search" id="search" placeholder="Search title, task id, session id" aria-label="Search sessions">
+    <select id="rolesel" aria-label="Filter by role"><option value="all">All roles</option><option value="conductor">Conductor</option><option value="router">Router</option><option value="desk">Desk</option><option value="unfiled">Unfiled</option></select>
+    <select id="verdsel" aria-label="Filter by verdict"><option value="all">Any verdict</option><option value="keep">Keep</option><option value="rotate">Rotate</option><option value="archive">Archive</option></select>
+  </div>
+  <div id="list"></div>
+  <section class="feed" id="feed" hidden><h3>Keeper digests</h3><div id="feedlist"></div></section>
+  <footer id="foot">
+    <p>Times are Pacific. Size is the session's context window against its handoff cap (300k; 120k for Haiku). The app reports size only for a running session, so a stopped one shows its last reading or unknown.</p>
+    <p>Percent toward done counts five milestones: PR open, checks green, PR merged, STATUS: DONE reported, nothing unpushed. It reads unknown while any of them is unknown.</p>
+    <div id="gaterules"></div>
+  </footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s);};
+function h(tag,attrs){
+  var e=document.createElement(tag);
+  if(attrs){for(var k in attrs){var v=attrs[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else e.setAttribute(k,v===true?'':v);}}
+  for(var i=2;i<arguments.length;i++){var c=arguments[i];
+    (Array.isArray(c)?c:[c]).forEach(function(x){if(x==null||x===false)return;e.append(x.nodeType?x:document.createTextNode(String(x)));});}
+  return e;
+}
+var STL={'working':'Working','waiting-owner':'Waiting on owner','waiting-ci':'Waiting on CI slot','pr-open':'PR open','done':'Done','idle-stale':'Idle, stale'};
+var STORDER=['working','waiting-owner','waiting-ci','pr-open','done','idle-stale'];
+var FLAGL={'needed-stopped':['Needed but stopped','Open task, not running, no successor, quiet for an hour or more.'],
+  'quiet-running':['Running but silent','The app says running, but nothing has happened for 3 hours or more. Possibly hung; read it before acting.'],
+  'past-cap':['Past the cap, no successor','Context is over the handoff cap and no later session holds the task.'],
+  'archivable':['Ready for the archive gate','All five gate cells pass. Listed only; the router archives one at a time after its own check.'],
+  'duplicate':['Duplicates','Two live sessions hold the same task and count, or both run at once.'],
+  'orphan':['No task','A desk whose title carries no task id (LANE · TASK n/m · topic).']};
+var FLORDER=['past-cap','quiet-running','needed-stopped','duplicate','archivable','orphan'];
+var S={snap:null,feed:[],text:'',role:'all',verdict:'all',st:{},flag:null,more:{},closed:{},db:null};
+var pending=false;
+
+function pt(v){
+  if(!v)return 'unknown';
+  var d=new Date(v);if(isNaN(d.getTime()))return String(v);
+  try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(d);}catch(e){return String(v)+' (UTC)';}
+}
+function dur(min){
+  if(min==null||isNaN(min))return 'unknown';
+  if(min<0)min=0;if(min<1)return '<1m';if(min<90)return Math.round(min)+'m';
+  var hh=Math.floor(min/60);if(hh<48)return hh+'h '+Math.round(min-hh*60)+'m';
+  return Math.floor(hh/24)+'d '+(hh%24)+'h';
+}
+function ago(v){if(!v)return null;var d=new Date(v);if(isNaN(d.getTime()))return null;return (Date.now()-d.getTime())/60000;}
+function k(n){return n==null?'unknown':Math.round(n/1000)+'k';}
+function banner(m){var b=$('#banner');b.textContent=m;b.hidden=!m;}
+
+function rowEl(r){
+  var opened=!!S.more[r.id];
+  var el=h('div',{class:'row'+(r.flags&&r.flags.length&&r.flags.join()!=='orphan'?' flagged':'')});
+  el.append(h('div',{class:'title'},h('span',{class:'sid',text:r.short}),r.title||'(untitled)'));
+  var chips=h('div',{class:'chips'},
+    h('span',{class:'chip s-'+r.stage,text:STL[r.stage]||r.stage}),
+    h('span',{class:'chip r-role',text:r.role}),
+    h('span',{class:'chip v-'+r.verdict,text:r.verdict==='archive'?'Archive (listed)':r.verdict[0].toUpperCase()+r.verdict.slice(1)}));
+  (r.flags||[]).forEach(function(f){chips.append(h('span',{class:'chip f',text:(FLAGL[f]||[f])[0]}));});
+  el.append(chips);
+  var pct=r.percent==null?'unknown':r.percent+'%';
+  var size;
+  if(r.tokens==null){size=h('span',{},'Size ',h('b',{text:'unknown'}));}
+  else{var w=Math.min(100,100*r.tokens/(r.cap||300000));
+    size=h('span',{},'Size ',h('span',{class:'bar'+(r.tokens>=r.cap?' over':''),'aria-hidden':'true'},h('i',{style:'width:'+w.toFixed(0)+'%'})),h('b',{text:k(r.tokens)+' of '+k(r.cap)}));}
+  el.append(h('div',{class:'meta'},
+    h('span',{},'Task ',h('b',{class:'mono',text:r.task?(r.task+(r.n?' '+r.n+'/'+r.m:'')):'none'})),
+    h('span',{},'Toward done ',h('b',{text:pct})),
+    r.pr_number!=null?h('span',{},'PR ',h('b',{text:'#'+r.pr_number+(r.pr&&r.pr.state?' '+r.pr.state.toLowerCase()+(r.pr.draft?' draft':''):r.pr_badge?' '+r.pr_badge+' (app badge)':'')})):null,
+    h('span',{},r.running?'Running, last activity ':'Last activity ',h('b',{text:pt(r.last)})),
+    size));
+  if(r.status_line)el.append(h('div',{class:'status',text:r.status_line}));
+  el.append(h('button',{type:'button',class:'more','aria-expanded':opened?'true':'false',onclick:function(){S.more[r.id]=!S.more[r.id];render();}},opened?'Hide detail':'How these were worked out'));
+  if(opened){
+    var g=r.gate||{};
+    el.append(h('div',{class:'why'},
+      h('div',{text:'Session '+r.id}),
+      h('div',{text:'Stage: '+(r.stage_basis||'not recorded')}),
+      h('div',{text:'Toward done: '+(r.percent_basis||'not recorded')}),
+      h('div',{text:'Verdict: '+(r.verdict_basis||'not recorded')}),
+      h('div',{text:'Unpushed: '+(r.unpushed_basis||'not read')}),
+      h('div',{text:'Size: '+(r.tokens==null?'not reported (the app reports size only while a session runs)':'read '+pt(r.size_at)+(r.model?' ('+r.model+')':''))}),
+      h('div',{text:'Status line: '+(r.read_at?'read from the transcript '+pt(r.read_at):'transcript not read yet')}),
+      r.slot?h('div',{text:'Slot: '+(r.slot.kind==='holds'?'holds ':'waits for ')+r.slot.lock}):null,
+      h('div',{class:'gate'},['merged','report','handoff','pushed','decision'].map(function(c){
+        var v=g[c]||'unknown';var good=(c==='decision'?v==='no':(v==='yes'||(c==='merged'&&v==='none')));
+        var bad=(c==='decision'?v==='yes':v==='no');
+        return h('span',{class:'chip '+(good?'g-yes':bad?'g-no':''),text:c+': '+v});}))));
+  }
+  return el;
+}
+
+function render(){
+  var F=S.snap;
+  var fresh=$('#fresh');fresh.replaceChildren();
+  var strip=$('#strip');strip.replaceChildren();
+  $('#clock').textContent=pt(new Date().toISOString());
+  if(!F){
+    fresh.append(h('span',{class:'pill unk',text:'No refresh yet'}),h('span',{text:S.db===false?'This view cannot read the store.':'The keeper has not written a refresh. Sessions appear after its first run.'}));
+    $('#list').replaceChildren(h('div',{class:'empty',text:'Nothing to show yet.'}));$('#flags').hidden=true;return;
+  }
+  var age=ago(F.refreshed_at),limit=F.stale_after_min||45,stale=age==null||age>limit;
+  fresh.append(h('span',{class:'pill '+(age==null?'unk':stale?'stale':'ok'),text:age==null?'Unknown':stale?'Stale':'Fresh'}),
+    h('span',{text:'Last refresh '+pt(F.refreshed_at)+(age!=null?' ('+dur(age)+' ago)':'')+'. '+(stale?'Older than '+limit+' minutes, so stages below may have moved.':'The keeper runs every 30 minutes.')}));
+  var sm=F.summary||{};
+  strip.append(h('div',{class:'stat'},h('b',{text:String(sm.sessions==null?'unknown':sm.sessions)}),h('span',{text:'sessions'})));
+  STORDER.forEach(function(s){
+    strip.append(h('button',{type:'button',class:'stat '+s,'aria-pressed':S.st[s]?'true':'false',onclick:function(){S.st[s]=!S.st[s];render();}},h('b',{text:String(sm[s]||0)}),h('span',{text:STL[s]})));
+  });
+  var fl=F.flags||{},fbox=$('#flags');fbox.replaceChildren();var anyF=false;
+  fbox.append(h('h3',{text:'Keeper flags'}));
+  FLORDER.forEach(function(f){var ids=fl[f]||[];if(!ids.length)return;anyF=true;
+    fbox.append(h('div',{class:'flagrow'},
+      h('button',{type:'button',class:'fchip','aria-pressed':S.flag===f?'true':'false',onclick:function(){S.flag=S.flag===f?null:f;render();}},FLAGL[f][0],h('span',{class:'c',text:String(ids.length)})),
+      h('span',{class:'what',text:FLAGL[f][1]})));});
+  fbox.hidden=!anyF;
+  var rules=$('#gaterules');rules.replaceChildren();
+  if(F.gate_rules&&F.gate_rules.length){rules.append(h('p',{text:'Verdicts apply the existing archive gate ('+(F.gate_source||'Conductor desk')+'):'}),h('ol',{},F.gate_rules.map(function(t){return h('li',{text:t});})));}
+
+  var rows=F.rows||[];
+  var anySt=STORDER.some(function(s){return S.st[s];});
+  var q=S.text.toLowerCase();
+  var list=rows.filter(function(r){
+    if(S.role!=='all'&&r.role!==S.role)return false;
+    if(S.verdict!=='all'&&r.verdict!==S.verdict)return false;
+    if(anySt&&!S.st[r.stage])return false;
+    if(S.flag&&(r.flags||[]).indexOf(S.flag)<0)return false;
+    if(q&&((r.title||'')+' '+(r.task||'')+' '+r.id+' '+(r.group||'')).toLowerCase().indexOf(q)<0)return false;
+    return true;});
+  var root=$('#list');root.replaceChildren();
+  if(!list.length){root.append(h('div',{class:'empty',text:'No sessions match. Clear the search or the filters.'}));}
+  var by={};list.forEach(function(r){(by[r.group]=by[r.group]||[]).push(r);});
+  var gorder=['CONDUCTOR','ROUTER'];
+  Object.keys(by).sort(function(a,b){var ia=gorder.indexOf(a),ib=gorder.indexOf(b);if(ia<0)ia=9;if(ib<0)ib=9;return ia-ib||(a<b?-1:1);}).forEach(function(g){
+    var items=by[g];
+    var active=items.filter(function(r){return r.stage!=='done'&&r.stage!=='idle-stale';}).length;
+    var open=S.closed[g]!==undefined?!S.closed[g]:(active>0||!!S.flag||!!q);
+    var det=h('details',{class:'grp',open:open,ontoggle:function(e){S.closed[g]=!e.target.open;}},
+      h('summary',{},h('h2',{text:g}),h('span',{class:'n',text:items.length+' sessions, '+active+' active'})),
+      h('div',{class:'rows'},items.map(rowEl)));
+    root.append(det);
+  });
+  var fd=$('#feedlist');fd.replaceChildren();
+  S.feed.slice(0,4).forEach(function(d){fd.append(h('div',{},h('div',{class:'meta',text:pt(d.at)}),h('pre',{text:d.text||''})));});
+  $('#feed').hidden=!S.feed.length;
+}
+function schedule(){var a=document.activeElement;if(a&&a.tagName==='INPUT'){pending=true;return;}render();}
+document.addEventListener('focusout',function(){setTimeout(function(){if(pending){pending=false;render();}},0);});
+$('#search').addEventListener('input',function(e){S.text=e.target.value;render();});
+$('#rolesel').addEventListener('change',function(e){S.role=e.target.value;render();});
+$('#verdsel').addEventListener('change',function(e){S.verdict=e.target.value;render();});
+setInterval(function(){var a=document.activeElement;if(!(a&&a.tagName==='INPUT'))render();},60000);
+render();
+
+(async function(){
+  var c=window.claude;
+  if(!c||!c.use){S.db=false;banner('This copy cannot read the keeper’s refresh. Open Sessions desk from your claude.ai artifacts.');render();return;}
+  var db=null;try{db=await c.use('db');}catch(e){db=null;}
+  if(!db){S.db=false;banner('The refresh cannot be read in this view. Open Sessions desk from your claude.ai artifacts while signed in.');render();return;}
+  S.db=true;
+  function stop(w){return function(e){banner(w+' stopped updating ('+(e&&e.code?e.code:'error')+'). Reload the page.');};}
+  db.collection('snapshot').onSnapshot(function(s){var cur=null;s.docs.forEach(function(d){if(d.id==='current')cur=d.data();});S.snap=cur;schedule();},stop('The refresh'));
+  db.collection('feed').onSnapshot(function(s){var a=[];s.docs.forEach(function(d){if(d.id==='latest')return;var x=d.data();if(x&&x.text)a.push(x);});a.sort(function(x,y){return x.at<y.at?1:-1;});S.feed=a;schedule();},stop('The digest feed'));
+})();
+})();
+</script>
