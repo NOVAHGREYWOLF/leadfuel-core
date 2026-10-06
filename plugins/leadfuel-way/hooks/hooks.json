@@ -1,5 +1,5 @@
 {
-  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor. One script, five events.",
+  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor, background agents judged as agents (not as their parent session). One script, five events.",
   "hooks": {
     "SessionStart": [
       {
@@ -57,7 +57,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*__archive_session",
+        "matcher": "mcp__.*__(archive_session|move_sessions|set_session_title)",
         "hooks": [
           {
             "type": "command",
