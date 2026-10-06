@@ -40,7 +40,11 @@ CALL_S="${CALL_S:-30}"           # cap on any one docker/gh call (exit 124 = it 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # The captive-portal probe: a command, run as `timeout PROBE_S $CAPTIVE_PROBE`. Source of truth is
 # leadfuel-core node/captive_probe.py; the copy beside this script is what runs on this PC.
-CAPTIVE_PROBE="${CAPTIVE_PROBE:-python $DIR/captive_probe.py}"
+# python.exe is not an MSYS program: handed /f/novah/ci/captive_probe.py (what the scheduled task
+# gives us) it looks on the wrong drive and finds nothing. cygpath gives it the Windows form;
+# there is no cygpath on Linux, where the path is already right.
+winpath() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
+CAPTIVE_PROBE="${CAPTIVE_PROBE:-python $(winpath "$DIR/captive_probe.py")}"
 PROBE_S="${PROBE_S:-60}"
 
 stalled=(); unknown=(); evidence=()

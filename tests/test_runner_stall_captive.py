@@ -87,6 +87,19 @@ def first_line(out):
     return out.splitlines()[0]
 
 
+def test_the_default_probe_command_is_python_with_the_windows_form_of_the_path(box, tmp_path):
+    """Found by the first live run on this PC: the scheduled task passes /f/novah/ci/..., and
+    python.exe cannot open that. Every other test sets CAPTIVE_PROBE itself, so none saw it."""
+    bindir = tmp_path / "bin"
+    _write(str(bindir / "cygpath"), '#!/usr/bin/env bash\necho "WIN:$2"\n')
+    _write(str(bindir / "python"), '#!/usr/bin/env bash\necho "python $*" >> "$STUB_LOG"\necho "ONLINE stub"\n')
+    rc, out, calls = box("ONLINE", CAPTIVE_PROBE="")     # empty -> the script's own default
+    assert rc == 0 and first_line(out) == "OK", out
+    pycalls = [c for c in calls if c.startswith("python ")]
+    assert len(pycalls) == 1 and re.fullmatch(r"python WIN:.*[\\/]captive_probe\.py", pycalls[0]), calls
+    assert "captive probe: ONLINE stub" in out
+
+
 def docker_calls(calls):
     return [c for c in calls if c.startswith(("docker", "gh"))]
 
