@@ -8,9 +8,15 @@ Session local_09713dbf. Router: ROUTER #24 local_17705746. Blocked, not at cap. 
 - Re-checked every PR the audit tied to a live session with gh at 20:1xZ: none changed state since 17:30Z.
 - Sent STATUS BLOCKED and ASK (f6a9997a) to ROUTER #24 by session id: delivered, turn started, not confirmed read.
 
+## Update 21:3xZ: owner answered q293=A (21:23Z) and q313=B (21:19Z), relayed by #24 and verified on the Router desk
+- q293=A means: archive every session that passes the check (PR merged or none, DONE or a final report, handoff saved, nothing unpushed), including size-limited ones, and old routers once their desks are finished. Check children first.
+- Archived under it (verified with gh, ls-remote, get_session and list_events): ATLAS-B1 70fae0d7 (hub #740 merged; efab85d = remote; owner question settled by hub #765) and WAY-1 12597f42 (core #10 merged; WAY-1-001.md on main; the local merge 5a68c2f has the same tree as git merge-tree of its two remote parents).
+- q313=B: **keep f6a9997a.** WATCH RESEND-CHECK confirms first, then #24 archives it.
+- Sent to #24, queued (#24 was mid-turn): an ASK on PR-TRIAGE 1bfe7e56 (passes the checks; the owner's "hand the 16 green PRs to MERGE-TRAIN" never went out; default A, archive). Also flagged: two SITES-FUNNELS 3/3 sessions (4ad294c5, 349a38bb) and the stale lock file `.locks/full-suite.running/20261002T232811Z-DOORS-ATLAS-B1-*`.
+
 ## Held (re-read before acting)
-- **q293 unanswered** (Router desk). It alone holds WAY-1 12597f42, ATLAS-B1 70fae0d7 and the other sessions on q281's list (q281=B: keep open until a successor).
-- **f6a9997a** (WATCH Resend routine run, 09-24) has no report, so it fails the gate. Card **q313**, default A (archive). Archive it only on the owner's answer. Verified 20:3xZ: its task etgai-resend-verification is absent from the scheduler, and it has no worktree.
+- (superseded by the update above) q293 used to hold WAY-1 and ATLAS-B1. The others on q281's list still owe work or have open PRs, so they stay.
+- **f6a9997a** (WATCH Resend routine run, 09-24): keep it (q313=B). Verified 20:3xZ: its task etgai-resend-verification is absent from the scheduler, and it has no worktree.
 - **#24 rulings, 20:2xZ:** 1ba6b145 was archived by #24 (verified). The SITES-FUNNELS 3/3 chip is task_524b1af8, and 3/3 archives 2/2 itself. Hold all old coordinators. Stay stopped until #24 writes.
 - **Merge desk refresh run 73bb1e3c** has hung on an ArtifactData call since 17:34Z, so no refreshes run. Reported to #24 (its ruling; not touched).
 - **Old coordinators:** each still parents an unfinished desk. Conductor 005 083bdfe0 parents ROUTER #11, which parents 874ae11a and be232c9f (unpushed a920053). #12 is archived; #13 parents #14. #23 is archived. Do not archive any of them until their children are finished, or the owner detaches them.
