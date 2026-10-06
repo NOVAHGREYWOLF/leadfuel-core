@@ -38,12 +38,12 @@ def newest_first(*events):
 
 # ---------------------------------------------------------------- parse_events
 
-def _xml(rid, event_id, data):
+def _xml(rid, event_id, data, at="2026-10-06T02:13:31.1004607Z"):
     fields = "".join("<Data Name='%s'>%s</Data>" % (k, v) for k, v in data.items())
     return ("<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System>"
-            "<EventID>%d</EventID><TimeCreated SystemTime='2026-10-06T02:13:31.1004607Z'/>"
+            "<EventID>%d</EventID><TimeCreated SystemTime='%s'/>"
             "<EventRecordID>%d</EventRecordID></System><EventData>%s</EventData></Event>"
-            % (event_id, rid, fields))
+            % (event_id, at, rid, fields))
 
 
 def test_parse_reads_both_event_kinds_newest_first():
@@ -296,6 +296,47 @@ def test_the_log_reader_gives_the_child_no_stdin(monkeypatch):
     cp.read_ncsi_events()
     assert seen["stdin"] is cp.subprocess.DEVNULL
     assert seen["cmd"][0] == "wevtutil" and "/rd:true" in seen["cmd"]
+
+
+def _episode_log():
+    """02:13:31Z hotspot detected, 02:17:49Z again, 02:23:03Z Internet again (the 10-06 episode)."""
+    cap = lambda rid, at, c, r: _xml(rid, 4042, {"IfLuid": WIFI, "Family": 0, "Capability": c,
+                                                 "CapabilityChangeReason": r}, at)
+    return (cap(1, "2026-10-06T02:00:00.0000000Z", INTERNET, ACTIVE_OK)
+            + cap(2, "2026-10-06T02:13:31.0000000Z", LOCAL, HOTSPOT_FAIL)
+            + _xml(3, 4038, {"IfLuid": WIFI, "Family": 0}, "2026-10-06T02:17:49.0000000Z")
+            + cap(4, "2026-10-06T02:23:03.0000000Z", INTERNET, ACTIVE_OK))
+
+
+@pytest.mark.parametrize("as_of,state", [
+    ("2026-10-06T02:10:00Z", "online"),
+    ("2026-10-06T02:18:00Z", "captive"),     # inside the episode
+    ("2026-10-06T02:23:03Z", "online"),      # the moment it cleared
+    ("2026-10-06T03:00:00Z", "online"),
+    (None, "online"),                        # no replay: the whole log, newest event wins
+])
+def test_windows_signal_replays_the_log_as_of_a_past_time(monkeypatch, as_of, state):
+    monkeypatch.setattr(cp, "default_route_luid", lambda: (WIFI, None))
+    monkeypatch.setattr(cp, "read_ncsi_events", lambda *a, **k: _episode_log())
+    assert cp.windows_signal(as_of).state == state
+
+
+def test_a_replay_before_the_log_began_is_unknown_not_online(monkeypatch):
+    monkeypatch.setattr(cp, "default_route_luid", lambda: (WIFI, None))
+    monkeypatch.setattr(cp, "read_ncsi_events", lambda *a, **k: _episode_log())
+    assert cp.windows_signal("2026-09-01T00:00:00Z").state == "unknown"
+
+
+def test_as_of_replay_sends_nothing_and_can_say_captive_or_unknown_but_never_online(monkeypatch):
+    monkeypatch.setattr(cp, "default_route_luid", lambda: (WIFI, None))
+    monkeypatch.setattr(cp, "read_ncsi_events", lambda *a, **k: _episode_log())
+    monkeypatch.setattr(cp, "http_signal", lambda *a, **k: (_ for _ in ()).throw(AssertionError("sent a GET")))
+    out = io.StringIO()
+    assert cp.main(["--as-of", "2026-10-06T02:18:00Z"], out=out) == 3
+    assert out.getvalue().startswith("CAPTIVE ") and "replay as of 2026-10-06T02:18:00Z" in out.getvalue()
+    out = io.StringIO()
+    assert cp.main(["--as-of", "2026-10-06T03:00:00Z"], out=out) == 2      # online in the log, unproven
+    assert out.getvalue().startswith("UNKNOWN ")
 
 
 # ---------------------------------------------------------------- main: output, exit codes, --wait

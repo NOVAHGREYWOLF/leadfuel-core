@@ -32,6 +32,7 @@ Usage:
     python captive_probe.py                       one check
     python captive_probe.py --wait 540            while CAPTIVE, re-check every 60 s for up to 540 s
     python captive_probe.py --no-http             Windows' log only; nothing leaves the machine
+    python captive_probe.py --as-of 2026-10-06T02:18:00Z    replay the log as of a past time (no http)
 
 Stdlib only. The source and tests live in leadfuel-core (node/); the runner stall check runs a
 copy next to itself in the CI notes folder.
@@ -192,12 +193,17 @@ def read_ncsi_events(count=500, timeout=20):
     return out.stdout.decode("utf-8", "replace")
 
 
-def windows_signal():
+def windows_signal(as_of=None):
+    """as_of: replay, "what would Windows' log have said at this UTC time" (YYYY-MM-DDTHH:MM:SS...).
+    Reads the same log, ignores events after that time. For proving a verdict against a known past
+    episode; the default is now."""
     luid, why = default_route_luid()
     if luid is None:
         return Signal("unknown", "windows: " + why)
     try:
-        events, bad = parse_events(read_ncsi_events())
+        events, bad = parse_events(read_ncsi_events(count=5000 if as_of else 500))
+        if as_of:
+            events = [e for e in events if e.time[:19] <= as_of[:19]]
     except (OSError, subprocess.SubprocessError, ET.ParseError) as exc:
         return Signal("unknown", "windows: cannot read the NCSI log (%s)" % exc)
     if bad and not events:
@@ -296,6 +302,17 @@ def check(use_http=True, win_fn=windows_signal, web_fn=http_signal):
     return verdict, [win.detail, web.detail], summary(verdict, win, web)
 
 
+def replay_check(as_of):
+    """A check_fn that replays Windows' log as of a past time. No http probe: the past cannot be
+    probed, so the verdict is CAPTIVE if Windows had seen a portal, else UNKNOWN, never ONLINE."""
+    def run(use_http=True):
+        win = windows_signal(as_of)
+        web = Signal("skipped", "http: not run (--as-of replays Windows' log only)")
+        verdict = combine(win, web)
+        return verdict, [win.detail, "replay as of %s" % as_of], summary(verdict, win, web)
+    return run
+
+
 def main(argv=None, out=sys.stdout, sleep=time.sleep, clock=time.monotonic, check_fn=check):
     ap = argparse.ArgumentParser(description="Is this PC behind a captive portal right now?")
     ap.add_argument("--no-http", action="store_true",
@@ -304,8 +321,13 @@ def main(argv=None, out=sys.stdout, sleep=time.sleep, clock=time.monotonic, chec
                     help="while CAPTIVE, re-check until it clears or SECONDS have passed")
     ap.add_argument("--every", type=int, default=60, metavar="SECONDS",
                     help="re-check interval for --wait (default 60, minimum 15)")
+    ap.add_argument("--as-of", metavar="UTC", help="replay Windows' log as it stood at this UTC time,"
+                    " e.g. 2026-10-06T02:18:00Z (sends nothing; for proving a verdict against a past episode)")
     args = ap.parse_args(argv)
     every = max(15, args.every)
+    if args.as_of:
+        check_fn = replay_check(args.as_of)
+        args.wait = 0
 
     started = clock()
     verdict, evidence, why = check_fn(use_http=not args.no_http)
