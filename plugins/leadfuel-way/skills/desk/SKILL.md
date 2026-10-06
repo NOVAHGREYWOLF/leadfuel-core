@@ -37,3 +37,10 @@ DEFAULT: A (why)
 ## Finish or hand off
 - Done: `STATUS: DONE` with the PR, and the final report as the last message. On DONE the router archives you through its gate (PR really merged, a final report, nothing unpushed). Do not archive yourself.
 - At the cap with work left, or blocked: `leadfuel-way:handoff` (desk row), then **stay open** (owner, 2026-10-02). You never leave before your successor is live: the router opens a fresh desk with your task id and title, count advanced, and archives you only once that desk is live in the lane's group and nothing of yours is unpushed.
+
+## If you are a background agent
+A router may run you with the Agent tool instead of opening a session (pilot, AUTO-DESKS). You can tell: your brief says so, there was no session-start banner, and your working directory is `.claude/worktrees/agent-<id>`. Everything above holds, except:
+- **You are not a sidebar session.** Never title, file or archive anything: `self` in a session tool is the router that started you, and the hook refuses `set_session_title`, `move_sessions` and `archive_session` on it. Skip the way's first-turn titling step.
+- **Your worktree is made for you**, in the router's repo. Fetch and branch from the base your brief names. For a task in another repo, take a worktree there (`git worktree add .claude/worktrees/<task> -b <task>`); the hook lets you edit only a linked worktree that is not the router's own checkout.
+- **Your report is your final message**: the STATUS (or ASK) block, five lines at most after the first. It reaches the router on its own; `SendMessage` to `main` also reaches it mid-task if you must ask before you finish.
+- **At your size cap** (the guard measures your own transcript): commit and push, write the handoff note in the repo, and end with `STATUS: CONTINUING` naming its path. The router starts a fresh agent from it.

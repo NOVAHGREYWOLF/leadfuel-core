@@ -11,7 +11,7 @@ This skill is the shared part. Your role adds one more: `leadfuel-way:conductor`
 
 ## 1. First turn, every session
 1. **Read the banner.** The plugin's session-start hook puts a block headed `THE WAY` in your context: your title, your role, your caps. **No banner means the hooks are not live.** Say so once to the owner, and hand off by your own judgment at the caps in section 5.
-2. **Title and group yourself.** Title is `LANE · topic` (a desk), `ROUTER #N` (a router), or `CONDUCTOR · topic`. Then `move_sessions` with `session_ids: ["self"]` into the sidebar group of that name. Nothing stays ungrouped. The title is how the hooks know your role, so set it before you work.
+2. **Title and group yourself.** Title is `LANE · topic` (a desk), `ROUTER #N` (a router), or `CONDUCTOR · topic`. Then `move_sessions` with `session_ids: ["self"]` into the sidebar group of that name. Nothing stays ungrouped. The title is how the hooks know your role, so set it before you work. **A background agent** (started by a router with the Agent tool; no banner, cwd `.claude/worktrees/agent-<id>`) skips this step: it is not a sidebar session, and `self` there is the router (`leadfuel-way:desk`, last section).
 3. **Check ownership and isolation** before you write: name the files, check the session map, take a worktree if the repo is shared.
 
 ## 2. Who does what
@@ -21,7 +21,7 @@ Three tiers. Each has a sidebar group, and **all work happens in desks.**
 |---|---|---|---|
 | **CONDUCTOR** | exactly one, estate-wide | the owner | Holds the complete task list on the **Conductor desk** page and asks the owner "what next?". Creates the router for a project and hands it the tasks the owner queued. Does no work. |
 | **ROUTER** | one per project | the conductor | Opens one desk session per queued task, picks its model, relays answers, posts questions as cards on the **Router desk** page. Does no work. |
-| **Desk session** | one per task | the router | Does the task: worktree, change, draft PR, checks, report, handoff. Titled `LANE · <task id> n/m · topic`, filed in its lane's group. |
+| **Desk session** | one per task | the router | Does the task: worktree, change, draft PR, checks, report, handoff. Titled `LANE · <task id> n/m · topic`, filed in its lane's group. Or, as a pilot, a background agent the router starts itself (no owner click; `leadfuel-way:router`). |
 
 A conductor or router that finds itself building something stops and hands it to a desk. The hooks enforce part of this: a session whose title starts with `CONDUCTOR` or `ROUTER` (upper case, whatever follows; `ROUTER #N` in any case) is a coordinator tier, and the Edit, Write, MultiEdit and NotebookEdit tools are refused inside a git checkout, except for handoff notes and `.conductor/` state. (Shell commands are not covered; the rule is a nudge, not a wall.)
 
