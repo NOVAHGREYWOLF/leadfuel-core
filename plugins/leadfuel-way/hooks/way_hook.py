@@ -27,10 +27,26 @@ Events (one entry point, dispatched on `hook_event_name`):
                       show that there is none (no list_sessions read): archiving sweeps idle
                       children with no open PR. WAY-no-nested-sessions.
 
+Background agents (AUTO-DESKS). A router may run a desk as a background agent (the Agent tool with
+isolation: worktree) instead of a chip the owner must click. Claude Code fires a subagent's hooks
+with the PARENT session's session_id and transcript_path plus an `agent_id` (measured 2026-10-06
+on CLI 2.1.286: a probe agent's writes landed in the parent's state file and read the parent's
+title). So without the rules below a router's agent inherits the router's title and is refused
+every edit, is told to hand off at the router's size, and `self` in a session tool means the router.
+When `agent_id` is present:
+    - writes: a coordinator's agent may edit inside a linked git worktree (a `.git` FILE at its root)
+      that is not the coordinator's own checkout; never the coordinator's checkout, never a main
+      checkout. With the coordinator's cwd unknown, only an Agent-tool worktree
+      (`.claude/worktrees/agent-*`) is provably not the coordinator's.
+    - archive_session is refused outright, and move_sessions / set_session_title on `self`: an agent
+      is not a sidebar session, and `self` there is the session that started it.
+    - the guard measures the agent's own transcript (`<session>/subagents/agent-<id>.jsonl`) and
+      keeps its own state, so the parent's state is not written by its agents' events.
+
 Caps follow the model the session runs on: Haiku 120k/150k (200k window), others 300k/450k.
 SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 disables the guard
-and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule; WAY_ARCHIVE_GUARD=0
-disables the self-archive guard.
+and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule and the agent rules;
+WAY_ARCHIVE_GUARD=0 disables the self-archive guard.
 
 It never raises: a broken hook must not break the session it guards. What it cannot measure it
 reports as unknown, never as small.
@@ -45,7 +61,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.6"
+VERSION = "0.1.8"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -74,6 +90,10 @@ DESK_TASK = re.compile(r"·\s*(\S+)\s+(\d+)\s*/\s*\d+")
 SESSION_READS = ("list_sessions", "get_session")
 DEFAULT_LIST_LIMIT = 20  # list_sessions returns this many rows when no limit is given
 READ_FRESH_SECONDS = 600  # a session read older than this no longer says who has children
+# Session tools whose `self` means the parent session when a subagent calls them.
+SELF_TOOLS = ("__move_sessions", "__set_session_title")
+# The Agent tool's isolation worktrees: <repo>/.claude/worktrees/agent-<agent id>.
+AGENT_WORKTREE = re.compile(r"/\.claude/worktrees/agent-[^/]+/", re.I)
 
 
 # --- transcript ---------------------------------------------------------------------------
@@ -94,18 +114,19 @@ def _records(text: str):
             continue  # the first line of a tail may be cut mid-record
 
 
-def last_turn(transcript_path: str) -> tuple[int | None, str | None, int]:
+def last_turn(transcript_path: str, agent: bool = False) -> tuple[int | None, str | None, int]:
     """(context tokens the last main-thread turn sent, its model, transcript size).
 
     Tokens are input + cache_read + cache_creation: the size of the context that turn sent.
     None when the transcript is unreadable or has no main-thread turn yet (unknown, not zero).
+    `agent=True` reads a subagent's own transcript, where every record is a sidechain.
     """
     try:
         text, size = _tail(transcript_path)
     except OSError:
         return None, None, 0
     for rec in reversed(list(_records(text))):
-        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+        if rec.get("type") != "assistant" or (rec.get("isSidechain") and not agent):
             continue
         msg = rec.get("message") or {}
         usage = msg.get("usage") or {}
@@ -141,6 +162,38 @@ def scan_title(transcript_path: str, start: int = 0) -> tuple[str | None, int]:
             continue
         title = rec.get("customTitle") or title
     return title, start + cut
+
+
+def session_cwd(transcript_path: str) -> str | None:
+    """The working directory of the session's own main thread (its newest record that names one), or
+    None. A subagent's hook event may carry the agent's cwd, so the coordinator's is read here."""
+    try:
+        text, _ = _tail(transcript_path)
+    except OSError:
+        return None
+    for line in reversed(text.splitlines()):
+        if '"cwd"' not in line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and not rec.get("isSidechain") and rec.get("cwd"):
+            return str(rec["cwd"])
+    return None
+
+
+def agent_of(event: dict) -> str | None:
+    """The subagent's id when this hook fires inside one (an Agent-tool worker), else None. Claude Code
+    sends `agent_id` only for subagents; session_id and transcript_path stay the parent's."""
+    aid = "".join(c for c in str(event.get("agent_id") or "") if c.isalnum() or c in "-_")[:80]
+    return aid or None
+
+
+def agent_transcript(transcript_path: str, agent_id: str) -> str:
+    """Where Claude Code keeps a subagent's own transcript: <session>.jsonl -> <session>/subagents/agent-<id>.jsonl."""
+    p = Path(transcript_path)
+    return str(p.with_suffix("") / "subagents" / f"agent-{agent_id}.jsonl")
 
 
 def session_title(transcript_path: str) -> str | None:
@@ -455,13 +508,24 @@ def caps_for(model: str | None) -> tuple[int, int]:
     return soft, hard
 
 
-def guard_message(tokens: int, last_warned: int, soft: int, hard: int) -> tuple[str | None, int]:
-    """(message or None, new last_warned)."""
+AGENT_HANDOFF = (
+    "You are a background agent, not a sidebar session: finish the step, commit and push your branch, "
+    "write your handoff note in the repo (a path containing 'handoff', per the `leadfuel-way:handoff` "
+    "desk row), and end with `STATUS: CONTINUING | <task id> | <PR url or no PR> | handoff <path>`. "
+    "The router starts a fresh agent from the note."
+)
+
+
+def guard_message(tokens: int, last_warned: int, soft: int, hard: int, agent: bool = False) -> tuple[str | None, int]:
+    """(message or None, new last_warned). `agent` words it for a background agent."""
     if tokens < soft:
         return None, last_warned
     if last_warned and tokens - last_warned < REWARN_EVERY:
         return None, last_warned
     k = tokens // 1000
+    if agent:
+        cap = f"HARD CAP {hard // 1000}k" if tokens >= hard else f"handoff point {soft // 1000}k, hard cap {hard // 1000}k"
+        return f"CONTEXT BUDGET: this agent is at ~{k}k tokens ({cap}). Start nothing new. {AGENT_HANDOFF}", tokens
     if tokens >= hard:
         return (
             f"CONTEXT BUDGET: HARD CAP. This session is at ~{k}k tokens (cap {hard // 1000}k). "
@@ -505,15 +569,21 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
     return "\n".join(lines)
 
 
-def in_git_checkout(path: str) -> bool:
+def git_root(path: str) -> Path | None:
+    """The nearest folder at or above `path` holding `.git` (a directory: a main checkout; a file: a
+    linked worktree), or None."""
     try:
         p = Path(path).resolve()
     except (OSError, RuntimeError):
-        return False
+        return None
     for d in [p, *p.parents]:
         if (d / ".git").exists():
-            return True
-    return False
+            return d
+    return None
+
+
+def in_git_checkout(path: str) -> bool:
+    return git_root(path) is not None
 
 
 def write_allowed_for_coordinator(path: str) -> bool:
@@ -523,6 +593,50 @@ def write_allowed_for_coordinator(path: str) -> bool:
     return not in_git_checkout(path)
 
 
+def _same_dir(a: Path, b: Path) -> bool:
+    return os.path.normcase(str(a)) == os.path.normcase(str(b))
+
+
+def write_allowed_for_agent(path: str, coordinator_cwd: str | None) -> bool:
+    """May a coordinator's background agent write `path`? It is a desk when it works in its own
+    worktree: anything the coordinator may write itself, plus a linked git worktree (a `.git` file at
+    its root) that is not the coordinator's own checkout. Never the coordinator's checkout, never a
+    main checkout (a desk does not edit a shared checkout). With the coordinator's cwd unknown, only an
+    Agent-tool worktree is provably not the coordinator's: unknown is not a pass."""
+    if write_allowed_for_coordinator(path):
+        return True
+    root = git_root(path)
+    if root is None or not (root / ".git").is_file():
+        return False
+    if coordinator_cwd is None:
+        return bool(AGENT_WORKTREE.search(str(root).replace("\\", "/") + "/"))
+    own = git_root(coordinator_cwd)
+    return own is None or not _same_dir(root, own)
+
+
+def agent_session_refusal(tool: str, inp: dict) -> str | None:
+    """Why a background agent may not make this session-tool call, or None. An agent is not a sidebar
+    session: it is never titled, filed or archived, and `self` there is the session that started it."""
+    if tool.endswith("__archive_session"):
+        return (
+            "THE WAY: a background agent never archives a session. `self` here is the session that "
+            "started you, and archiving it would end every agent it runs. Report with your final message "
+            "(STATUS line); the router archives through its gate."
+        )
+    targets = inp.get("session_ids") if tool.endswith("__move_sessions") else [inp.get("session_id")]
+    if isinstance(targets, str):
+        targets = [targets]
+    if not isinstance(targets, list):
+        return None
+    if tool.endswith(SELF_TOOLS) and any(str(t or "").strip().lower() == "self" for t in targets):
+        return (
+            "THE WAY: a background agent is not a sidebar session and is never titled or filed. `self` "
+            "here is the session that started you. Skip the way's titling and grouping step: your router "
+            "records you on its roster."
+        )
+    return None
+
+
 # --- state --------------------------------------------------------------------------------
 
 def state_dir() -> Path:
@@ -530,26 +644,42 @@ def state_dir() -> Path:
     return Path(os.environ.get("WAY_STATE_DIR") or Path(tempfile.gettempdir()) / "leadfuel-way")
 
 
-def _state_path(session_id: str) -> Path:
+def _state_path(session_id: str, sub: str = "") -> Path:
+    """`sub` keeps background agents' state out of the per-session files the doctor reads."""
     safe = "".join(c for c in session_id if c.isalnum() or c in "-_")[:80] or "unknown"
-    d = state_dir()
+    d = state_dir() / sub if sub else state_dir()
     d.mkdir(parents=True, exist_ok=True)
     return d / f"{safe}.json"
 
 
-def load_state(session_id: str) -> dict:
+def load_state(session_id: str, sub: str = "") -> dict:
     try:
-        return json.loads(_state_path(session_id).read_text())
+        return json.loads(_state_path(session_id, sub).read_text())
     except (OSError, ValueError):
         return {}
 
 
-def save_state(session_id: str, state: dict) -> None:
+def save_state(session_id: str, state: dict, sub: str = "") -> None:
     try:
         state["updated_at"] = time.time()
-        _state_path(session_id).write_text(json.dumps(state))
+        _state_path(session_id, sub).write_text(json.dumps(state))
     except OSError:
         pass
+
+
+def _guard(state: dict, name: str, tokens: int | None, model: str | None, size: int,
+           agent: bool = False) -> dict | None:
+    """The context guard for one transcript: record the crossings in `state`, speak past the cap."""
+    if tokens is None:
+        return None
+    soft, hard = caps_for(model)
+    state.update(tokens=tokens, model=model)
+    if tokens >= soft and "soft_crossed_at" not in state:
+        state["soft_crossed_at"] = size
+    if tokens >= hard and "hard_crossed_at" not in state:
+        state["hard_crossed_at"] = size
+    msg, state["last_warned"] = guard_message(tokens, int(state.get("last_warned") or 0), soft, hard, agent)
+    return {"hookSpecificOutput": {"hookEventName": name, "additionalContext": msg}} if msg else None
 
 
 # --- dispatch -----------------------------------------------------------------------------
@@ -559,10 +689,18 @@ def handle(event: dict) -> dict | None:
     sid = str(event.get("session_id") or "")
     tpath = str(event.get("transcript_path") or "")
     state = load_state(sid)
-    seen = state.setdefault("seen", {})
+    # A subagent's events carry the parent's session_id: they keep their own state and never write the
+    # parent's, so an agent cannot reset its parent's crossings or race its saves.
+    agent = agent_of(event)
+    akey = f"{sid}--{agent}" if agent else ""
+    astate = load_state(akey, "agents") if agent else {}
+    tally = astate if agent else state
+    seen = tally.setdefault("seen", {})
     seen[name] = seen.get(name, 0) + 1
     out: dict | None = None
     guard_off = os.environ.get("SESSION_GUARD_OFF") == "1"
+    roles_on = os.environ.get("WAY_ENFORCE_ROLES", "1") != "0"
+    tool = str(event.get("tool_name") or "")
 
     if name == "SessionStart":
         if event.get("source") in ("compact", "clear"):
@@ -581,17 +719,11 @@ def handle(event: dict) -> dict | None:
         }}
 
     elif name in ("UserPromptSubmit", "PostToolUse") and not guard_off:
-        tokens, model, size = last_turn(tpath)
-        if tokens is not None:
-            soft, hard = caps_for(model)
-            state.update(tokens=tokens, model=model)
-            if tokens >= soft and "soft_crossed_at" not in state:
-                state["soft_crossed_at"] = size
-            if tokens >= hard and "hard_crossed_at" not in state:
-                state["hard_crossed_at"] = size
-            msg, state["last_warned"] = guard_message(tokens, int(state.get("last_warned") or 0), soft, hard)
-            if msg:
-                out = {"hookSpecificOutput": {"hookEventName": name, "additionalContext": msg}}
+        if agent:
+            # The agent's own size, not its parent's: a desk agent hands off at its cap, never the router's.
+            out = _guard(astate, name, *last_turn(agent_transcript(tpath, agent), agent=True), agent=True)
+        else:
+            out = _guard(state, name, *last_turn(tpath))
 
     elif name == "Stop" and not guard_off:
         tokens, model, size = last_turn(tpath)
@@ -612,7 +744,17 @@ def handle(event: dict) -> dict | None:
                         "the one prompt for a fresh session, then end your turn."
                     )}
 
-    elif name == "PreToolUse" and str(event.get("tool_name") or "").endswith("__archive_session"):
+    elif name == "PreToolUse" and agent and roles_on and tool.endswith(SELF_TOOLS + ("__archive_session",)):
+        reason = agent_session_refusal(tool, event.get("tool_input") or {})
+        if reason:
+            astate["session_tools_refused"] = int(astate.get("session_tools_refused") or 0) + 1
+            out = {"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }}
+
+    elif name == "PreToolUse" and tool.endswith("__archive_session"):
         inp = event.get("tool_input") or {}
         target = str(inp.get("session_id") or "").strip()
         if os.environ.get("WAY_ARCHIVE_GUARD", "1") != "0" and target:
@@ -629,16 +771,28 @@ def handle(event: dict) -> dict | None:
                     "permissionDecisionReason": reason,
                 }}
 
-    elif name == "PreToolUse" and os.environ.get("WAY_ENFORCE_ROLES", "1") != "0":
-        tool = str(event.get("tool_name") or "")
+    elif name == "PreToolUse" and roles_on:
         inp = event.get("tool_input") or {}
         path = str(inp.get("file_path") or inp.get("notebook_path") or "")
         role = None
         if tool in WRITE_TOOLS and path:
-            # Read the title fresh: a session can retitle itself after SessionStart.
+            # Read the title fresh: a session can retitle itself after SessionStart. For an agent this
+            # is its parent's title, which decides whether the agent rule applies at all.
             role, lane = role_of(cached_title(tpath, state))
             state.update(role=role, lane=lane)
-        if role in ("CONDUCTOR", "ROUTER") and not write_allowed_for_coordinator(path):
+        if role in TIERS and agent and not write_allowed_for_agent(path, session_cwd(tpath)):
+            out = {"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    f"THE WAY: you are a background agent of a {role}, and {path} is not in your own "
+                    "worktree. A desk agent edits only its own linked worktree: the one the Agent tool "
+                    "made (isolation: worktree), or for another repo one you take there with "
+                    "`git worktree add .claude/worktrees/<task> -b <task>`. Never the router's own "
+                    "checkout or a shared main checkout."
+                ),
+            }}
+        elif role in TIERS and not agent and not write_allowed_for_coordinator(path):
             out = {"hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
@@ -649,7 +803,10 @@ def handle(event: dict) -> dict | None:
                 ),
             }}
 
-    save_state(sid, state)
+    if agent:
+        save_state(akey, astate, "agents")
+    else:
+        save_state(sid, state)
     return out
 
 

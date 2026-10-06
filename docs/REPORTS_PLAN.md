@@ -42,3 +42,32 @@ Steps 1 and 2 are independent. 3 to 6 run in order.
 - Confirm the problem still exists before changing anything.
 - Branch, tests and lint, draft PR, then stop. Never merge or deploy.
 - Spend approvals stay a separate immediate email but must be sent from Prime.
+
+## Completion status (reconciled 2026-10-06 UTC, task GRP-reports-finish)
+Public repo: ids, titles and status only. "Verified" = read with `gh` against `NOVAHGREYWOLF/novahub` on this date; "reported" = taken from the named desk's session or board task, not re-checked. Statuses move; re-read before acting.
+
+The plan's steps 1 to 6 above map to the tasks below. The previous reconciliation (2026-10-02) is superseded: it listed #695 and #700 as open and P9 as having no PR, and all three have since merged.
+
+| Task | What | State | Basis |
+|---|---|---|---|
+| Steps 3, 4 | side senders folded in, Prime pulls each spoke (novahub#672, #680, #683) | merged 2026-09-29/30 | verified |
+| P5-F1, P5-F3 | spoke authority and the contested-source guard (board tasks, both done) | done, nothing to build | reported (board) |
+| P5-F4 | auto-archive line in the briefing (novahub#692) | merged | verified |
+| P5 | CONDUCTOR block in the briefing (novahub#697) | merged | verified. Reported: no conductor report has ever reached the hub in production, so the block never renders; the writer sits outside the hub |
+| P6, P7 | Scope and Core daily reports (#694), Estate weekly (#696) | merged | verified |
+| P8 | DMARC parser, ingest and Deliverability report (#695) | merged 2026-10-02 | verified. Dormant until `DMARC_MAILBOX` is set (owner step) |
+| P5-F5 | scan source coverage once per pull (#700) | merged 2026-10-02 | verified |
+| P9 | attach every report as a PDF (#701), WeasyPrint libs in the build (#714), print CSS (#722) | merged | verified. In production the PDF engine reported itself missing at boot (reported, from a deploy log); fix is deploy configuration, an owner step |
+| Desk Log | daily Desk Log (#742) | merged | verified |
+| Spend | metered LLM spend, gate and fixed floor, as the `spend` spoke; ops roster is core + spend + deliverability (novahub#775) | draft | verified (this PR). `health_ops` and `coverage` were not built: `core` already reports system health and source coverage |
+| Visual rebuild | every report as one offline interactive HTML file (novahub#774) | open draft | verified state; owned by the reports visual desk |
+| P10 | end-to-end check, briefing lands with every attachment | not run | needs a real send, which leaves the machine: owner approval first |
+
+## What is left, in order
+1. **Land the Spend report** (novahub#775) and the visual rebuild (#774) through the merge train.
+2. **PDF engine in production**: a deploy-configuration change so the boot line reads ready (owner step). Check after any fix that the engine reports ready at boot.
+3. **DMARC_MAILBOX** (owner step): until it is set the Deliverability report stays dormant.
+4. **Proof send (P10)**: one real briefing to the owner's inbox through the proof-send gate, with every attachment. Leaves the machine, so the owner runs it, after item 2.
+5. **Master report storage**: reported as not stored since 2026-09-24 while the briefing still goes out; a reports-desk investigation, not started.
+
+Rules that still hold: draft PRs, bare `pytest` plus the repo gate script, never merge on a stale base, nothing transmits without the owner.

@@ -9,7 +9,7 @@
       "name": "leadfuel-way",
       "source": "./plugins/leadfuel-way",
       "description": "The way: banner, handoff guard, and the conductor / router / desk skills.",
-      "version": "0.1.6"
+      "version": "0.1.8"
     }
   ]
 }
