@@ -11,7 +11,7 @@ Close-first holds. Open a desk only on an owner answer.
 Claimed v146. Removed 73 worktrees (re-verified, no force). Archived 11 desks through the gate (board archived_by_22, archived_by_22_b). Re-sent #21's rulings, nudged 10 stalled desks. Routed q277, q278, q280-q284. Opened CORE10-GREEN (DONE, open until #10 lands) and RESCUE-UNSYNCED (DONE, archived).
 
 ## Open owner cards
-q279, q285, q286, q287, q288, q208. Clicks on q279/q285/q286 once failed to save: if still empty, ask for a re-click.
+q208 only. q279, q285-q288 were answered and routed by #22 AFTER this note was first written: see "Arrived after the handoff" in the private inbox.
 
 ## Next
 1. Pull answers, fan out. q286 A: open REPORTS-FINISH 2/2 and ONE-PLACE-SHELL 2/2 (Fable pin); prompts in their last STATUS.
