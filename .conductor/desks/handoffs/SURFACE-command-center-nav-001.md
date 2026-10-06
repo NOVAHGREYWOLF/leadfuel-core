@@ -6,7 +6,13 @@ Session `local_9c29f80c-c0d6-4274-9b81-b09af65a7741` (short ref changed on resum
 - novahub #707 merged as `073f802` (2026-10-02, deploy success per GitHub deployment 6803523697). Nav link "Command Center" in `templates/base.html` (desktop nav + mobile drawer), pointing at `/goal` (`goal_workspace_page`), shown when `account.logged_in`, hidden from anonymous. `tests/test_nav_command_center_link.py`, 9 tests.
 - Owner, direct (2026-10-02): leave `/goal` alone until the real command center exists; the real one is ONE page, customers scoped to their own estate, owner as admin gets the same page plus superuser powers. Build handed to ROUTER #8; desk `INTELLIGENCE · command center per user` (1/1 handed off; 2/2 live 2026-10-05).
 
-## State (re-read before acting)
+## UPDATE 2026-10-06 21:30Z (supersedes the State and Next below where they differ)
+- **#713 IS MERGED**: `7d0c8347ecea264f3ff5abe05a1223832b55ab54`, mergedAt 2026-10-06T00:58:18Z (verified by me with gh). Main was `5c2218f` at 21:27Z. The build desk's promised message never reached me; do not wait for it. So the blocker is gone and the repoint is now the live task.
+- **No successor was ever opened.** I have no start_session tool; the owner has the paste prompt.
+- **CAUTION, read first:** a SURFACE desk `CC-ROUTE-MOVE 1/1` (session `local_e137f345-6bd6-47cb-8e18-e6ae2a4fffcc`, novahub worktree `affectionate-sammet-a9c442`, branch `claude/affectionate-sammet-a9c442`) exists and its task moves a command center route. I did NOT read its brief or scope. Before editing `templates/base.html`, confirm on current main that endpoint `command_center` still exists (a route move may rename it) and ask that desk whether it touches the nav links or my test. SendMessage by `local_` session id delivers; by name it may be held.
+- Heavy jobs now seem to use a "heavy slot" (see that desk's transcript, COMMS held it 2026-10-06). Re-read the CURRENT lock protocol in `F:/Claude Sessions/.locks/README.md` and `WORK_QUEUE.md` before taking or queuing anything.
+
+## State (re-read before acting) -- as of 2026-10-05, partly stale
 - Verified 2026-10-05 08:23Z: novahub #713 (`feat/command-center-per-user`, `GET /command-center`, endpoint `command_center`) OPEN, draft, last updated 2026-10-02T17:24Z. Main was `46d1a47`.
 - Read: VAULT reviewed, no blocking finding, all findings closed. PRIVACY pass is second-hand (recorded in a PR comment by that desk). Its red checks are cancelled unlocked runs; it still needs one full CI run inside the `ci-novahub` hold.
 
