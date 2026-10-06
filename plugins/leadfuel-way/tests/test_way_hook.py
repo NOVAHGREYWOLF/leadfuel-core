@@ -482,15 +482,32 @@ def refused(out) -> bool:
 _ids = iter(range(10_000))
 
 
-def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False):
+def stamp(age=0):
+    """An ISO timestamp `age` seconds ago, the way transcript records carry one."""
+    import datetime
+    return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=age)).isoformat()
+
+
+def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False,
+                 tool_input=None, detail=True, age=0):
     """Append a session read and its result, the way the transcript records them."""
     tid = f"ls{next(_ids)}"
     text = as_text if as_text is not None else json.dumps(rows)
     transcript.add(
-        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": {"group": "x"}}]),
-        {"type": "user", "isSidechain": False, "message": {"content": [
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": tool_input if tool_input is not None else {"limit": 500}}]),
+        {"type": "user", "isSidechain": False, "timestamp": stamp(age), "message": {"content": [
             {"type": "tool_result", "tool_use_id": tid, "is_error": is_error, "content": [{"type": "text", "text": text}]}]}},
     )
+    if detail and tool.endswith("list_sessions") and isinstance(rows, list) and not is_error:
+        for r in rows:  # the real flow: each live row is then read with get_session, the only read that has the parent
+            saw_sessions(transcript, r, tool="mcp__ccd_session_mgmt__get_session",
+                         tool_input={"session_id": r.get("sessionId", "x")}, detail=False)
+
+
+def saw_self(transcript, own_id="local_me"):
+    """This session reading itself: get_session("self") names its own id."""
+    saw_sessions(transcript, {"sessionId": own_id, "title": "me", "isArchived": False},
+                 tool="mcp__ccd_session_mgmt__get_session", tool_input={"session_id": "self"})
 
 
 def row(title, group, archived=False, **extra):
@@ -515,6 +532,7 @@ def test_self_archive_with_no_successor_seen_is_refused_for_every_tier(hook, tra
 ])
 def test_self_archive_is_allowed_once_the_successor_is_seen_live_in_its_group(hook, transcript, own, successor, group):
     transcript.add(title_rec(own))
+    saw_self(transcript)
     saw_sessions(transcript, [row(successor, group)])
     assert archive(hook, transcript) is None
 
@@ -541,6 +559,8 @@ def test_what_does_not_count_as_a_live_successor(hook, transcript, own, seen):
 
 def test_a_get_session_result_counts_and_prose_around_the_json_is_tolerated(hook, transcript):
     transcript.add(title_rec("ROUTER #9"))
+    saw_self(transcript)
+    saw_sessions(transcript, [], as_text="[]")
     saw_sessions(transcript, None, tool="mcp__ccd_session_mgmt__get_session",
                  as_text="Session:\n" + json.dumps(row("ROUTER #10", "ROUTER")) + "\n(end)")
     assert archive(hook, transcript) is None
@@ -563,10 +583,151 @@ def test_a_successor_read_in_a_subagent_does_not_count(hook, transcript):
     assert refused(archive(hook, transcript))
 
 
-def test_archiving_another_session_or_unarchiving_is_not_this_guard(hook, transcript):
+def test_unarchiving_is_not_this_guard(hook, transcript):
     transcript.add(title_rec("ROUTER #10"))
-    assert archive(hook, transcript, target="local_61ed8382") is None
     assert archive(hook, transcript, tool="mcp__ccd_session_mgmt__unarchive_session") is None
+
+
+# --- PreToolUse: no archiving a session over live children (WAY-no-nested-sessions) ---------
+
+def child(parent, archived=False, **extra):
+    return {"sessionId": "local_kid", "title": "NODE · T-1 1/1 · x", "isArchived": archived,
+            "parentSessionId": parent, "detached": False, **extra}
+
+
+def test_archiving_a_session_with_a_live_child_is_refused(hook, transcript):
+    """An archive swept a live router and its desks on 2026-10-02: this is that call."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [child("local_pred")])
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "local_kid" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+@pytest.mark.parametrize("kid", [
+    child("local_pred", archived=True),            # already archived: nothing to sweep
+    child("local_pred", detached=True),            # moved to top level
+    child("local_other"),                          # someone else's child
+])
+def test_archiving_a_session_is_allowed_when_no_child_is_live(hook, transcript, kid):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [kid])
+    assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_child_that_does_not_say_whether_it_is_archived_still_counts(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    k = child("local_pred")
+    del k["isArchived"]
+    saw_sessions(transcript, [k])
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_the_list_sessions_started_by_field_counts_as_the_parent(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [{"sessionId": "k", "isArchived": False, "startedBy": "local_pred"}])
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def real_listing_row(sid):
+    """A list_sessions row as the app returns it: no parentSessionId, no startedBy (observed 2026-10-02)."""
+    return {"sessionId": sid, "title": "NODE · T-1 1/1 · x", "isArchived": False, "isRunning": False,
+            "group": {"id": "g", "name": "NODE"}, "link": "claude://x"}
+
+
+def test_a_listing_row_with_no_parent_field_is_unknown_not_clear(hook, transcript):
+    """The reported hole: the real listing carries no parent, so a listing alone must not pass."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "local_kid" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_get_session_read_of_every_live_row_clears_it(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
+    saw_sessions(transcript, {**real_listing_row("local_kid")}, tool="mcp__ccd_session_mgmt__get_session",
+                 tool_input={"session_id": "local_kid"}, detail=False)
+    assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_get_session_that_names_the_target_as_parent_refuses_after_a_bare_listing(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
+    saw_sessions(transcript, {**real_listing_row("local_kid"), "parentSessionId": "local_pred", "detached": False},
+                 tool="mcp__ccd_session_mgmt__get_session", tool_input={"session_id": "local_kid"}, detail=False)
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_an_archived_listing_row_needs_no_get_session(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [{**real_listing_row("local_old"), "isArchived": True}], detail=False)
+    assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_group_filtered_listing_hides_children_and_does_not_clear(hook, transcript):
+    """List ROUTER, read the router, archive the predecessor: a child filed in DOORS is invisible."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_r12")], tool_input={"group": "ROUTER", "limit": 500})
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_full_page_listing_hides_children_and_does_not_clear(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row(f"local_{i}") for i in range(20)], tool_input={})  # default limit 20: full page
+    out = archive(hook, transcript, target="local_pred")
+    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_listing_below_its_limit_with_no_filter_is_complete(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], tool_input={"limit": 50})
+    assert archive(hook, transcript, target="local_pred") is None
+
+
+def test_a_listing_read_an_hour_ago_does_not_clear(hook, transcript):
+    """A child opened since a stale listing is invisible to it."""
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], age=3600)
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_a_stale_get_session_does_not_clear_a_fresh_listing(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    saw_sessions(transcript, [real_listing_row("local_a")], detail=False)
+    saw_sessions(transcript, real_listing_row("local_a"), tool="mcp__ccd_session_mgmt__get_session",
+                 tool_input={"session_id": "local_a"}, detail=False, age=3600)
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_a_read_with_no_timestamp_is_stale(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    tid = "nots"
+    transcript.add(
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"limit": 500}}]),
+        {"type": "user", "isSidechain": False, "message": {"content": [
+            {"type": "tool_result", "tool_use_id": tid, "content": [{"type": "text", "text": "[]"}]}]}},
+    )
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_no_listing_read_means_unknown_and_refuses(hook, transcript):
+    transcript.add(title_rec("ROUTER #12"))
+    assert refused(archive(hook, transcript, target="local_pred"))
+
+
+def test_self_archive_with_a_live_child_is_refused_even_with_a_successor(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    saw_self(transcript, "local_me")
+    saw_sessions(transcript, [row("ROUTER #10", "ROUTER"), child("local_me")])
+    assert refused(archive(hook, transcript))
+
+
+def test_self_archive_without_knowing_its_own_id_is_unknown_and_refuses(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    saw_sessions(transcript, [row("ROUTER #10", "ROUTER")])
+    out = archive(hook, transcript)
+    assert refused(out) and "self" in out["hookSpecificOutput"]["permissionDecisionReason"]
 
 
 def test_the_remote_archive_tool_is_guarded_too(hook, transcript):

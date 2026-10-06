@@ -111,7 +111,7 @@ def test_unparseable_hooks_json_is_a_failure(doc, plugin_copy, ctx):
 
 def test_the_real_hook_passes_every_synthetic_check(doc, ctx):
     results = doc.check_synthetic(ctx)
-    assert len(results) == 8
+    assert len(results) == 9
     assert all(r.status == doc.OK for r in results), [(r.name, r.detail) for r in results]
 
 
