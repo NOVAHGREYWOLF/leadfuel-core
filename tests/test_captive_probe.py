@@ -140,9 +140,9 @@ def test_http_expected_text_is_online():
 
 @pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
 def test_http_redirect_is_captive_and_names_only_the_host(status):
-    sig = cp.classify_http(status, b"", "http://10.11.12.1:8080/login?sid=SECRET123&mac=aa")
+    sig = cp.classify_http(status, b"", "http://192.0.2.1:8080/login?sid=SECRET123&mac=aa")
     assert sig.state == "captive"
-    assert "10.11.12.1:8080" in sig.detail
+    assert "192.0.2.1:8080" in sig.detail
     assert "SECRET123" not in sig.detail and "login" not in sig.detail
 
 
@@ -152,7 +152,7 @@ def test_http_511_is_captive():
 
 def test_http_200_with_another_page_is_captive():
     # Many portals answer every URL 200 with their own login page.
-    assert cp.classify_http(200, b"<html>Welcome to Hello WiFi</html>").state == "captive"
+    assert cp.classify_http(200, b"<html>Welcome to Guest WiFi</html>").state == "captive"
 
 
 @pytest.mark.parametrize("status", [204, 400, 403, 404, 500, 502, 503])
