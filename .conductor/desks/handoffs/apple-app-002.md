@@ -16,3 +16,6 @@ Session local_772034d0, 2026-10-02. Source: ROUTER #9/#10/#11 briefs; owner queu
 ## Next
 - Once enrolled and signed in on a device: verify real goal_status shape; adjust goalLines.
 - Owed to others: native approve needs a hub-side device credential (DOORS, not briefed).
+
+## UPDATE (owner decision, directly in chat)
+Owner has NO paid Apple Developer Program and said yes to switching to the home-screen web app (/command-center, novahub #713, Add to Home Screen). Sent to ROUTER #22 (board router/current names incarnation 22; #19 and #13 unreachable). ASK pending: which desk makes /command-center phone-ready (default INTELLIGENCE). leadfuel-ios PRs 1,2,3,4 are parked; do not build more there. Apple/Expo/eas steps are no longer on the owner's list.
