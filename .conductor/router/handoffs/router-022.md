@@ -15,7 +15,7 @@ q208 only. q279, q285-q288 were answered and routed by #22 AFTER this note was f
 
 ## Next
 1. Pull answers, fan out. q286 A: open REPORTS-FINISH 2/2 and ONE-PLACE-SHELL 2/2 (Fable pin); prompts in their last STATUS.
-2. q288: land or close core #10, then archive CORE10-GREEN local_67c66e25.
+2. DONE by #22: core #10 merged to main (b65cf0d), CORE10-GREEN archived. #19 and #16 now conflict: rebase onto main (inbox).
 3. q285 A (after the owner installs 0.1.7): run the pilot, tell AUTO-DESKS local_9345bf47.
 4. Gate held: local_fdfd3d2f (last turn ended mid tool call), CI-RUNNER-STALL local_b44c4f26 (check its detector).
 5. Archive #21 local_d51bda2e only when its 9 side desks are finished; #20 after MERGE-TRAIN 3/3, CI-RUNNER-STALL, ATLAS-DOORS 2/2; #18 after HUB727-LAND pushes.
