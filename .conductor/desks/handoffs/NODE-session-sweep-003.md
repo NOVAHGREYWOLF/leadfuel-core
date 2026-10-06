@@ -10,9 +10,10 @@ Session local_09713dbf. Router: ROUTER #24 local_17705746. Blocked, not at cap. 
 
 ## Held (re-read before acting)
 - **q293 unanswered** (Router desk). It alone holds WAY-1 12597f42, ATLAS-B1 70fae0d7 and the other sessions on q281's list (q281=B: keep open until a successor).
-- **f6a9997a** (WATCH Resend routine run, 09-24) has no report, so it fails the gate. ASK is with #24, default A (archive).
+- **f6a9997a** (WATCH Resend routine run, 09-24) has no report, so it fails the gate. Card **q313**, default A (archive). Archive it only on the owner's answer. Verified 20:3xZ: its task etgai-resend-verification is absent from the scheduler, and it has no worktree.
+- **#24 rulings, 20:2xZ:** 1ba6b145 was archived by #24 (verified). The SITES-FUNNELS 3/3 chip is task_524b1af8, and 3/3 archives 2/2 itself. Hold all old coordinators. Stay stopped until #24 writes.
+- **Merge desk refresh run 73bb1e3c** has hung on an ArtifactData call since 17:34Z, so no refreshes run. Reported to #24 (its ruling; not touched).
 - **Old coordinators:** each still parents an unfinished desk. Conductor 005 083bdfe0 parents ROUTER #11, which parents 874ae11a and be232c9f (unpushed a920053). #12 is archived; #13 parents #14. #23 is archived. Do not archive any of them until their children are finished, or the owner detaches them.
-- **Router-owed:** 1ba6b145 waits on its ASK (default "done, archive me"). The 8f79f3dd successor (SITES-FUNNELS 3/3) was never opened.
 
 ## Next
 1. When MERGE-TRAIN 4/4 lands PRs (or q293 is answered), re-check each affected desk with gh, git ls-remote, get_session and list_events, then archive through the gate one at a time. First candidates: 1148264e (#775), 7dd3f0db (#776), 719b9dc0 (#736), a6bf9b01 (#718), db8811fa (#774).
