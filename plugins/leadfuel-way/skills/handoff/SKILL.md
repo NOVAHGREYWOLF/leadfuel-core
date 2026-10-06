@@ -21,7 +21,7 @@ A session's cost grows with its context: every turn re-reads the whole history. 
 6. **Never leave before your successor is live** (owner, 2026-10-02: "MAKE SURE ROUTER DOESNT LEAVE ITSELF UNTIL IT HAS A SUCCESSOR"; and a desk at its limit with work left hands off and stays open). The same rule for every tier:
    - **The successor can only be a paste prompt** (no `start_session`): give the owner the prompt as your last message and **stay open**. Do not archive. Start nothing new; anything that arrives belongs to the successor, which archives you once it is live (router and conductor: the successor's Claim step; desk: the router, through its gate).
    - **You started the successor yourself:** run `list_sessions` with your sidebar group. Only when the result shows the successor in that group and not archived, the push is verified with `git ls-remote`, and nothing in your worktree is unpushed (archiving removes the worktree), archive yourself as the last act: `archive_session` with `self`. If any of those cannot be shown, do not archive: say which in your last message and end your turn.
-   - The plugin's guard refuses `archive_session` on `self` until this session has read back a `list_sessions` or `get_session` result showing that successor live.
+   - The plugin's guard refuses `archive_session` on `self` until this session has read back a `list_sessions` or `get_session` result showing that successor live. It also refuses it while any live session names this one as its `parentSessionId`, and as unknown until `get_session` with `self` and a `list_sessions` have been read.
 
 ## Where the note goes
 | Tier | File (on the branch the tier already works from) | Successor title |
