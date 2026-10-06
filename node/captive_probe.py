@@ -183,7 +183,9 @@ def read_ncsi_events(count=500, timeout=20):
     cmd = ["wevtutil", "qe", NCSI_LOG,
            "/q:*[System[(EventID=%d or EventID=%d)]]" % (EV_HOTSPOT, EV_CAPABILITY),
            "/c:%d" % count, "/rd:true", "/f:xml"]
-    out = subprocess.run(cmd, capture_output=True, timeout=timeout)
+    # stdin=DEVNULL: under the scheduled task (conhost --headless) there is no stdin handle to
+    # inherit and subprocess dies with "[WinError 6] The handle is invalid" before wevtutil runs.
+    out = subprocess.run(cmd, capture_output=True, timeout=timeout, stdin=subprocess.DEVNULL)
     if out.returncode != 0:
         raise OSError("wevtutil exit %d: %s" % (out.returncode,
                                                  out.stderr.decode("utf-8", "replace").strip()[:200]))

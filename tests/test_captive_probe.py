@@ -281,6 +281,23 @@ def test_windows_signal_with_only_unreadable_events_is_unknown(monkeypatch):
     assert cp.windows_signal().state == "unknown"
 
 
+def test_the_log_reader_gives_the_child_no_stdin(monkeypatch):
+    """Found by the first run under the scheduled task: with no console, subprocess cannot
+    inherit stdin and raises 'WinError 6 The handle is invalid', so the probe was UNKNOWN."""
+    seen = {}
+
+    class Done:
+        returncode, stdout, stderr = 0, b"", b""
+
+    def fake_run(cmd, **kw):
+        seen.update(kw, cmd=cmd)
+        return Done()
+    monkeypatch.setattr(cp.subprocess, "run", fake_run)
+    cp.read_ncsi_events()
+    assert seen["stdin"] is cp.subprocess.DEVNULL
+    assert seen["cmd"][0] == "wevtutil" and "/rd:true" in seen["cmd"]
+
+
 # ---------------------------------------------------------------- main: output, exit codes, --wait
 
 def run_main(argv, verdicts):
