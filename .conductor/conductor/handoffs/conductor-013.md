@@ -20,6 +20,10 @@ Re-create the tick. If the owner calls AUTO-DESKS a close-first exception, tell 
 ## Owed
 - Owner: is AUTO-DESKS a close-first exception? Asked in chat 00:59Z, unanswered.
 
+## Arrived after the handoff (from ROUTER #22 local_09dd8448, ~02:5xZ): for 014 to file
+1. q278=D (verified by me on the Router desk: answered 00:57Z): SW-NODE is $299 setup plus $15 a month. Put the figure on the MONEY store task that enters prices through the admin page (STORE-PRICE-SHEET or its follow-up; STORE-CHECKOUT local_42298d55 is archived). Nothing entered yet. The store stays off until q279 (Stripe test-mode switch) is answered.
+2. Defect, file UNQUEUED in the lane that owns novahub scripts/gates.sh per SESSION_MAP: when gates.sh runs nested inside a caller's heavy-lock hold, its EXIT trap releases the CALLER's token. Source: SURFACE ATLAS-LIVE-FLOWS 2/2 local_719b9dc0, read in the code, not run (unverified). That desk is working around it, not fixing it.
+
 ## Gotchas
 - gh can hang on the slow link (timed out ~02:28Z): wrap it in `timeout`.
 - Desk JSON: get with out_dir, edit in python (utf-8, ensure_ascii=False), set with if_version.
