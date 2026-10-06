@@ -25,3 +25,8 @@ Owner, in that session, about Atlas Live (https://claude.ai/artifact/6LEvF7K9u9q
 ## Status read 2026-10-03 ~02:15 UTC
 - Build B stood down (ATLAS-HUB-001.md on hub branch claude/nice-rhodes-c5c334 @ 8d79a3d): on ROUTER #13's relay of owner answer q177, the atlas lives in the hub as the map view, hub PR #730 (/goal/atlas) and #736 (/goal/atlas/live). Verified here with gh: #730 open draft, CLEAN; #719 open draft. #713, #720 and #736 not read (gh timed out). Follow-up link from /admin/wall went to ROUTER #13.
 - Build A: ATLAS-3D 1/1 (local_0f7bb7a2) settled the design and published nothing; handed off at 300k (atlas-3d-001.md) and asks ROUTER #13 first whether 3D still goes ahead beside the hub map view. No successor seen in the DESIGN group at this read.
+
+## 2026-10-05 final
+- Owner: "we should have 55 layers". All 55 picks (L01-L18, V01-V37) become atlas layers. Relayed to ROUTER #20 local_461fe4e9: delivered, not confirmed read.
+- On the atlas as of Atlas Live v5: 10 layers plus part of L03. v10 is reported published and was not read here.
+- This session is at its hard cap. Next: a SPATIAL-LAYERS desk opened by ROUTER #20 (ATLAS-VIEWS / SPATIAL-1), after it checks for duplicates.
