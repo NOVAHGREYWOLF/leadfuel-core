@@ -1,0 +1,9 @@
+{
+  "name": "leadfuel-way",
+  "version": "0.1.7",
+  "description": "How every session works: three tiers (conductor, router, desk), a session-start banner, an automatic handoff at the context cap, and the skills for each tier.",
+  "author": {
+    "name": "Novah Greywolf"
+  },
+  "license": "UNLICENSED"
+}
