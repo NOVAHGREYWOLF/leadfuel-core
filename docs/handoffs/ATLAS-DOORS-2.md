@@ -1,21 +1,26 @@
 # ATLAS-DOORS 2/2 handoff (DOORS)
 
-Session: DOORS · ATLAS-DOORS 2/2. Router: ROUTER #20. Source: Router desk q275 = A.
-Written 2026-10-05 ~13:55 UTC. Re-read state before acting; these lines go stale.
+Session: DOORS · ATLAS-DOORS 2/2. Router: ROUTER #22. Source: Router desk q275 = A.
+Updated 2026-10-06 ~06:25 UTC. Re-read state before acting; these lines go stale.
 
-## hub #752 (atlas-doors)
-- Head f4b82c7: main 46d1a47 merged in, plus the test fix (tests/test_hub_post_door.py reads source through tests._source.source_of; the guard was not touched).
-- CI on f4b82c7: pytest pass, hosted gates pass, hosted pip-audit pass. CLEAN. Marked ready.
-- Handed to MERGE-TRAIN 2/2 (local_3bac496f) ~11:50 UTC. Delivered, but not merged as of 13:54 UTC.
-- Train holds .locks/ci-novahub (claimed 08:46Z, last updated 09:19Z). The session is idle and hub has had no merges since 04:40Z.
-- Worktree: novahub/.claude/worktrees/atlas-doors-2 (detached; pushed as HEAD:atlas-doors).
+## hub #752: DONE
+- MERGED 2026-10-06 00:59:57Z as 5c2218f (gh verified).
 
-## hub #754 (doors/send-email-carries-reply-to-idempotency)
-- Fix committed LOCALLY ONLY: 5b1f2aa in novahub/.claude/worktrees/doors-resend-2 (detached on 83a3d0b).
-  - api_send_application binds account_email via _subject_or_refuse.
-  - Two tests: an odyssey caller naming the account without the acting header gets 403; with the header, the acting person binds.
-  - Local run: tests/test_send_email_carries_reply_to_and_key.py and tests/test_subject_binding.py, 24 passed.
-- Next: after #752 lands, rebase 5b1f2aa onto main, push HEAD:doors/send-email-carries-reply-to-idempotency, wait for green and CLEAN, then send to MERGE-TRAIN.
-- Counterpart: odyssey #52 head 2b2df82 sends X-Acting-Email (ARM-SENDS-DOORS 2/2 owns it; I verified line 145 myself).
+## hub #754 (doors/send-email-carries-reply-to-idempotency): with the train, not merged
+- Head 007a2bf: 5b1f2aa (subject bind) plus main 5c2218f merged in.
+- Conflicts resolved:
+  - mesh classes: application and calendar_write both kept.
+  - routes: both kept.
+  - idempotency_key carried through send_email's door into _resend_send.
+  - The wire fixture sets the email cap.
+- CI on 007a2bf: pytest, hosted gates and hosted pip-audit pass. CLEAN, ready. main unmoved at 06:22Z.
+- Handed to MERGE-TRAIN 3/3 (local_94207e40) ~04:3xZ. Delivered.
+- The train marked itself BLOCKED at 02:56Z (train E #774, permission classifier) and still holds .locks/ci-novahub. #754 has not landed.
+- Next: whoever holds ci-novahub merges main into #754 if main moved, re-checks green, squashes. Then tell ARM-SENDS-DOORS 2/2 (local_c572e6ef) that odyssey #52 may merge.
+- Worktree: novahub/.claude/worktrees/doors-resend-2 (detached, nothing unpushed).
 </content>
 </invoke>
+<invoke name="Bash">
+<parameter name="command">git add docs/handoffs/ATLAS-DOORS-2.md && git commit -q -m "handoff: ATLAS-DOORS 2/2 update (#752 merged, #754 at train)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && timeout 120 git push -q origin HEAD 2>&1 | tail -1; git rev-parse --short HEAD; timeout 30 git ls-remote origin claude/heuristic-khayyam-ac7a1b
