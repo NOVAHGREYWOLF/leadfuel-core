@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map — the 55 overlays</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#050508}
+.w{--d0:#050508;--d1:#09090e;--d2:#101019;--d3:#171725;--ink:#ECECF1;--ink2:rgba(236,236,241,.85);--mut:#8e8e9e;--mut2:#6b6b80;--line:#262633;--acc:#6366F1;--lit:#b9b6ff;--accsoft:rgba(99,102,241,.12);--deg:#fbbf24;--brk:#fb7185;--brkt:#fda4af;--unk:#62627a;--idle:#2a2a38;--idlet:#6b6b80;--ok:#2dd4bf;--mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.w *{box-sizing:border-box}
+.w a{color:inherit;text-decoration:none}
+.w button{font:inherit;color:inherit}
+kbd{font:600 10px/1 var(--mono);color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:3px 5px;background:var(--d2);min-width:18px;text-align:center;display:inline-block}
+.lbl{font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.mark{display:flex;align-items:center;gap:8px;font-weight:650;letter-spacing:.06em;white-space:nowrap}
+.mark i{width:13px;height:13px;border:1.5px solid var(--lit);transform:rotate(45deg);border-radius:2px;display:inline-block}
+.nb{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;color:var(--mut);background:var(--d2);font-size:12.5px}
+.nb.cur{color:var(--ink);border-color:var(--acc);background:var(--accsoft)}
+.trail{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.trail span{padding:5px 9px;border:1px solid var(--line);border-radius:6px;white-space:nowrap}
+.trail span.here{color:var(--ink);border-color:var(--lit)}
+.trail em{font-style:normal;color:var(--mut2)}
+.jump{display:flex;align-items:center;gap:8px;flex:0 1 24rem;min-width:0;height:34px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:9px;background:var(--d3);color:var(--mut2);font-size:12.5px;white-space:nowrap;overflow:hidden}
+.jump svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;flex:none}
+.jump kbd{margin-left:auto}
+.apex{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--d2);font-weight:600;white-space:nowrap;font-size:12.5px}
+.apex .d{width:8px;height:8px;border-radius:50%;background:var(--deg)}
+.apex small{font:400 11px var(--mono);color:var(--mut)}
+.scope{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;border-radius:5px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.clock{font:12px var(--mono);color:var(--mut);white-space:nowrap}
+.ex{font:600 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);border:1px dashed var(--line);padding:4px 6px;border-radius:4px;white-space:nowrap}
+.res{display:flex;align-items:center;background:var(--d1);border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--mut)}
+.res > span{display:flex;align-items:center;gap:8px;padding:0 16px;height:36px;border-right:1px solid var(--line);white-space:nowrap}
+.res b{font-weight:600;color:var(--ink);letter-spacing:.08em;font-size:10.5px}
+.res i{font-style:normal;color:var(--ink2)}
+.pane{background:var(--d2);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;align-content:start;min-width:0}
+.pane.raised{background:var(--d3)}
+.pane h5{margin:0;font:600 10.5px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pane h5 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--mut2)}
+.pane h5 kbd{margin-left:auto}
+.ans{font-weight:600;font-size:15px;line-height:1.3;color:var(--ink);text-wrap:balance}
+.ans b{color:var(--brkt)}.ans .wait{color:var(--deg)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink2)}
+.row small{display:block;color:var(--mut);font:11px var(--mono)}
+.st{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.st .d{width:8px;height:8px;border-radius:50%;flex:none}
+.st-ready{color:var(--ink2)}.st-ready .d{background:var(--ink2)}
+.st-degraded{color:var(--deg)}.st-degraded .d{background:linear-gradient(90deg,var(--deg) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--deg)}
+.st-broken{color:var(--brkt)}.st-broken .d{background:var(--brk)}
+.st-unknown{color:var(--mut)}.st-unknown .d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--unk)}
+.st-idle{color:var(--idlet)}.st-idle .d{background:var(--idle);box-shadow:inset 0 0 0 1px var(--mut2)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--d3);font-size:12.5px;color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.sub{display:grid;gap:1px;align-content:start}
+.sub h6{margin:0;padding:8px 8px 4px;font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.sub h6 span{color:var(--mut2);letter-spacing:0}
+.ov{display:grid;grid-template-columns:14px 30px minmax(0,1fr) auto;gap:7px;align-items:center;height:22px;padding:0 8px 0 6px;border-radius:5px;border:0;background:none;color:var(--mut);font-size:11.5px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden}
+.ov:hover{background:var(--d3);color:var(--ink)}
+.ov.on{color:var(--ink);background:var(--accsoft)}
+.ov .m{width:8px;height:8px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--mut2);justify-self:center}
+.ov .m.data{background:var(--ink2);box-shadow:none}
+.ov .m.partial{background:linear-gradient(90deg,var(--ink2) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--ink2)}
+.ov .m.unknown{box-shadow:inset 0 0 0 1.5px var(--unk)}
+.ov.on .m.data{background:var(--lit)}
+.ov .id{font:600 10px var(--mono);color:var(--mut2)}
+.ov.on .id{color:var(--lit)}
+.ov .n{overflow:hidden;text-overflow:ellipsis}
+.ov kbd{padding:2px 4px;min-width:16px;font-size:9px}
+.fam{display:flex;align-items:center;gap:8px;height:24px;padding:0 8px 0 6px;border:0;background:none;color:var(--ink2);font-size:12px;text-align:left;cursor:pointer;width:100%;border-radius:5px}
+.fam:hover{background:var(--d3)}
+.fam .c{width:10px;color:var(--mut2);font-size:10px}
+.fam .cnt{margin-left:auto;font:600 10px/1 var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:999px;color:var(--mut)}
+.map{position:relative;width:920px;height:726px;margin:0 auto}
+.map svg{position:absolute;inset:0;width:920px;height:726px;overflow:visible}
+.map .ring{fill:none;stroke:var(--line);stroke-width:1}
+.map .rim{fill:none;stroke:var(--mut2);stroke-width:1.2}
+.map .spoke{stroke:var(--line);stroke-width:1}
+.map .dot{fill:var(--d3);stroke:var(--mut2);stroke-width:1}
+.map .dot.off{fill:var(--d1);stroke:var(--idle)}
+.map .land{font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;fill:var(--mut)}
+.map .fog{fill:rgba(251,113,133,.06);stroke:var(--brk);stroke-width:1.2;stroke-dasharray:4 4}
+.map .route{fill:none;stroke:var(--lit);stroke-width:1.2;stroke-dasharray:3 5;opacity:.8}
+.map .pool{fill:rgba(251,191,36,.12);stroke:var(--deg);stroke-width:1.2}
+.map .pool.unk{fill:none;stroke:var(--unk);stroke-dasharray:3 3}
+.map .cost{fill:none;stroke:var(--deg);stroke-width:4;stroke-linecap:round}
+.map .costbg{fill:none;stroke:var(--line);stroke-width:4;stroke-linecap:round}
+.map .trailp{fill:none;stroke:var(--ok);stroke-width:1.4;stroke-dasharray:2 4}
+.map .tag{font:600 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.map .tag.rose{fill:var(--brkt)}.map .tag.amber{fill:var(--deg)}.map .tag.teal{fill:var(--ok)}.map .tag.ind{fill:var(--lit)}.map .tag.mut{fill:var(--mut)}
+.node{position:absolute;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 5px;border-radius:999px;border:1px solid var(--line);background:rgba(16,16,25,.92);font:600 10.5px/1 var(--mono);color:var(--ink2);white-space:nowrap;text-transform:lowercase}
+.node .d{width:7px;height:7px;border-radius:50%;background:var(--ink2);flex:none}
+.node.stale{color:var(--deg);border-color:rgba(251,191,36,.45)}.node.stale .d{background:linear-gradient(90deg,var(--deg) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--deg)}
+.node.unknown{color:var(--mut);border-style:dashed}.node.unknown .d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--unk)}
+.node.door{border-radius:4px}.node.door .d{border-radius:1px;transform:rotate(45deg);width:6px;height:6px}
+.node.arm .d{border-radius:1px;transform:rotate(45deg);background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink2)}
+.node.you{color:var(--lit);border-color:var(--lit);box-shadow:0 0 0 1px rgba(99,102,241,.55),0 0 24px rgba(99,102,241,.25);text-transform:none;font-size:11.5px;padding:5px 10px 5px 7px}
+.node.you .d{background:var(--lit);width:9px;height:9px;transform:rotate(45deg);border-radius:1px}
+.ovl{position:absolute;left:12px;top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);max-width:560px}
+.ovl span{padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:rgba(9,9,14,.85)}
+.ovl span.on{color:var(--lit);border-color:rgba(99,102,241,.6)}
+.legend{position:absolute;right:12px;bottom:10px;display:flex;gap:12px;font:10px var(--mono);color:var(--mut)}
+.mini{position:relative;height:126px;border:1px solid var(--line);border-radius:8px;background:var(--d1);overflow:hidden}
+.mini svg{width:100%;height:100%}
+.mini .ring{fill:none;stroke:var(--line);stroke-width:1}
+.mini .here{fill:var(--lit)}.mini .warn{fill:var(--deg)}.mini .rose{fill:none;stroke:var(--brk);stroke-dasharray:3 3}
+.mini .cap{position:absolute;left:8px;bottom:6px;font:10px var(--mono);color:var(--mut)}
+.ask{display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:38px;padding:0 4px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--d3)}
+.ask input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:13px;color:var(--ink);font-family:inherit}
+.ask input::placeholder{color:var(--mut2)}
+.mic{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--d2);color:var(--mut);font:600 9.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.mic svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.go{height:30px;padding:0 12px;border:0;border-radius:7px;background:var(--acc);color:#fff;font-weight:600;cursor:pointer}
+.keys{display:flex;align-items:center;gap:14px;padding:0 14px;font:11px var(--mono);color:var(--mut2);background:var(--d0);border-top:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.keys span{display:inline-flex;align-items:center;gap:5px}
+.keys kbd{background:var(--d1)}
+</style>
+</helmet>
+<div class="w" style="display:grid;grid-template-columns:300px minmax(0,1fr) 300px;grid-template-rows:52px 36px minmax(0,1fr) 56px 30px;width:100%;height:100vh;min-height:900px;min-width:1180px;background:#050508;color:#ECECF1;font-size:13px;line-height:1.45">
+
+  <header style="grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 14px;background:#09090e;border-bottom:1px solid #262633;min-width:0">
+    <div class="mark"><i></i><span>LEADFUEL</span></div>
+    <nav style="display:flex;gap:4px" aria-label="Move">
+      <a class="nb" href="Main.dc.html"><kbd>H</kbd>Home</a>
+      <a class="nb" href="Main.dc.html"><kbd>B</kbd>Back</a>
+    </nav>
+    <div class="trail" aria-label="Trail"><span>Home</span><em>›</em><span class="here">Map · overlays</span></div>
+    <a class="jump" href="Search.dc.html" aria-label="Jump to a place, a quest, a person"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Jump to a place, a quest, a person<kbd>/</kbd></a>
+    <div class="apex" style="margin-left:auto"><span class="d"></span>needs you · 3<small>as of 42 s</small></div>
+    <a class="scope" href="Owner.dc.html">your estate</a>
+    <span class="clock">09:41 PT</span>
+    <span class="ex">example data</span>
+  </header>
+
+  <div class="res" style="grid-column:1/-1">
+    <span><b>TUE 7 OCT</b><i>09:41 PT</i>· next <i>15:00</i> call with Dana</span>
+    <span><b>MONEY</b><i>$4,120</i> in bank · <i>1,980</i> credits · spend today <i>$0.42</i></span>
+    <span><b>LEADS</b><i>212</i> · 31 warm · 1,480 contacts</span>
+    <span><b>BRAIN</b><i>12,480</i> facts · learned 09:30 · 3 gaps</span>
+  </div>
+
+  <aside style="display:grid;grid-template-rows:auto minmax(0,1fr);gap:6px;padding:10px 8px;background:#09090e;border-right:1px solid #262633;min-height:0;overflow:hidden" aria-label="Overlay menu">
+    <a class="nb" href="Main.dc.html" style="justify-content:flex-start"><kbd>Esc</kbd>Command · back to the menu</a>
+    <div class="sub" style="overflow:hidden">
+      <h6>Layers <span>18 · keys 1–9 · {{onCount}} on</span></h6>
+      <sc-for list="{{layers}}" as="l" hint-placeholder-count="18">
+        <button type="button" class="ov {{l.cls}}" onClick="{{l.pick}}" aria-pressed="{{l.pressed}}"><span class="m {{l.mark}}"></span><span class="id">{{l.id}}</span><span class="n">{{l.name}}</span><kbd>{{l.key}}</kbd></button>
+      </sc-for>
+      <h6 style="padding-top:12px">Views <span>37 · one at a time · default: the world</span></h6>
+      <button type="button" class="fam"><span class="c">▸</span>Inside the brain<span class="cnt">7</span></button>
+      <button type="button" class="fam"><span class="c">▸</span>Doors and gates<span class="cnt">4</span></button>
+      <button type="button" class="fam"><span class="c">▸</span>The arms at work<span class="cnt">9</span></button>
+      <button type="button" class="fam" style="color:#ECECF1"><span class="c">▾</span>Your life<span class="cnt">5</span></button>
+      <button type="button" class="ov"><span class="m partial"></span><span class="id">V21</span><span class="n">Life map</span></button>
+      <button type="button" class="ov"><span class="m unknown"></span><span class="id">V22</span><span class="n">Body helix · waits on Apple Health</span></button>
+      <button type="button" class="ov"><span class="m partial"></span><span class="id">V23</span><span class="n">Money terrain · one ridge per rail</span></button>
+      <button type="button" class="ov"><span class="m unknown"></span><span class="id">V24</span><span class="n">World around you</span></button>
+      <button type="button" class="ov"><span class="m unknown"></span><span class="id">V25</span><span class="n">Your rhythm</span></button>
+      <button type="button" class="fam"><span class="c">▸</span>The estate and the machine<span class="cnt">10</span></button>
+      <button type="button" class="fam"><span class="c">▸</span>What a customer sees<span class="cnt">2</span></button>
+    </div>
+  </aside>
+
+  <main style="position:relative;min-width:0;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#09090e 0,#050508 70%),linear-gradient(rgba(185,182,255,.05) 1px,transparent 1px) 0 0 / 28px 28px,linear-gradient(90deg,rgba(185,182,255,.05) 1px,transparent 1px) 0 0 / 28px 28px;background-color:#050508" aria-label="The world with overlays">
+    <div class="ovl"><span class="lbl" style="border:0;background:none;padding:0 2px 0 0">on the map</span><sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><span class="on">{{c.id}} {{c.name}}</span></sc-for><span>view · the world</span></div>
+    <div class="map">
+      <svg viewBox="0 0 920 726" role="img" aria-label="The world: seven regions around the core">
+        <g transform="translate(460 363)">
+          <polygon class="rim" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.882)"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.779)"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.654)"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.522)"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.397)"></polygon>
+          <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.265)"></polygon>
+          <g class="spoke"><line x1="0" y1="0" x2="123" y2="-242"></line><line x1="0" y1="0" x2="266" y2="-57"></line><line x1="0" y1="0" x2="252" y2="102"></line><line x1="0" y1="0" x2="93" y2="256"></line><line x1="0" y1="0" x2="-136" y2="236"></line><line x1="0" y1="0" x2="-269" y2="38"></line><line x1="0" y1="0" x2="-123" y2="-242"></line></g>
+        </g>
+        <g class="land"><text x="460" y="71" text-anchor="middle">People</text><text x="690" y="183">Public and market</text><text x="751" y="388">AI vendors</text><text x="663" y="573">Money</text><text x="435" y="654" text-anchor="middle">Body and place</text><text x="218" y="526" text-anchor="end">Meetings and time</text><text x="200" y="230" text-anchor="end">Machines and web</text></g>
+        <g>
+          <circle class="dot off" cx="367" cy="172" r="3"></circle><circle class="dot off" cx="543" cy="168" r="3"></circle><circle class="dot off" cx="622" cy="227" r="3"></circle><circle class="dot off" cx="651" cy="270" r="3"></circle><circle class="dot off" cx="427" cy="572" r="3"></circle><circle class="dot off" cx="384" cy="561" r="3"></circle><circle class="dot off" cx="284" cy="481" r="3"></circle><circle class="dot off" cx="266" cy="449" r="3"></circle><circle class="dot off" cx="261" cy="435" r="3"></circle><circle class="dot off" cx="253" cy="319" r="3"></circle><circle class="dot off" cx="266" cy="277" r="3"></circle><circle class="dot off" cx="288" cy="238" r="3"></circle><circle class="dot off" cx="318" cy="205" r="3"></circle><circle class="dot off" cx="354" cy="179" r="3"></circle>
+          <circle class="dot" cx="629" cy="308" r="3"></circle><circle class="dot" cx="637" cy="378" r="3"></circle><circle class="dot" cx="636" cy="388" r="3"></circle><circle class="dot" cx="312" cy="463" r="3"></circle><circle class="dot" cx="393" cy="198" r="3"></circle>
+          <circle class="dot" cx="551" cy="254" r="3"></circle><circle class="dot" cx="600" cy="388" r="3"></circle><circle class="dot" cx="509" cy="496" r="3"></circle><circle class="dot" cx="369" cy="472" r="3"></circle><circle class="dot off" cx="318" cy="363" r="3"></circle><circle class="dot" cx="369" cy="254" r="3"></circle>
+          <circle class="dot" cx="517" cy="271" r="3"></circle><circle class="dot" cx="563" cy="330" r="3"></circle><circle class="dot" cx="560" cy="404" r="3"></circle><circle class="dot" cx="511" cy="458" r="3"></circle><circle class="dot" cx="430" cy="467" r="3"></circle><circle class="dot" cx="416" cy="264" r="3"></circle>
+          <circle class="dot" cx="460" cy="291" r="2.5"></circle><circle class="dot" cx="482" cy="295" r="2.5"></circle><circle class="dot" cx="511" cy="312" r="2.5"></circle><circle class="dot" cx="518" cy="321" r="2.5"></circle><circle class="dot" cx="532" cy="368" r="2.5"></circle><circle class="dot" cx="526" cy="352" r="2.5"></circle><circle class="dot" cx="518" cy="405" r="2.5"></circle><circle class="dot" cx="511" cy="414" r="2.5"></circle><circle class="dot" cx="482" cy="431" r="2.5"></circle><circle class="dot" cx="460" cy="435" r="2.5"></circle><circle class="dot" cx="438" cy="431" r="2.5"></circle><circle class="dot" cx="409" cy="414" r="2.5"></circle><circle class="dot" cx="402" cy="405" r="2.5"></circle><circle class="dot" cx="390" cy="374" r="2.5"></circle><circle class="dot" cx="384" cy="352" r="2.5"></circle><circle class="dot" cx="402" cy="321" r="2.5"></circle><circle class="dot" cx="409" cy="312" r="2.5"></circle><circle class="dot" cx="438" cy="295" r="2.5"></circle>
+          <circle class="dot off" cx="676" cy="258" r="3"></circle><circle class="dot off" cx="261" cy="497" r="3"></circle><circle class="dot off" cx="558" cy="144" r="3"></circle>
+        </g>
+      </svg>
+      <sc-if value="{{onBlind}}" hint-placeholder-val="{{true}}">
+        <svg viewBox="0 0 920 726" aria-hidden="true"><ellipse class="fog" cx="604" cy="513" rx="62" ry="48"></ellipse><text class="tag rose" x="672" y="548">L06 · blind spot · 3 rails</text></svg>
+      </sc-if>
+      <sc-if value="{{onRoutes}}" hint-placeholder-val="{{true}}">
+        <svg viewBox="0 0 920 726" aria-hidden="true"><path class="route" d="M515 194 L477 124"></path><path class="route" d="M515 194 L558 144"></path><path class="route" d="M515 194 L621 185"></path><path class="route" d="M515 194 L676 258"></path><path class="route" d="M515 194 C420 300 300 380 261 497"></path><text class="tag ind" x="540" y="108">L10 · every route waits for a yes</text></svg>
+      </sc-if>
+      <sc-if value="{{onPools}}" hint-placeholder-val="{{true}}">
+        <svg viewBox="0 0 920 726" aria-hidden="true"><circle class="pool" cx="515" cy="194" r="18"></circle><circle class="pool" cx="355" cy="337" r="14"></circle><circle class="pool unk" cx="637" cy="378" r="12"></circle><text class="tag amber" x="296" y="322">L03 · 2 drafts wait</text><text class="tag mut" x="655" y="368">embeddings · unknown</text></svg>
+      </sc-if>
+      <sc-if value="{{onCost}}" hint-placeholder-val="{{true}}">
+        <svg viewBox="0 0 920 726" aria-hidden="true"><path class="costbg" d="M599 428 A20 20 0 1 1 599 464"></path><path class="cost" d="M599 428 A20 20 0 0 1 616 426"></path><text class="tag amber" x="640" y="470">L13 · $0.42 of $5.00 cap</text></svg>
+      </sc-if>
+      <sc-if value="{{onTrail}}" hint-placeholder-val="{{true}}">
+        <svg viewBox="0 0 920 726" aria-hidden="true"><path class="trailp" d="M460 363 C470 300 500 240 515 194 C545 180 575 210 592 244"></path><text class="tag teal" x="600" y="232">L16 · your 1 approval, 08:12</text></svg>
+      </sc-if>
+      <a class="node you" href="Main.dc.html" style="left:460px;top:363px"><span class="d"></span>You · the core</a>
+      <a class="node arm" href="Focus.dc.html" style="left:477px;top:124px"><span class="d"></span>reach</a>
+      <a class="node arm" href="Focus.dc.html" style="left:621px;top:185px"><span class="d"></span>signal</a>
+      <a class="node" href="Focus.dc.html" style="left:416px;top:156px"><span class="d"></span>mailbox</a>
+      <a class="node" href="Focus.dc.html" style="left:504px;top:156px"><span class="d"></span>linkedin</a>
+      <a class="node" href="Focus.dc.html" style="left:460px;top:151px"><span class="d"></span>teams</a>
+      <a class="node" href="Focus.dc.html" style="left:585px;top:191px"><span class="d"></span>imports</a>
+      <a class="node stale" href="Focus.dc.html" style="left:636px;top:481px"><span class="d"></span>quickbooks balances · stale 19 d</a>
+      <a class="node" href="Focus.dc.html" style="left:607px;top:515px"><span class="d"></span>qb records</a>
+      <a class="node" href="Focus.dc.html" style="left:572px;top:543px"><span class="d"></span>qb reports</a>
+      <a class="node unknown" href="Focus.dc.html" style="left:475px;top:575px"><span class="d"></span>apple health · not measured</a>
+      <a class="node" href="Focus.dc.html" style="left:313px;top:515px"><span class="d"></span>calendar</a>
+      <a class="node door" href="Focus.dc.html" style="left:460px;top:185px"><span class="d"></span>intake</a>
+      <a class="node door stale" href="Act.dc.html" style="left:515px;top:194px"><span class="d"></span>approval queue · 3 wait</a>
+      <a class="node door" href="Act.dc.html" style="left:592px;top:244px"><span class="d"></span>door out</a>
+      <a class="node door" href="Focus.dc.html" style="left:617px;top:446px"><span class="d"></span>spend gate</a>
+      <a class="node" href="Focus.dc.html" style="left:411px;top:230px"><span class="d"></span>corpus</a>
+      <a class="node" href="Quests.dc.html" style="left:366px;top:417px"><span class="d"></span>goal plan</a>
+      <a class="node" href="Focus.dc.html" style="left:355px;top:337px"><span class="d"></span>reply drafts · 2</a>
+    </div>
+    <div class="legend"><span class="st st-ready"><span class="d"></span>live</span><span class="st st-degraded"><span class="d"></span>stale</span><span class="st st-broken"><span class="d"></span>broken</span><span class="st st-unknown"><span class="d"></span>unknown</span><span class="st st-idle"><span class="d"></span>not connected</span></div>
+  </main>
+
+  <aside style="display:grid;gap:10px;align-content:start;padding:12px 10px;background:#09090e;border-left:1px solid #262633;min-height:0;overflow:hidden">
+    <section class="pane raised" aria-label="Today">
+      <h5>Today <span>always on</span><kbd>T</kbd></h5>
+      <div class="ans"><b>3 things</b> need you. One has waited <b>11 days</b>.</div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>2 d</span><span>Approve: reply to Dana about Thursday<small>reach · email · outward</small></span></div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>6 h</span><span>Approve: post the launch note<small>signal · post · outward</small></span></div>
+      <div class="row"><span class="st st-broken"><span class="d"></span>11 d old</span><span>Decide: connect orbit to LinkedIn<small>a door · needs your yes</small></span></div>
+    </section>
+    <section class="pane" aria-label="Act">
+      <h5>Act · the door <span>always on</span><kbd>A</kbd></h5>
+      <div class="ans"><span class="wait">3 proposals</span> wait at the door.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn primary" href="Act.dc.html">Open the door</a></div>
+    </section>
+    <section aria-label="Minimap">
+      <div class="lbl" style="padding:0 2px 6px;display:flex;justify-content:space-between"><span>Minimap</span><span style="letter-spacing:0;text-transform:none;color:#6b6b80">overlays marked</span></div>
+      <div class="mini">
+        <svg viewBox="0 0 280 126" role="img" aria-label="Minimap with the blind spot and your position">
+          <g transform="translate(140 66) scale(.22)">
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" style="stroke:#6b6b80"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.654)"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.397)"></polygon>
+            <ellipse class="rose" cx="144" cy="150" rx="62" ry="48"></ellipse>
+            <circle class="warn" cx="55" cy="-169" r="9"></circle>
+            <circle class="here" cx="0" cy="0" r="12"></circle>
+          </g>
+        </svg>
+        <span class="cap">Map · blind spot in Money · 3 wait at the queue</span>
+      </div>
+    </section>
+    <p style="margin:0;padding:0 4px;font:11px/1.5 var(--mono);color:#6b6b80">A layer tints the places it owns and dims the rest. A view re-draws the same model and never leaves the page. Keys <kbd>1</kbd>–<kbd>9</kbd> toggle the first nine.</p>
+  </aside>
+
+  <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 14px;background:#09090e;border-top:1px solid #262633">
+    <span class="lbl" style="width:276px">Ask · always on</span>
+    <div class="ask"><input type="text" placeholder="Ask about what is on the map" aria-label="Ask"><span class="mic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>local only</span><a class="go" href="Ask.dc.html" style="display:inline-flex;align-items:center">Ask</a></div>
+    <kbd style="height:24px;line-height:16px">?</kbd>
+  </div>
+
+  <div class="keys" style="grid-column:1/-1">
+    <span><kbd>H</kbd>home</span><span><kbd>B</kbd>back</span><span><kbd>M</kbd>close overlays</span><span><kbd>/</kbd>jump</span><span><kbd>T</kbd>today</span><span><kbd>Q</kbd>quests</span><span><kbd>A</kbd>act</span><span><kbd>?</kbd>ask</span><span><kbd>1</kbd>–<kbd>9</kbd>toggle a layer</span><span><kbd>↑</kbd><kbd>↓</kbd>move in the list</span><span><kbd>↵</kbd>enter a place</span><span><kbd>Esc</kbd>close</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { on: { L03: true, L06: true, L10: true, L13: true, L16: true } };
+  }
+  renderVals() {
+    var LAYERS = [
+      ['L01', 'arrivals', 'Live arrivals', 'data'], ['L02', 'track', 'Track one item', 'partial'], ['L03', 'pools', 'Waiting pools', 'partial'],
+      ['L04', 'travel', 'Travel time', 'data'], ['L05', 'volume', 'Terrain', 'data'], ['L06', 'blind', 'Blind spots', 'data'],
+      ['L07', 'incidents', 'Incidents', 'partial'], ['L08', 'replay', 'Replay', 'partial'], ['L09', 'lines', 'Scheduled lines', 'unknown'],
+      ['L10', 'routes', 'Permission routes', 'data'], ['L11', 'borders', 'Borders', 'data'], ['L12', 'privacy', 'Privacy zones', 'data'],
+      ['L13', 'cost', 'Cost', 'data'], ['L14', 'weather', 'Weather', 'partial'], ['L15', 'forecast', 'Forecast', 'partial'],
+      ['L16', 'trail', 'Your trail', 'data'], ['L17', 'age', 'Age', 'partial'], ['L18', 'claimed', 'Claimed vs measured', 'data']
+    ];
+    var on = this.state.on;
+    var self = this;
+    var layers = LAYERS.map(function (l, i) {
+      var id = l[0];
+      return {
+        id: id, name: l[2], mark: l[3], key: i < 9 ? String(i + 1) : '',
+        cls: on[id] ? 'on' : '', pressed: on[id] ? 'true' : 'false',
+        pick: function () { var next = Object.assign({}, self.state.on); next[id] = !next[id]; self.setState({ on: next }); }
+      };
+    });
+    var chips = layers.filter(function (l) { return on[l.id]; }).map(function (l) { return { id: l.id, name: l.name }; });
+    return {
+      layers: layers, chips: chips, onCount: chips.length,
+      onBlind: !!on.L06, onRoutes: !!on.L10, onPools: !!on.L03, onCost: !!on.L13, onTrail: !!on.L16
+    };
+  }
+}
+</script>
+</body>
+</html>

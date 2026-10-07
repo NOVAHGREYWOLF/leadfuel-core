@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Jump — search to anywhere</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#050508}
+.w{--d0:#050508;--d1:#09090e;--d2:#101019;--d3:#171725;--ink:#ECECF1;--ink2:rgba(236,236,241,.85);--mut:#8e8e9e;--mut2:#6b6b80;--line:#262633;--acc:#6366F1;--lit:#b9b6ff;--accsoft:rgba(99,102,241,.12);--deg:#fbbf24;--brk:#fb7185;--brkt:#fda4af;--unk:#62627a;--idle:#2a2a38;--idlet:#6b6b80;--ok:#2dd4bf;--mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.w *{box-sizing:border-box}
+.w a{color:inherit;text-decoration:none}
+.w button{font:inherit;color:inherit}
+kbd{font:600 10px/1 var(--mono);color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:3px 5px;background:var(--d2);min-width:18px;text-align:center;display:inline-block}
+.lbl{font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.mark{display:flex;align-items:center;gap:8px;font-weight:650;letter-spacing:.06em;white-space:nowrap}
+.mark i{width:13px;height:13px;border:1.5px solid var(--lit);transform:rotate(45deg);border-radius:2px;display:inline-block}
+.nb{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;color:var(--mut);background:var(--d2);font-size:12.5px}
+.trail{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.trail span{padding:5px 9px;border:1px solid var(--line);border-radius:6px;white-space:nowrap}
+.trail span.here{color:var(--ink);border-color:var(--lit)}
+.trail em{font-style:normal;color:var(--mut2)}
+.jump{display:flex;align-items:center;gap:8px;flex:0 1 24rem;min-width:0;height:34px;padding:0 10px 0 12px;border:1px solid transparent;border-radius:9px;background:var(--d3);color:var(--ink);font-size:12.5px;white-space:nowrap;overflow:hidden;box-shadow:0 0 0 1px rgba(99,102,241,.55),0 0 24px rgba(99,102,241,.25)}
+.jump svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;flex:none}
+.jump kbd{margin-left:auto}
+.jump i{display:inline-block;width:1px;height:16px;background:var(--lit);margin-left:1px}
+.apex{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--d2);font-weight:600;white-space:nowrap;font-size:12.5px}
+.apex .d{width:8px;height:8px;border-radius:50%;background:var(--deg)}
+.apex small{font:400 11px var(--mono);color:var(--mut)}
+.scope{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;border-radius:5px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.clock{font:12px var(--mono);color:var(--mut);white-space:nowrap}
+.ex{font:600 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);border:1px dashed var(--line);padding:4px 6px;border-radius:4px;white-space:nowrap}
+.res{display:flex;align-items:center;background:var(--d1);border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--mut)}
+.res > span{display:flex;align-items:center;gap:8px;padding:0 16px;height:36px;border-right:1px solid var(--line);white-space:nowrap}
+.res b{font-weight:600;color:var(--ink);letter-spacing:.08em;font-size:10.5px}
+.res i{font-style:normal;color:var(--ink2)}
+.pane{background:var(--d2);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;align-content:start;min-width:0}
+.pane.raised{background:var(--d3)}
+.pane h5{margin:0;font:600 10.5px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pane h5 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--mut2)}
+.pane h5 kbd{margin-left:auto}
+.ans{font-weight:600;font-size:15px;line-height:1.3;color:var(--ink);text-wrap:balance}
+.ans b{color:var(--brkt)}.ans .wait{color:var(--deg)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink2)}
+.row small{display:block;color:var(--mut);font:11px var(--mono)}
+.st{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.st .d{width:8px;height:8px;border-radius:50%;flex:none}
+.st-ready{color:var(--ink2)}.st-ready .d{background:var(--ink2)}
+.st-degraded{color:var(--deg)}.st-degraded .d{background:linear-gradient(90deg,var(--deg) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--deg)}
+.st-broken{color:var(--brkt)}.st-broken .d{background:var(--brk)}
+.st-unknown{color:var(--mut)}.st-unknown .d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--unk)}
+.st-idle{color:var(--idlet)}.st-idle .d{background:var(--idle);box-shadow:inset 0 0 0 1px var(--mut2)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--d3);font-size:12.5px;color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.menu{display:grid;gap:2px}
+.menu a,.menu button{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px 0 8px;border-radius:7px;color:var(--mut);font-size:13px;border:1px solid transparent;background:none;text-align:left;cursor:pointer}
+.menu .c{width:10px;color:var(--lit);font-weight:700;visibility:hidden}
+.menu .n{flex:1}
+.menu .cnt{font:600 10px/1 var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:999px;color:var(--mut)}
+.menu .cnt.hot{color:var(--brkt);border-color:var(--brk)}.menu .cnt.wait{color:var(--deg);border-color:var(--deg)}
+.party{display:grid;gap:4px}
+.pm{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;height:34px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--d2);font-size:12.5px}
+.pm i{width:11px;height:11px;border:1.5px solid var(--ink2);transform:rotate(45deg);border-radius:2px;display:inline-block;margin-left:4px}
+.pm.dim{color:var(--idlet)}.pm.dim i{border-color:var(--idlet);border-style:dashed}
+.pm b{font-weight:600;color:var(--ink)}.pm.dim b{color:var(--idlet)}
+.pm small{font:10.5px var(--mono);color:var(--mut)}
+.char{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--d3)}
+.char .av{width:44px;height:44px;border:1.5px solid var(--lit);transform:rotate(45deg);border-radius:6px;display:grid;place-items:center;margin:0 auto}
+.char .av span{transform:rotate(-45deg);font:600 12px var(--mono);color:var(--lit)}
+.char b{display:block;font-size:14px;color:var(--ink)}
+.char small{display:block;font:11px var(--mono);color:var(--mut)}
+.dim{position:absolute;inset:0;opacity:.25}
+.dim svg{width:920px;height:726px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.dim .ring{fill:none;stroke:var(--mut2);stroke-width:1}
+.dim .spoke{stroke:var(--line)}
+.pal{position:absolute;left:50%;top:48px;transform:translateX(-50%);width:640px;max-width:calc(100% - 40px);display:grid;border:1px solid var(--line);border-radius:14px;background:rgba(16,16,25,.97);box-shadow:0 24px 64px rgba(0,0,0,.6),0 0 0 1px rgba(99,102,241,.25);overflow:hidden}
+.pal .in{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:16px}
+.pal .in svg{width:18px;height:18px;fill:none;stroke:var(--mut);stroke-width:1.7;stroke-linecap:round;flex:none}
+.pal .in b{font-weight:500;color:var(--ink)}
+.pal .in i{display:inline-block;width:1px;height:20px;background:var(--lit)}
+.pal .in .lbl{margin-left:auto}
+.grp{padding:8px 8px 4px}
+.grp h6{margin:0;padding:6px 8px 4px;font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut2);display:flex;justify-content:space-between}
+.hit{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;gap:10px;align-items:center;height:36px;padding:0 10px;border-radius:7px;color:var(--ink2);font-size:13px}
+.hit:hover{background:var(--d3)}
+.hit.sel{background:var(--accsoft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--acc)}
+.hit .g{width:12px;height:12px;border:1.5px solid var(--mut);border-radius:50%;justify-self:center}
+.hit .g.door{border-radius:1px;transform:rotate(45deg);width:10px;height:10px}
+.hit .g.view{border-radius:2px;border-style:dashed}
+.hit .g.quest{border-radius:1px;transform:rotate(45deg);width:10px;height:10px;border-color:var(--lit)}
+.hit .g.person{border-radius:50% 50% 2px 2px}
+.hit .g.cmd{border-radius:2px;border-color:var(--mut2)}
+.hit .n b{font-weight:600;color:var(--ink)}
+.hit .n em{font-style:normal;color:var(--lit)}
+.hit .n small{color:var(--mut);font:11px var(--mono);margin-left:8px}
+.hit .where{font:10.5px var(--mono);color:var(--mut2);white-space:nowrap}
+.hit kbd{opacity:0}.hit.sel kbd{opacity:1}
+.foot{display:flex;gap:14px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);font:11px var(--mono);color:var(--mut2)}
+.foot span{display:inline-flex;align-items:center;gap:5px}
+.mini{position:relative;height:126px;border:1px solid var(--line);border-radius:8px;background:var(--d1);overflow:hidden}
+.mini svg{width:100%;height:100%}
+.mini .ring{fill:none;stroke:var(--line);stroke-width:1}
+.mini .here{fill:var(--lit)}.mini .warn{fill:var(--deg)}
+.mini .cap{position:absolute;left:8px;bottom:6px;font:10px var(--mono);color:var(--mut)}
+.ask{display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:38px;padding:0 4px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--d3)}
+.ask input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:13px;color:var(--ink);font-family:inherit}
+.ask input::placeholder{color:var(--mut2)}
+.mic{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--d2);color:var(--mut);font:600 9.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.mic svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.go{height:30px;padding:0 12px;border:0;border-radius:7px;background:var(--acc);color:#fff;font-weight:600;cursor:pointer}
+.keys{display:flex;align-items:center;gap:14px;padding:0 14px;font:11px var(--mono);color:var(--mut2);background:var(--d0);border-top:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.keys span{display:inline-flex;align-items:center;gap:5px}
+.keys kbd{background:var(--d1)}
+</style>
+</helmet>
+<div class="w" style="display:grid;grid-template-columns:220px minmax(0,1fr) 300px;grid-template-rows:52px 36px minmax(0,1fr) 56px 30px;width:100%;height:100vh;min-height:900px;min-width:1180px;background:#050508;color:#ECECF1;font-size:13px;line-height:1.45">
+
+  <header style="grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 14px;background:#09090e;border-bottom:1px solid #262633;min-width:0">
+    <div class="mark"><i></i><span>LEADFUEL</span></div>
+    <nav style="display:flex;gap:4px" aria-label="Move">
+      <a class="nb" href="Main.dc.html"><kbd>H</kbd>Home</a>
+      <a class="nb" href="Main.dc.html"><kbd>B</kbd>Back</a>
+    </nav>
+    <div class="trail" aria-label="Trail"><span class="here">Home</span><em>· jumping</em></div>
+    <a class="jump" href="Search.dc.html" aria-label="Jump"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>quick<i></i><kbd>Esc</kbd></a>
+    <div class="apex" style="margin-left:auto"><span class="d"></span>needs you · 3<small>as of 42 s</small></div>
+    <a class="scope" href="Owner.dc.html">your estate</a>
+    <span class="clock">09:41 PT</span>
+    <span class="ex">example data</span>
+  </header>
+
+  <div class="res" style="grid-column:1/-1">
+    <span><b>TUE 7 OCT</b><i>09:41 PT</i>· next <i>15:00</i> call with Dana</span>
+    <span><b>MONEY</b><i>$4,120</i> in bank · <i>1,980</i> credits · spend today <i>$0.42</i></span>
+    <span><b>LEADS</b><i>212</i> · 31 warm · 1,480 contacts</span>
+    <span><b>BRAIN</b><i>12,480</i> facts · learned 09:30 · 3 gaps</span>
+  </div>
+
+  <aside style="display:grid;gap:10px;align-content:start;padding:12px 10px;background:#09090e;border-right:1px solid #262633;min-height:0;overflow:hidden;opacity:.6">
+    <a class="char" href="Main.dc.html" aria-label="Your character">
+      <div class="av"><span>AV</span></div>
+      <div><b>Avery · Northlight</b><small>brain 12,480 facts · 6 needs</small><small>customer · own estate</small></div>
+    </a>
+    <div>
+      <div class="lbl" style="padding:2px 8px 6px">Command</div>
+      <nav class="menu" aria-label="Command menu">
+        <a href="Main.dc.html"><span class="c">▸</span><span class="n">Today</span><span class="cnt hot">3</span><kbd>T</kbd></a>
+        <a href="Map.dc.html"><span class="c">▸</span><span class="n">Map · overlays</span><span class="cnt">55</span><kbd>M</kbd></a>
+        <a href="Quests.dc.html"><span class="c">▸</span><span class="n">Quests</span><span class="cnt wait">1</span><kbd>Q</kbd></a>
+        <button type="button"><span class="c">▸</span><span class="n">Party · arms</span><kbd>P</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Inventory</span><kbd>I</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Time · the day</span><kbd>D</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Status · you</span><kbd>S</kbd></button>
+        <a href="Act.dc.html"><span class="c">▸</span><span class="n">Act · the door</span><span class="cnt wait">3</span><kbd>A</kbd></a>
+        <a href="Ask.dc.html"><span class="c">▸</span><span class="n">Ask</span><kbd>?</kbd></a>
+      </nav>
+    </div>
+    <div>
+      <div class="lbl" style="padding:2px 8px 6px">Party · the arms</div>
+      <div class="party">
+        <div class="pm"><i></i><div><b>hub</b> <small>core · ready</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm"><i></i><div><b>reach</b> <small>3 sent · 0 replies</small></div><span class="st st-degraded"><span class="d"></span>waiting</span></div>
+        <div class="pm"><i></i><div><b>signal</b> <small>1 post due</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm"><i></i><div><b>scope</b> <small>profile 70 %</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm dim"><i></i><div><b>orbit</b> <small>not connected</small></div><span class="st st-idle"><span class="d"></span>idle</span></div>
+        <div class="pm dim"><i></i><div><b>odyssey</b> <small>not in plan</small></div><span class="st st-idle"><span class="d"></span>idle</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="position:relative;min-width:0;min-height:0;overflow:hidden;background:#050508" aria-label="Jump palette over the world">
+    <div class="dim" aria-hidden="true">
+      <svg viewBox="0 0 920 726"><g transform="translate(460 363)"><polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242"></polygon><polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.654)"></polygon><polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.397)"></polygon><g class="spoke"><line x1="0" y1="0" x2="123" y2="-242"></line><line x1="0" y1="0" x2="266" y2="-57"></line><line x1="0" y1="0" x2="252" y2="102"></line><line x1="0" y1="0" x2="93" y2="256"></line><line x1="0" y1="0" x2="-136" y2="236"></line><line x1="0" y1="0" x2="-269" y2="38"></line><line x1="0" y1="0" x2="-123" y2="-242"></line></g></g></svg>
+    </div>
+    <section class="pal" aria-label="Jump">
+      <div class="in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><b>quick</b><i></i><span class="lbl">9 hits · places, overlays, quests, people, commands</span></div>
+      <div class="grp">
+        <h6>Places <span>on the map</span></h6>
+        <a class="hit sel" href="Focus.dc.html"><span class="g"></span><span class="n"><b><em>Quick</em>Books balances</b><small>sensor · Money</small></span><span class="st st-degraded"><span class="d"></span>stale 19 d</span><kbd>↵</kbd></a>
+        <a class="hit" href="Focus.dc.html"><span class="g"></span><span class="n"><b><em>Quick</em>Books records</b><small>sensor · Money</small></span><span class="st st-unknown"><span class="d"></span>not measured</span><kbd>↵</kbd></a>
+        <a class="hit" href="Focus.dc.html"><span class="g"></span><span class="n"><b><em>Quick</em>Books reports</b><small>sensor · Money</small></span><span class="st st-unknown"><span class="d"></span>not measured</span><kbd>↵</kbd></a>
+        <a class="hit" href="Map.dc.html"><span class="g door"></span><span class="n"><b>Money</b> · the region<small>3 sensors · 1 stale</small></span><span class="st st-degraded"><span class="d"></span>1 of 3 live</span><kbd>↵</kbd></a>
+      </div>
+      <div class="grp">
+        <h6>Overlays <span>18 layers · 37 views</span></h6>
+        <a class="hit" href="Map.dc.html"><span class="g view"></span><span class="n"><b>V23 · Money terrain</b><small>view · one ridge per QuickBooks rail</small></span><span class="st st-degraded"><span class="d"></span>partial</span><kbd>↵</kbd></a>
+        <a class="hit" href="Map.dc.html"><span class="g view"></span><span class="n"><b>L06 · Blind spots</b><small>layer · fog over what the system cannot see</small></span><span class="st st-ready"><span class="d"></span>on</span><kbd>↵</kbd></a>
+      </div>
+      <div class="grp">
+        <h6>Quests <span>goals and campaigns</span></h6>
+        <a class="hit" href="Quests.dc.html"><span class="g quest"></span><span class="n"><b>Pay down the card</b><small>goal · reads QuickBooks balances</small></span><span class="st st-ready"><span class="d"></span>on track</span><kbd>↵</kbd></a>
+      </div>
+      <div class="grp">
+        <h6>People <span>your own graph</span></h6>
+        <a class="hit" href="Focus.dc.html"><span class="g person"></span><span class="n"><b>Dana Quick</b><small>warm tie · 2 threads · call 15:00</small></span><span class="where">people</span><kbd>↵</kbd></a>
+      </div>
+      <div class="grp" style="padding-bottom:8px">
+        <h6>Commands</h6>
+        <a class="hit" href="Act.dc.html"><span class="g cmd"></span><span class="n"><b>Ask QuickBooks again</b><small>move · outward · queued for you</small></span><span class="where">act</span><kbd>↵</kbd></a>
+      </div>
+      <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd>move</span><span><kbd>↵</kbd>jump there · the trail remembers where you were</span><span><kbd>Tab</kbd>next group</span><span><kbd>Esc</kbd>close</span><span style="margin-left:auto">one index · no network per keystroke</span></div>
+    </section>
+  </main>
+
+  <aside style="display:grid;gap:10px;align-content:start;padding:12px 10px;background:#09090e;border-left:1px solid #262633;min-height:0;overflow:hidden;opacity:.6">
+    <section class="pane raised" aria-label="Today">
+      <h5>Today <span>always on</span><kbd>T</kbd></h5>
+      <div class="ans"><b>3 things</b> need you. One has waited <b>11 days</b>.</div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>2 d</span><span>Approve: reply to Dana about Thursday<small>reach · email · outward</small></span></div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>6 h</span><span>Approve: post the launch note<small>signal · post · outward</small></span></div>
+      <div class="row"><span class="st st-broken"><span class="d"></span>11 d old</span><span>Decide: connect orbit to LinkedIn<small>a door · needs your yes</small></span></div>
+    </section>
+    <section class="pane" aria-label="Act">
+      <h5>Act · the door <span>always on</span><kbd>A</kbd></h5>
+      <div class="ans"><span class="wait">3 proposals</span> wait at the door.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn primary" href="Act.dc.html">Open the door</a></div>
+    </section>
+    <section aria-label="Minimap">
+      <div class="lbl" style="padding:0 2px 6px;display:flex;justify-content:space-between"><span>Minimap</span><span style="letter-spacing:0;text-transform:none;color:#6b6b80">the hit under the cursor</span></div>
+      <div class="mini">
+        <svg viewBox="0 0 280 126" role="img" aria-label="Minimap: the selected hit is in Money">
+          <g transform="translate(140 66) scale(.22)">
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" style="stroke:#6b6b80"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.654)"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.397)"></polygon>
+            <circle class="warn" cx="176" cy="118" r="9"></circle>
+            <circle cx="176" cy="118" r="18" style="fill:none;stroke:#b9b6ff;stroke-width:3;stroke-dasharray:8 8"></circle>
+            <circle class="here" cx="0" cy="0" r="12"></circle>
+          </g>
+        </svg>
+        <span class="cap">↵ jumps to QuickBooks balances</span>
+      </div>
+    </section>
+  </aside>
+
+  <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 14px;background:#09090e;border-top:1px solid #262633;opacity:.6">
+    <span class="lbl" style="width:196px">Ask · always on</span>
+    <div class="ask"><input type="text" placeholder="Ask about your day, a quest, a place on the map" aria-label="Ask"><span class="mic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>local only</span><a class="go" href="Ask.dc.html" style="display:inline-flex;align-items:center">Ask</a></div>
+    <kbd style="height:24px;line-height:16px">?</kbd>
+  </div>
+
+  <div class="keys" style="grid-column:1/-1">
+    <span><kbd>↑</kbd><kbd>↓</kbd>move</span><span><kbd>↵</kbd>jump</span><span><kbd>Tab</kbd>next group</span><span><kbd>Esc</kbd>close</span><span><kbd>/</kbd>opens this from anywhere</span><span><kbd>B</kbd>after a jump: back to where you were</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

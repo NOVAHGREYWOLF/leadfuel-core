@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Focus — the HUD at a part</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#050508}
+.w{--d0:#050508;--d1:#09090e;--d2:#101019;--d3:#171725;--ink:#ECECF1;--ink2:rgba(236,236,241,.85);--mut:#8e8e9e;--mut2:#6b6b80;--line:#262633;--acc:#6366F1;--lit:#b9b6ff;--accsoft:rgba(99,102,241,.12);--deg:#fbbf24;--brk:#fb7185;--brkt:#fda4af;--unk:#62627a;--idle:#2a2a38;--idlet:#6b6b80;--ok:#2dd4bf;--mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.w *{box-sizing:border-box}
+.w a{color:inherit;text-decoration:none}
+.w button{font:inherit;color:inherit}
+kbd{font:600 10px/1 var(--mono);color:var(--mut);border:1px solid var(--line);border-radius:4px;padding:3px 5px;background:var(--d2);min-width:18px;text-align:center;display:inline-block}
+.lbl{font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.mark{display:flex;align-items:center;gap:8px;font-weight:650;letter-spacing:.06em;white-space:nowrap}
+.mark i{width:13px;height:13px;border:1.5px solid var(--lit);transform:rotate(45deg);border-radius:2px;display:inline-block}
+.nb{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;color:var(--mut);background:var(--d2);font-size:12.5px}
+.nb.cur{color:var(--ink);border-color:var(--acc);background:var(--accsoft)}
+.trail{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.trail span{padding:5px 9px;border:1px solid var(--line);border-radius:6px;white-space:nowrap}
+.trail span.here{color:var(--ink);border-color:var(--lit)}
+.trail em{font-style:normal;color:var(--mut2)}
+.jump{display:flex;align-items:center;gap:8px;flex:0 1 20rem;min-width:0;height:34px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:9px;background:var(--d3);color:var(--mut2);font-size:12.5px;white-space:nowrap;overflow:hidden}
+.jump svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;flex:none}
+.jump kbd{margin-left:auto}
+.apex{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--d2);font-weight:600;white-space:nowrap;font-size:12.5px}
+.apex .d{width:8px;height:8px;border-radius:50%;background:var(--deg)}
+.apex small{font:400 11px var(--mono);color:var(--mut)}
+.scope{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;border-radius:5px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.clock{font:12px var(--mono);color:var(--mut);white-space:nowrap}
+.ex{font:600 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);border:1px dashed var(--line);padding:4px 6px;border-radius:4px;white-space:nowrap}
+.res{display:flex;align-items:center;background:var(--d1);border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--mut)}
+.res > span{display:flex;align-items:center;gap:8px;padding:0 16px;height:36px;border-right:1px solid var(--line);white-space:nowrap}
+.res b{font-weight:600;color:var(--ink);letter-spacing:.08em;font-size:10.5px}
+.res i{font-style:normal;color:var(--ink2)}
+.pane{background:var(--d2);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;align-content:start;min-width:0}
+.pane.raised{background:var(--d3)}
+.pane h5{margin:0;font:600 10.5px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pane h5 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--mut2)}
+.pane h5 kbd{margin-left:auto}
+.ans{font-weight:600;font-size:15px;line-height:1.3;color:var(--ink);text-wrap:balance}
+.ans b{color:var(--brkt)}.ans .wait{color:var(--deg)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink2)}
+.row small{display:block;color:var(--mut);font:11px var(--mono)}
+.st{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.st .d{width:8px;height:8px;border-radius:50%;flex:none}
+.st-ready{color:var(--ink2)}.st-ready .d{background:var(--ink2)}
+.st-degraded{color:var(--deg)}.st-degraded .d{background:linear-gradient(90deg,var(--deg) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--deg)}
+.st-broken{color:var(--brkt)}.st-broken .d{background:var(--brk)}
+.st-unknown{color:var(--mut)}.st-unknown .d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--unk)}
+.st-idle{color:var(--idlet)}.st-idle .d{background:var(--idle);box-shadow:inset 0 0 0 1px var(--mut2)}
+.st-ok{color:var(--ok)}.st-ok .d{background:var(--ok)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--d3);font-size:12.5px;color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.btn .tier{font:600 9.5px/1 var(--mono);letter-spacing:.08em;padding:2px 5px;border-radius:4px;border:1px solid currentColor}
+.btn.outward{color:var(--deg)}
+.menu{display:grid;gap:2px}
+.menu a,.menu button{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px 0 8px;border-radius:7px;color:var(--mut);font-size:13px;border:1px solid transparent;background:none;text-align:left;cursor:pointer}
+.menu a:hover,.menu button:hover{color:var(--ink);background:var(--d3)}
+.menu .cur{color:var(--ink);background:var(--accsoft);border-color:var(--acc)}
+.menu .c{width:10px;color:var(--lit);font-weight:700;visibility:hidden}
+.menu .cur .c{visibility:visible}
+.menu .n{flex:1}
+.menu .cnt{font:600 10px/1 var(--mono);padding:2px 6px;border:1px solid var(--line);border-radius:999px;color:var(--mut)}
+.menu .cnt.hot{color:var(--brkt);border-color:var(--brk)}.menu .cnt.wait{color:var(--deg);border-color:var(--deg)}
+.party{display:grid;gap:4px}
+.pm{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;height:34px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--d2);font-size:12.5px}
+.pm i{width:11px;height:11px;border:1.5px solid var(--ink2);transform:rotate(45deg);border-radius:2px;display:inline-block;margin-left:4px}
+.pm.dim{color:var(--idlet)}.pm.dim i{border-color:var(--idlet);border-style:dashed}
+.pm b{font-weight:600;color:var(--ink)}.pm.dim b{color:var(--idlet)}
+.pm small{font:10.5px var(--mono);color:var(--mut)}
+.char{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--d3)}
+.char .av{width:44px;height:44px;border:1.5px solid var(--lit);transform:rotate(45deg);border-radius:6px;display:grid;place-items:center;margin:0 auto}
+.char .av span{transform:rotate(-45deg);font:600 12px var(--mono);color:var(--lit)}
+.char b{display:block;font-size:14px;color:var(--ink)}
+.char small{display:block;font:11px var(--mono);color:var(--mut)}
+.focus{border:1px solid var(--lit);border-radius:12px;background:var(--d3);padding:16px;display:grid;gap:10px;align-content:start;box-shadow:0 0 0 1px rgba(99,102,241,.25),0 0 32px rgba(99,102,241,.12)}
+.focus .fn{font-weight:650;font-size:28px;line-height:1.1;letter-spacing:-.01em;text-wrap:balance}
+.focus .eyebrow{display:flex;gap:10px;align-items:center;font:600 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.focus p{margin:0;font-size:13px;color:var(--ink2);max-width:52ch}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font:11.5px var(--mono);color:var(--ink2)}
+.kv span:nth-child(odd){color:var(--mut2)}
+.bar5{display:flex;height:9px;border-radius:3px;overflow:hidden;background:var(--d0)}
+.bar5 i{display:block;height:100%;border-right:1px solid var(--d2)}
+.bar5 .degraded{background:var(--deg)}.bar5 .unknown{background:repeating-linear-gradient(135deg,var(--unk) 0 2px,transparent 2px 5px)}.bar5 .ready{background:#3f3f52}.bar5 .idle{background:var(--idle)}
+.find{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--d2);font-size:12.5px;color:var(--ink2)}
+.find .fix{grid-column:2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px var(--mono);color:var(--mut)}
+.find .fix b{color:var(--ok);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:10px}
+.tiles{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{display:grid;gap:5px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--d2);font-size:12.5px;min-height:74px;align-content:start}
+.tile b{font-weight:600;color:var(--ink)}
+.tile .v{font:10px var(--mono);color:var(--mut2);letter-spacing:.06em;text-transform:uppercase}
+.tile.side{border-style:dashed}
+.tile.cur{border-color:var(--lit)}
+.mini{position:relative;height:126px;border:1px solid var(--line);border-radius:8px;background:var(--d1);overflow:hidden}
+.mini svg{width:100%;height:100%}
+.mini .ring{fill:none;stroke:var(--line);stroke-width:1}
+.mini .here{fill:var(--lit)}.mini .warn{fill:var(--deg)}
+.mini .cap{position:absolute;left:8px;bottom:6px;font:10px var(--mono);color:var(--mut)}
+.ask{display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:38px;padding:0 4px 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--d3)}
+.ask input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:13px;color:var(--ink);font-family:inherit}
+.ask input::placeholder{color:var(--mut2)}
+.mic{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--d2);color:var(--mut);font:600 9.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.mic svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.go{height:30px;padding:0 12px;border:0;border-radius:7px;background:var(--acc);color:#fff;font-weight:600;cursor:pointer}
+.keys{display:flex;align-items:center;gap:14px;padding:0 14px;font:11px var(--mono);color:var(--mut2);background:var(--d0);border-top:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.keys span{display:inline-flex;align-items:center;gap:5px}
+.keys kbd{background:var(--d1)}
+</style>
+</helmet>
+<div class="w" style="display:grid;grid-template-columns:220px minmax(0,1fr) 300px;grid-template-rows:52px 36px minmax(0,1fr) 56px 30px;width:100%;height:100vh;min-height:900px;min-width:1180px;background:#050508;color:#ECECF1;font-size:13px;line-height:1.45">
+
+  <header style="grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 14px;background:#09090e;border-bottom:1px solid #262633;min-width:0">
+    <div class="mark"><i></i><span>LEADFUEL</span></div>
+    <nav style="display:flex;gap:4px" aria-label="Move">
+      <a class="nb" href="Main.dc.html"><kbd>H</kbd>Home</a>
+      <a class="nb" href="Map.dc.html"><kbd>B</kbd>Back</a>
+    </nav>
+    <div class="trail" aria-label="Trail"><span>Home</span><em>›</em><span>Map</span><em>›</em><span>Money</span><em>›</em><span class="here">QuickBooks balances</span></div>
+    <a class="jump" href="Search.dc.html" aria-label="Jump"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Jump to…<kbd>/</kbd></a>
+    <div class="apex" style="margin-left:auto"><span class="d"></span>needs you · 3<small>as of 42 s</small></div>
+    <a class="scope" href="Owner.dc.html">your estate</a>
+    <span class="clock">09:41 PT</span>
+    <span class="ex">example data</span>
+  </header>
+
+  <div class="res" style="grid-column:1/-1">
+    <span><b>TUE 7 OCT</b><i>09:41 PT</i>· next <i>15:00</i> call with Dana</span>
+    <span><b>MONEY</b><i>$4,120</i> in bank · <i>1,980</i> credits · spend today <i>$0.42</i></span>
+    <span><b>LEADS</b><i>212</i> · 31 warm · 1,480 contacts</span>
+    <span><b>BRAIN</b><i>12,480</i> facts · learned 09:30 · 3 gaps</span>
+  </div>
+
+  <aside style="display:grid;gap:10px;align-content:start;padding:12px 10px;background:#09090e;border-right:1px solid #262633;min-height:0;overflow:hidden">
+    <a class="char" href="Main.dc.html" aria-label="Your character">
+      <div class="av"><span>AV</span></div>
+      <div><b>Avery · Northlight</b><small>brain 12,480 facts · 6 needs</small><small>customer · own estate</small></div>
+    </a>
+    <div>
+      <div class="lbl" style="padding:2px 8px 6px">Command</div>
+      <nav class="menu" aria-label="Command menu">
+        <a href="Main.dc.html"><span class="c">▸</span><span class="n">Today</span><span class="cnt hot">3</span><kbd>T</kbd></a>
+        <a class="cur" href="Map.dc.html"><span class="c">▸</span><span class="n">Map · in a place</span><span class="cnt">55</span><kbd>M</kbd></a>
+        <a href="Quests.dc.html"><span class="c">▸</span><span class="n">Quests</span><span class="cnt wait">1</span><kbd>Q</kbd></a>
+        <button type="button"><span class="c">▸</span><span class="n">Party · arms</span><kbd>P</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Inventory</span><kbd>I</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Time · the day</span><kbd>D</kbd></button>
+        <button type="button"><span class="c">▸</span><span class="n">Status · you</span><kbd>S</kbd></button>
+        <a href="Act.dc.html"><span class="c">▸</span><span class="n">Act · the door</span><span class="cnt wait">3</span><kbd>A</kbd></a>
+        <a href="Ask.dc.html"><span class="c">▸</span><span class="n">Ask</span><kbd>?</kbd></a>
+      </nav>
+    </div>
+    <div>
+      <div class="lbl" style="padding:2px 8px 6px">Party · the arms</div>
+      <div class="party">
+        <div class="pm"><i></i><div><b>hub</b> <small>core · ready</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm"><i></i><div><b>reach</b> <small>3 sent · 0 replies</small></div><span class="st st-degraded"><span class="d"></span>waiting</span></div>
+        <div class="pm"><i></i><div><b>signal</b> <small>1 post due</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm"><i></i><div><b>scope</b> <small>profile 70 %</small></div><span class="st st-ready"><span class="d"></span>ready</span></div>
+        <div class="pm dim"><i></i><div><b>orbit</b> <small>not connected</small></div><span class="st st-idle"><span class="d"></span>idle</span></div>
+        <div class="pm dim"><i></i><div><b>odyssey</b> <small>not in plan</small></div><span class="st st-idle"><span class="d"></span>idle</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="position:relative;min-width:0;min-height:0;overflow:auto;padding:14px;display:grid;gap:12px;align-content:start;background:radial-gradient(ellipse at 50% 30%,#101019 0,#050508 75%);background-color:#050508" aria-label="The HUD at a part">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="lbl">Behind you</span>
+      <div class="trail"><a href="Main.dc.html"><span>Home</span></a><em>›</em><a href="Map.dc.html"><span>Map</span></a><em>›</em><a href="Map.dc.html"><span>Money</span></a><em>›</em><span class="here">QuickBooks balances</span></div>
+      <a class="nb" href="Map.dc.html" style="margin-left:auto;height:28px"><kbd>B</kbd>step back</a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px">
+      <section class="focus" aria-label="State">
+        <div class="eyebrow"><span>sensor</span><em style="font-style:normal;color:#6b6b80">·</em><span>region · Money</span><em style="font-style:normal;color:#6b6b80">·</em><span>read every 15 min</span></div>
+        <div class="fn">QuickBooks balances</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="st st-degraded"><span class="d"></span>stale since 16 Sep</span><span style="font-size:12.5px;color:#c9c9d4">working, with a named deficiency</span></div>
+        <p>Balance snapshots, asked every 15 minutes and written on change. The watcher allows 45 days of silence by design, so this reads stale, not broken.</p>
+        <div class="kv"><span>last row</span><span>2026-09-16 04:10 PT · 19 days ago</span><span>budget</span><span>1,080 h of silence · 24 h ask check</span><span>feeds</span><span>Money terrain (V23) · the morning book · your Survival need</span></div>
+        <div><div class="lbl" style="padding-bottom:5px">the three rails of this sensor group</div><div class="bar5" role="img" aria-label="3 rails: 1 stale, 2 unknown"><i class="degraded" style="width:33.3%"></i><i class="unknown" style="width:66.7%"></i></div></div>
+      </section>
+      <section class="pane raised" aria-label="Findings, each with its fix">
+        <h5>Findings · with the fix <span>2</span></h5>
+        <div class="find"><span class="st st-degraded"><span class="d"></span>F1</span><span>The balance sheet has not moved for 19 days.</span><div class="fix"><b>Fix</b><a class="btn" href="Focus.dc.html"><span class="tier">safe</span>Re-read now</a><span>→ runs, nothing leaves</span></div></div>
+        <div class="find"><span class="st st-unknown"><span class="d"></span>F2</span><span>Records and reports have no measurement on record.</span><div class="fix"><b>Fix</b><a class="btn" href="Focus.dc.html"><span class="tier">fix</span>Measure both rails</a><span>→ runs and logs</span></div></div>
+        <div class="find"><span class="st st-ready"><span class="d"></span>F3</span><span>Survival reads unknown while this is stale: the need waits on this sensor.</span><div class="fix"><b>Why</b><span>fixing F1 flips the Survival ladder from hollow to a rung</span></div></div>
+      </section>
+    </div>
+
+    <section class="pane" aria-label="Moves">
+      <h5>Moves <span>disposition shown before the click</span></h5>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <a class="btn" href="Focus.dc.html"><span class="tier">safe</span>Re-read now</a>
+        <a class="btn" href="Focus.dc.html"><span class="tier">fix</span>Reset the 24 h check</a>
+        <a class="btn outward" href="Act.dc.html"><span class="tier">outward</span>Ask QuickBooks again <span style="font:11px var(--mono);color:#8e8e9e">→ queued for you</span></a>
+        <a class="btn" href="Ask.dc.html">Ask about this</a>
+        <span style="margin-left:auto;font:11px var(--mono);color:#6b6b80">outward never runs from here: it becomes a proposal at the door</span>
+      </div>
+    </section>
+
+    <section aria-label="Ahead: the neighbours">
+      <div class="lbl" style="padding:0 2px 6px;display:flex;justify-content:space-between"><span>Ahead · neighbours</span><span style="letter-spacing:0;text-transform:none;color:#6b6b80"><kbd>←</kbd> <kbd>→</kbd> move · <kbd>↵</kbd> enter · dashed = connected by an edge</span></div>
+      <div class="tiles">
+        <a class="tile cur" href="Focus.dc.html"><span class="v">sibling · same group</span><b>QuickBooks records</b><span class="st st-unknown"><span class="d"></span>not measured</span></a>
+        <a class="tile" href="Focus.dc.html"><span class="v">sibling · same group</span><b>QuickBooks reports</b><span class="st st-unknown"><span class="d"></span>not measured</span></a>
+        <a class="tile" href="Map.dc.html"><span class="v">measures →</span><b>Money · the region</b><span class="st st-degraded"><span class="d"></span>1 of 3 rails live</span></a>
+        <a class="tile side" href="Focus.dc.html"><span class="v">to →</span><b>Raw vault · store</b><span class="st st-ready"><span class="d"></span>live</span></a>
+        <a class="tile side" href="Map.dc.html"><span class="v">shown on →</span><b>Money terrain · view V23</b><span class="st st-degraded"><span class="d"></span>partial</span></a>
+        <a class="tile side" href="Main.dc.html"><span class="v">feeds →</span><b>Survival · your need</b><span class="st st-unknown"><span class="d"></span>unknown until F1</span></a>
+      </div>
+    </section>
+  </main>
+
+  <aside style="display:grid;gap:10px;align-content:start;padding:12px 10px;background:#09090e;border-left:1px solid #262633;min-height:0;overflow:hidden">
+    <section class="pane raised" aria-label="Today">
+      <h5>Today <span>always on</span><kbd>T</kbd></h5>
+      <div class="ans"><b>3 things</b> need you. One has waited <b>11 days</b>.</div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>2 d</span><span>Approve: reply to Dana about Thursday<small>reach · email · outward</small></span></div>
+      <div class="row"><span class="st st-degraded"><span class="d"></span>6 h</span><span>Approve: post the launch note<small>signal · post · outward</small></span></div>
+      <div class="row"><span class="st st-broken"><span class="d"></span>11 d old</span><span>Decide: connect orbit to LinkedIn<small>a door · needs your yes</small></span></div>
+    </section>
+    <section class="pane" aria-label="Act">
+      <h5>Act · the door <span>always on</span><kbd>A</kbd></h5>
+      <div class="ans"><span class="wait">3 proposals</span> wait at the door.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn primary" href="Act.dc.html">Open the door</a></div>
+    </section>
+    <section aria-label="Minimap">
+      <div class="lbl" style="padding:0 2px 6px;display:flex;justify-content:space-between"><span>Minimap</span><span style="letter-spacing:0;text-transform:none;color:#6b6b80">you are in Money</span></div>
+      <div class="mini">
+        <svg viewBox="0 0 280 126" role="img" aria-label="Minimap: you are at QuickBooks balances in the Money region">
+          <g transform="translate(140 66) scale(.22)">
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" style="stroke:#6b6b80"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.654)"></polygon>
+            <polygon class="ring" points="123,-242 266,-57 252,102 93,256 -136,236 -269,38 -123,-242" transform="scale(.397)"></polygon>
+            <line x1="0" y1="0" x2="252" y2="102" style="stroke:#b9b6ff;stroke-width:2;stroke-dasharray:6 6"></line>
+            <line x1="0" y1="0" x2="93" y2="256" style="stroke:#b9b6ff;stroke-width:2;stroke-dasharray:6 6"></line>
+            <circle class="warn" cx="176" cy="118" r="9"></circle>
+            <circle class="here" cx="176" cy="118" r="14" style="fill:none;stroke:#b9b6ff;stroke-width:4"></circle>
+          </g>
+        </svg>
+        <span class="cap">Money · QuickBooks balances · 2 siblings unknown</span>
+      </div>
+    </section>
+  </aside>
+
+  <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 14px;background:#09090e;border-top:1px solid #262633">
+    <span class="lbl" style="width:196px">Ask · always on</span>
+    <div class="ask"><input type="text" placeholder="Ask about QuickBooks balances" aria-label="Ask"><span class="mic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>local only</span><a class="go" href="Ask.dc.html" style="display:inline-flex;align-items:center">Ask</a></div>
+    <kbd style="height:24px;line-height:16px">?</kbd>
+  </div>
+
+  <div class="keys" style="grid-column:1/-1">
+    <span><kbd>H</kbd>home</span><span><kbd>B</kbd>back one step</span><span><kbd>M</kbd>map</span><span><kbd>/</kbd>jump</span><span><kbd>T</kbd>today</span><span><kbd>Q</kbd>quests</span><span><kbd>A</kbd>act</span><span><kbd>?</kbd>ask</span><span><kbd>←</kbd><kbd>→</kbd>neighbours</span><span><kbd>↵</kbd>enter</span><span><kbd>F</kbd>fix the first finding</span><span><kbd>Esc</kbd>up one level</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
