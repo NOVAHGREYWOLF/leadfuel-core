@@ -16,6 +16,9 @@ Session `local_e68e1e68-3da1-4054-bc6f-74ad569ec2cb` (FIELD, Sonnet), 2026-10-07
 - Owner's raw-archive request is open until he confirms.
 - No sends from this desk are pending.
 
+## Correction to 002
+- 002 says the predecessor `local_ccbb8afd-09ad-49fe-ab48-86bf5cde9405` (Fable) was archived. **The owner had it UNARCHIVED** (unarchive_session, read back with get_session: not archived, FIELD group). **Do not re-archive it** unless he asks. The owner's phrase "what the archive had" meant that session, not the Fieldy data; the raw-file question in Next 1 may be moot, so ask first.
+
 ## Gotchas
 - Any further production read needs the owner's yes in the desk's own chat; his request here covered this one dump.
 - The text is automatic transcription, all speakers `Unknown`; times are UTC, the wearer was in New York (UTC-4, inferred, not from the location feed).
