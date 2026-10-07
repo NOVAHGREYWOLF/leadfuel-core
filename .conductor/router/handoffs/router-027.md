@@ -8,11 +8,11 @@ Keys on the board: log_27..log_27h, agents_27..agents_27_e, merge_train_27, owed
 Claimed v244. Routed q329-q339 and q342. Opened agents: HERO-COUNCIL 2/2, AUTO-DESKS 2/2 (hub-less, leadfuel-core #34 merged), ARM-SENDS-DOORS 4/4 (signal #33 merged 9d92d52, deploy unconfirmed), PHOTO-CLIENT-STORE 2/2 (novahgreywolf.com #6) and 3/3, PRIVACY PHOTO-STORE-REVIEW (#7, conditional), CC-ROUTE-MOVE 3/3 (#786 head bc086a4), VAULT HUB-ANON 2/2 reader, ONE-INTERFACE S1, S5, S6. Chip RUNNER-WAIT 3/3 local_13236c38 (owner started it). Archived: DESIGN 5/5, AUTO-DESKS 1/1, BOOK-TIME-LOCAL 2/2.
 
 ## Agents of #27 still running (they die if #27 is archived)
-S1 SHELL, S5 WORLD, S6 STUDIO (Opus, hub), HERO-COUNCIL 2/2, PHOTO-CLIENT-STORE 3/3, VAULT 2/2 reader. #27 stays open and copies each report into router/current agent_reports_27. Archive #27 only after all are there.
+S5 WORLD, S6 STUDIO (Opus, hub), HERO-COUNCIL 2/2, PHOTO-CLIENT-STORE 3/3, VAULT 2/2 reader. S1 SHELL 1/1 ended CONTINUING at its cap (no PR; hub surface/one-interface-s1 @ a71210c, ls-remote verified; handoff ONE-INTERFACE-S1-SHELL-001.md on that branch). #27 stays open and copies each report into router/current agent_reports_27. Archive #27 only after all are there.
 
 ## Next
 1. Open NODE GROUP-BY-PROJECT (owner-queued, rank 234; Opus agent, brief drafted in #27's chat, plugin branch way/plugin). Two isolation attempts failed transiently ("git identity"); git itself works.
-2. When S1 pushes its JSON contract (hub surface/one-interface-s1): open S2, S3, S4 stacked on it. Owner queued all six; cap 8 agents.
+2. Open S1 SHELL 2/2 (Opus agent) from that handoff: screen.js, tests, guard additions, draft PR, DOORS review of /api/command/atlas. S1's atlas read is already pushed, so S2, S3, S4 can open stacked on a71210c now. Owner queued all six; cap 8 agents.
 3. #786 to the train after 6/6's batch [784,788,787]; q342=A routed to LAB video local_a2905088 (repo character-design): mark q342 routed after its DONE, then archive that desk.
 4. COUNSEL photo-store wording: conductor 019 asked the owner.
 
