@@ -1,0 +1,28 @@
+{
+  "project": "one-interface",
+  "rule": "Every task below is already QUEUED by the owner (a pick exists on the Conductor desk; rank and source there). Several are HELD on gates recorded in their pick notes (close-first, Fable pins, merge-train order). Read each pick and task before opening a desk; search transcripts for the task id first, because some already have desks.",
+  "tasks": [
+    {"key": "SURFACE~CC-GAME-SHELL", "rank": 222, "role": "umbrella: the spec; done when the post-login home is the one interface for every account"},
+    {"key": "SURFACE~ONE-PLACE-SURVEY", "rank": -21, "role": "survey every session/page touching the command center"},
+    {"key": "DESIGN~ONE-PLACE-DESIGN", "rank": 189, "role": "the look and layout, once, plus tokens PR; suggested FIRST desk: a mock-up the owner reacts to before any build"},
+    {"key": "SURFACE~ONE-PLACE-SHELL", "rank": 190, "role": "the /command shell (hub #776 is open)"},
+    {"key": "INTELLIGENCE~ONE-PLACE-ASK", "rank": 191, "role": "one Ask over the brain, cited"},
+    {"key": "NODE~VOICE-IN-THE-SHELL", "rank": 194, "role": "mic on Ask via the home node"},
+    {"key": "SURFACE~CC-ROUTE-MOVE", "rank": 200, "role": "atlas and command-center routes and nav"},
+    {"key": "INTELLIGENCE~CC-PHONE-READY", "rank": 212, "role": "phone-ready home-screen app (q310)"},
+    {"key": "SURFACE~ATLAS-in-command-center", "rank": 78, "role": "atlas into the command center (PR #730 owed)"},
+    {"key": "SURFACE~ATLAS-VIEWS", "rank": 90, "role": "view switcher over one live model"},
+    {"key": "SURFACE~ATLAS-ACT", "rank": -18, "role": "act on any part from the map"},
+    {"key": "SURFACE~ATLAS-INVENTORY-HUB", "rank": -29.19, "role": "hub inventory as children of the parts"},
+    {"key": "DESIGN~SPATIAL-1-live-atlas", "rank": 109, "role": "live atlas page with a layer drawer"},
+    {"key": "SURFACE~SPATIAL-2-connector-reads", "rank": 110, "role": "read-only connector tools"},
+    {"key": "INTELLIGENCE~SPATIAL-3e-brain-views", "rank": 115, "role": "brain views"},
+    {"key": "NODE~SPATIAL-5-local-collectors", "rank": 117, "role": "local collectors"},
+    {"key": "DESIGN~SPATIAL-6a-customer-view", "rank": 118, "role": "customer view V36"},
+    {"key": "SURFACE~SPATIAL-6b-customer-view", "rank": 119, "role": "customer view V37"},
+    {"key": "SURFACE~TUFTE-G1-cc-correctness", "rank": 66, "role": "command center correctness"},
+    {"key": "SURFACE~TUFTE-G2-cc-outcome", "rank": 67, "role": "command center outcome layer"},
+    {"key": "SURFACE~GOAL-iphone-command-center", "rank": 59, "role": "owner goal: the iPhone app shows the command center only"}
+  ],
+  "stays_with_estate_router": "The merge train itself (NODE MERGE-TRAIN desks) stays with the estate router (ROUTER #25 local_447575ed). This project's PRs land through that train like any other."
+}

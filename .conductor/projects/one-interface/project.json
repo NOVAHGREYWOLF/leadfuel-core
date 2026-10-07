@@ -1,0 +1,24 @@
+{
+  "slug": "one-interface",
+  "goal": "One congruent, game-like interface for the whole app: the atlas world map with all 55 layers and views, the LeadFuel Command wall as the HUD, Today/Act/Ask always on screen, the post-login home for every account (customers and the owner).",
+  "umbrella_task": "SURFACE CC-GAME-SHELL (Conductor desk desks/surface, pick rank 222)",
+  "source": "Owner typed in SURFACE command center nav button (local_9ec7acd5-fe31-4f8b-af7f-0610e6348c35) ~04:55Z 10-07: 'yes thats right, start the one-interface project'. Verified by CONDUCTOR 017 (local_51008c82) with search_session_transcripts. The full spec is in the CC-GAME-SHELL task on the Conductor desk.",
+  "router": {
+    "title": "ROUTER #1 · one-interface",
+    "group": "ROUTER",
+    "model": "sonnet",
+    "worktree": ".claude/worktrees/router-one-interface-1 on claude/router-one-interface-1",
+    "opened_by": "owner's paste (a chip would nest the router under the conductor)"
+  },
+  "pages": {
+    "conductor_desk": "https://claude.ai/artifact/MKAx49RAskZ3cV7f2EkDMF (estate page; this project's tasks are on it)",
+    "router_desk": "https://claude.ai/artifact/LzmP6QcxmYh9TdvMMjS883 (estate page; prefix this project's cards 'one-interface:')"
+  },
+  "lanes": ["SURFACE", "DESIGN", "INTELLIGENCE", "NODE"],
+  "budgets": {
+    "context_tokens_soft": 5000000,
+    "context_tokens_hard": 8000000,
+    "max_parallel_desks": 8
+  },
+  "created": "2026-10-07T05:0xZ by CONDUCTOR 017"
+}
