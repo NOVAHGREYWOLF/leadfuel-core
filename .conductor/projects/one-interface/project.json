@@ -4,11 +4,8 @@
   "umbrella_task": "SURFACE CC-GAME-SHELL (Conductor desk desks/surface, pick rank 222)",
   "source": "Owner typed in SURFACE command center nav button (local_9ec7acd5-fe31-4f8b-af7f-0610e6348c35) ~04:55Z 10-07: 'yes thats right, start the one-interface project'. Verified by CONDUCTOR 017 (local_51008c82) with search_session_transcripts. The full spec is in the CC-GAME-SHELL task on the Conductor desk.",
   "router": {
-    "title": "ROUTER #1 · one-interface",
-    "group": "ROUTER",
-    "model": "sonnet",
-    "worktree": ".claude/worktrees/router-one-interface-1 on claude/router-one-interface-1",
-    "opened_by": "owner's paste (a chip would nest the router under the conductor)"
+    "title": "the ESTATE router: ROUTER #25 (local_447575ed) and its successors (Build Board router/current)",
+    "separate_router": "NONE. Owner override ~05:39Z 10-07 in SURFACE local_9ec7acd5: 'send it to router. this shouldnt be a new router. this should tell router what we are doing'. The planned ROUTER #1 · one-interface was never started; brief-router-1.md is superseded."
   },
   "pages": {
     "conductor_desk": "https://claude.ai/artifact/MKAx49RAskZ3cV7f2EkDMF (estate page; this project's tasks are on it)",

@@ -1,3 +1,8 @@
+# SUPERSEDED: no separate router. The estate router (ROUTER #25 local_447575ed) runs this project.
+Owner, ~05:39Z 10-07: "send it to router. this shouldnt be a new router. this should tell router
+what we are doing". The sources, the task list and "First moves" below still apply to the estate
+router, apart from step 1's handover, which is now moot.
+
 # Brief: ROUTER #1 · one-interface (from CONDUCTOR 017 local_51008c82, 2026-10-07)
 
 Public repo: ids and titles only. The full spec is on the Conductor desk, task SURFACE CC-GAME-SHELL.
