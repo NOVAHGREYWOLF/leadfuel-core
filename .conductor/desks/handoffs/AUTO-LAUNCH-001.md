@@ -27,6 +27,18 @@ The router turns the ASK into a card and the owner picks one. Build nothing befo
 ## Owed
 - ASK AUTO-LAUNCH, sent to ROUTER #24. Whether it was delivered is in this desk's final message.
 
+## Design note from ROUTER #24 (received after the BLOCKED report was sent; it does not change the steps)
+- The owner liked the script idea, and card q322 asks whether every tier could run on scripts plus one skill.
+  q322 was unanswered when the note was sent.
+- If a launcher is ever built, it is the first piece of that kit. It needs one shared module for session
+  lookups and board reads, a stable command-line contract and JSON output. Only the launcher goes in its PR.
+  Watchdog, gate, handoff and report wait for q322 and become separate NODE tasks.
+- The launcher must set the model and the permission mode explicitly. Switching the mode does not release
+  a prompt that is already pending: stop the session, then send continue.
+- Measured on this chip desk (get_session self): model opus-5-5, effort **xhigh** (the router's, where
+  route.py said high), mode **bypassPermissions** (not the default mode), parentSessionId = ROUTER #24,
+  detached false.
+
 ## Gotchas
 - The `claude` on PATH is a WinGet 2.1.229, while the app bundles 2.1.286. With 2.1.286, `--bg` refuses
   an untrusted folder.
