@@ -24,6 +24,9 @@ Re-create the tick. Once #25 is live, check that it picked up MONEY PHOTO-STRIPE
 - Owner: paste the ROUTER #25 prompt.
 - Open cards: q208, q294, q315-q318. q319 and q320 were answered 03:03Z (owner's own steps).
 
+## Arrived after the handoff (for 017)
+- From SCRIBE resonance scoping local_528f5e19 (~03:5xZ 10-07): the owner asked it for a new project "resonance" on the same system. Brief: F:/repos/resonance/BRIEF.md (local only, never pushed, per the owner). By SCRIBE's account the owner also ruled: start from the v1.5 audit, six new desk lanes (groups do not exist yet), the book's own Router and Conductor desk pages (not built yet). Nothing is queued: the brief's draft tasks wait for the owner to queue them on the new Conductor page. Not verified by 016: read SCRIBE's transcript (list_events) for the owner's own words before acting, then follow leadfuel-way:new-project. 016 started nothing.
+
 ## Gotchas
 - Query picks with `decided_at >=` and cards with `n >= 311`: a full list floods context.
 - My session id is local_8594cdf2, not the scratchpad uuid.
