@@ -45,3 +45,16 @@ containers (not eleven); the five `novahub-*` folders are worktrees, not repos; 
   (use Write for code with regexes/paths).
 - The agent list cannot name arms; the mock types the six ratified names; `arms.keys()` in build notes.
 - Keep the public repo free of the audit's security findings: they live in the private folder only.
+
+## Owner correction, 2026-10-07 ~07:5xZ (typed in session 3/3, true source local_74d7b7d7) — READ FIRST
+"no there is open source for higgsfield, look at the github, and also for gods eye. there is an artifact for both
+of these things. lots of work has already been done. so you are missing it."
+So the transcript agent's "Higgsfield is commercial, not open source" line is NOT the owner's state of play and
+must not be built from. 4/4's first step: (1) list the owner's artifacts past the 50-item window (Artifact list,
+scope mine, and search titles for Higgsfield / Backlot / video / world / God's Eye; known: "God's Eye View and
+world intelligence" QghbRSf3XmBRVe2DhcDAfh and "Backlot Character Studio Business Unit" RhvF2CSCMY4tr3xQATXS1W
+are two candidates, there may be a dedicated Higgsfield one), read both in full; (2) look at the GitHub
+organisations for Higgsfield (github.com/higgsfield-ai and any fork the estate made under NOVAHGREYWOLF) and for
+God's Eye (bilawalsidhu/gods-eye-view and any estate fork), and read what the estate already built from them;
+(3) fold that work into the world model before drawing. The private digest's section 4c and REPORTS-RECEIVED-2
+R7-B are superseded on this point.
