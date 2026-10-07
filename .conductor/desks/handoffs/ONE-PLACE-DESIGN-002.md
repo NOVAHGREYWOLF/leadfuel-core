@@ -22,6 +22,20 @@ local_447575ed-7d43-46a1-9189-5723397c433f. Reason: context guard crossed 300k m
 write the hand off. DOes this seem like a video game? its getting there."
 Read: the world must be the SPATIAL atlas (the 3D crystal of Atlas Live v11 / hub
 `goal_atlas.html`), not the flat ring; and the whole thing must feel more like a game.
+Second message, same session: "i dont really see any of the command prompt or all the different
+types of command prompt screens like developer... as also mentioned before it should go in as far
+and out as far as can. micro macro. also where is the live?" Read, three gaps the 2/2 screens have:
+1. The registers are missing: plain / operator / developer (1/1 and the hub /command have them)
+   and the developer screens (Engineering tree, source rows, ids, citations by id); also a real
+   command prompt: the Ask box doubles as a console (`/` jumps, `>` runs a command, `?` asks).
+2. Zoom is only two levels. It must go out to the whole estate and in to the smallest thing:
+   estate → region → part → "Made of" (376 parts: module, route, table, cron, setting) → the code
+   line, commit, test and row it is calculated from (Atlas v11's detail panel has this chain).
+   One continuous zoom, the trail and minimap showing the depth.
+3. "The live" is absent: the mock is example data. Show the Live rail (status, arrivals every
+   30 s, waiting pools, snapshot age) as a HUD element; and consider making the mock itself live
+   the way Atlas Live v11 is (a plain artifact reading the brain connector), since a Design-type
+   artboard cannot call the network.
 
 ## Next (one step)
 First, replace the stage with the spatial atlas: the crystal (hex prism, pyramid caps, lattice
