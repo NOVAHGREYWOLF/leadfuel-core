@@ -20,15 +20,15 @@ A session's cost grows with its context: every turn re-reads the whole history. 
 5. **Get the successor started** (below). Do not schedule a wake-up into this session: waking a large session re-reads all of it.
 6. **Never leave before your successor is live** (owner, 2026-10-02: "MAKE SURE ROUTER DOESNT LEAVE ITSELF UNTIL IT HAS A SUCCESSOR"; and a desk at its limit with work left hands off and stays open). The same rule for every tier:
    - **The successor can only be a paste prompt** (no `start_session`): give the owner the prompt as your last message and **stay open**. Do not archive. Start nothing new; anything that arrives belongs to the successor, which archives you once it is live (router and conductor: the successor's Claim step; desk: the router, through its gate).
-   - **You started the successor yourself:** run `list_sessions` with your sidebar group. Only when the result shows the successor in that group and not archived, the push is verified with `git ls-remote`, and nothing in your worktree is unpushed (archiving removes the worktree), archive yourself as the last act: `archive_session` with `self`. If any of those cannot be shown, do not archive: say which in your last message and end your turn.
-   - The plugin's guard refuses `archive_session` on `self` until this session has read back a `list_sessions` or `get_session` result showing that successor live.
+   - **You started the successor yourself:** run `list_sessions` with your sidebar group (a desk's is its project's group); a desk also runs `get_session` with `self`, because `list_sessions` leaves you out and the guard needs to see which group is yours. Only when the result shows the successor in that group and not archived, the push is verified with `git ls-remote`, and nothing in your worktree is unpushed (archiving removes the worktree), archive yourself as the last act: `archive_session` with `self`. If any of those cannot be shown, do not archive: say which in your last message and end your turn.
+   - The plugin's guard refuses `archive_session` on `self` until this session has read back a `list_sessions` or `get_session` result showing that successor live. For a desk titled `LANE · <project part> · n`, live means in the same group as its own `get_session` `self` read, with the same lane and part and a higher n; it never assumes the lane's group for that form. A desk still in the older form whose successor took the new form cannot prove the link by title, so it stays open and its router archives it.
 
 ## Where the note goes
 | Tier | File (on the branch the tier already works from) | Successor title |
 |---|---|---|
 | Conductor | `.conductor/conductor/handoffs/conductor-NNN.md` | `CONDUCTOR · <topic>` (still exactly one) |
 | Router (per project) | `.conductor/router/handoffs/router-NNN.md` | `ROUTER #N+1 · <project>` |
-| Desk | `.conductor/desks/handoffs/<task id>-NNN.md` on the task's PR branch, or the board task's `handoff` field when the project uses a board | the same `LANE · <task id> n/m · topic`, count advanced |
+| Desk | `.conductor/desks/handoffs/<task id>-NNN.md` on the task's PR branch, or the board task's `handoff` field when the project uses a board | `LANE · <project part> · n` with the same lane and part and n advanced, in the same project group (a desk still titled `LANE · <task id> n/m · topic` gets a successor in the new form, n advanced) |
 
 If the project already keeps notes somewhere, use that place. Coordinators (conductor, router) also list every child session they hold, its model, its size, and which are safe to reuse (under 200k) or should be retired.
 
