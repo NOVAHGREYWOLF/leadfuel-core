@@ -1,5 +1,5 @@
 {
-  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor, background agents judged as agents (not as their parent session). One script, five events.",
+  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor (desks judged by their own project group), no bulk session moves, background agents judged as agents (not as their parent session). One script, five events.",
   "hooks": {
     "SessionStart": [
       {

@@ -22,6 +22,17 @@ Events (one entry point, dispatched on `hook_event_name`):
                       session's successor live (not archived) in its sidebar group. Owner,
                       2026-10-02: a router does not leave itself until it has a successor, and a
                       desk at its limit hands off and stays open until the new desk is live.
+                      Also: `move_sessions` naming more than one session is refused. Owner,
+                      2026-10-07: sessions move one at a time, never in bulk.
+
+Titles and groups (owner, 2026-10-07: "The sidebar group becomes the master project ... The title
+becomes LANE · project part · n"). A desk is titled `LANE · <project part> · n` and filed in its
+PROJECT's sidebar group; the lane stays in the title. ROUTER and CONDUCTOR keep their tier groups.
+Every older form is still read exactly as before, so nothing breaks while sessions migrate one at a
+time: `LANE · <task id> n/m · topic`, `LANE · topic`, `ROUTER #N`, `CONDUCTOR · topic`. Because a
+desk's group is no longer named by its title, the archive guard reads the desk's own group from a
+`get_session` on `self`; for an older-form desk that has not read itself, the 0.1.7 rule (its lane's
+group) still applies. This hook never moves or retitles a session.
 
 Background agents (AUTO-DESKS). A router may run a desk as a background agent (the Agent tool with
 isolation: worktree) instead of a chip the owner must click. Claude Code fires a subagent's hooks
@@ -41,7 +52,7 @@ When `agent_id` is present:
 
 Caps follow the model the session runs on: Haiku 120k/150k (200k window), others 300k/450k.
 SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 disables the guard
-and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule and the agent rules;
+and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule, the agent rules and the bulk-move rule;
 WAY_ARCHIVE_GUARD=0 disables the self-archive guard.
 
 It never raises: a broken hook must not break the session it guards. What it cannot measure it
@@ -57,7 +68,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.7"
+VERSION = "0.1.8"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -81,8 +92,12 @@ SHELL_WRITES = re.compile(
     r"|\b(cp|mv)\s|\b(Copy|Move|New)-Item\b",
     re.I,
 )
-# A desk title carries its task id and session count: `LANE · <task id> n/m · topic`.
+# The older desk title carries its task id and session count: `LANE · <task id> n/m · topic`.
 DESK_TASK = re.compile(r"·\s*(\S+)\s+(\d+)\s*/\s*\d+")
+# The project form (owner, 2026-10-07): `LANE · <project part> · n`. The sidebar group is the project,
+# the lane stays first in the title, the part says what the session does, n counts the sessions that
+# have done that part. Same lane rule as DESK_TITLE: never ROUTER or CONDUCTOR.
+DESK_PART = re.compile(r"^\s*(?!(?:ROUTER|CONDUCTOR)\b)([A-Z][A-Z0-9_-]+)\s*·\s*([^·]*[^·\s])\s*·\s*(\d+)\s*$")
 SESSION_READS = ("list_sessions", "get_session")
 # Session tools whose `self` means the parent session when a subagent calls them.
 SELF_TOOLS = ("__move_sessions", "__set_session_title")
@@ -269,12 +284,15 @@ def _result_text(content) -> str:
 def sessions_seen(transcript_path: str) -> list[dict]:
     """Every session row this session has read back with list_sessions / get_session (main thread,
     within the transcript tail), oldest first. A row is whatever the tool returned: it is judged by
-    successor_in, which treats a missing field as unknown, never as a pass."""
+    is_successor, which treats a missing field as unknown, never as a pass.
+
+    A row from `get_session` on `self` is this session's own and is marked `_self: True`: it is how
+    the archive guard learns a desk's own sidebar group (list_sessions leaves the caller out)."""
     try:
         text, _ = _tail(transcript_path)
     except OSError:
         return []
-    asked: set[str] = set()
+    asked: dict[str, bool] = {}  # tool_use id -> was it a get_session on self
     rows: list[dict] = []
     for rec in _records(text):
         if rec.get("isSidechain"):
@@ -282,16 +300,21 @@ def sessions_seen(transcript_path: str) -> list[dict]:
         for block in (rec.get("message") or {}).get("content") or []:
             if not isinstance(block, dict):
                 continue
-            if block.get("type") == "tool_use" and str(block.get("name") or "").endswith(SESSION_READS):
-                asked.add(str(block.get("id") or ""))
+            name = str(block.get("name") or "")
+            if block.get("type") == "tool_use" and name.endswith(SESSION_READS):
+                inp = block.get("input") if isinstance(block.get("input"), dict) else {}
+                own = name.endswith("get_session") and str(inp.get("session_id") or "").strip().lower() == "self"
+                asked[str(block.get("id") or "")] = own
             elif block.get("type") == "tool_result" and str(block.get("tool_use_id") or "") in asked:
                 if block.get("is_error"):
                     continue
+                own = asked[str(block.get("tool_use_id") or "")]
                 value = _json_in(_result_text(block.get("content")))
                 if isinstance(value, dict):
                     value = value.get("sessions", [value]) if isinstance(value.get("sessions"), list) else [value]
                 if isinstance(value, list):
-                    rows.extend(r for r in value if isinstance(r, dict))
+                    # Set on every row, so a field of that name in a tool's own output cannot pose as one.
+                    rows.extend({**r, "_self": own} for r in value if isinstance(r, dict))
     return rows
 
 
@@ -317,15 +340,74 @@ def _router_number(title: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def is_successor(own_title: str | None, row: dict) -> bool:
+def desk_line(title: str | None) -> tuple[str, str, int] | None:
+    """Which line of sessions a desk title belongs to, so a successor can be told from a stranger.
+
+    ("task", <task id>, n) for the older form `LANE · <task id> n/m · topic`;
+    ("part", <project part>, n) for the project form `LANE · <project part> · n` (owner, 2026-10-07);
+    None for anything else, such as `LANE · topic`. The older form is tried first, so a title that
+    carries `n/m` is read exactly as 0.1.7 read it. The part keeps its case; compare with part_key.
+    """
+    t = title or ""
+    m = DESK_TASK.search(t)
+    if m:
+        return "task", m.group(1), int(m.group(2))
+    m = DESK_PART.match(t)
+    if m:
+        return "part", " ".join(m.group(2).split()), int(m.group(3))
+    return None
+
+
+def part_key(line: tuple[str, str, int]) -> tuple[str, str]:
+    """(form, key) two titles must share to be one line: the part ignores case and spacing; a task id
+    is compared exactly, as before."""
+    form, key, _ = line
+    return form, key.casefold() if form == "part" else key
+
+
+def group_of(row: dict) -> tuple[str, str] | None:
+    """(id, name) of the sidebar group a session row names, or None when the row does not say: a row
+    with no `group` (the app had not reported groups) is unknown, never ungrouped."""
+    g = row.get("group")
+    if not isinstance(g, dict):
+        return None
+    gid, name = str(g.get("id") or "").strip(), str(g.get("name") or "").strip()
+    return (gid, name) if gid or name else None
+
+
+def same_group(a: tuple[str, str] | None, b: tuple[str, str] | None) -> bool:
+    """By id when both rows carry one (two groups may share a name), else by name, ignoring case."""
+    if a is None or b is None:
+        return False
+    if a[0] and b[0]:
+        return a[0] == b[0]
+    return bool(a[1]) and a[1].casefold() == b[1].casefold()
+
+
+def own_group(rows: list[dict]) -> tuple[str, str] | None:
+    """This session's own sidebar group, from its newest `get_session` on `self`, or None (unknown)."""
+    for r in reversed(rows):
+        if r.get("_self"):
+            return group_of(r)
+    return None
+
+
+def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None = None) -> bool:
     """True only if `row` (a session as list_sessions / get_session returns it) is provably this
-    session's successor: live, filed in the group the tier names, and the next of the same line.
-    Anything the row does not say (no `isArchived`, no `group`) is unknown, and unknown is not live.
+    session's successor: live, filed in the right group, and the next of the same line. Anything the
+    row does not say (no `isArchived`, no `group`) is unknown, and unknown is not live.
 
     ROUTER #N: another ROUTER, numbered above N when both carry a number, in the ROUTER group.
     CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one).
-    DESK: the same lane, in that lane's group, and when the title carries `<task id> n/m`, the
-    same task id with n advanced.
+    DESK: the same lane (it stays in the title), in the same sidebar group as this session (`mine`,
+    read from a `get_session` on `self`), never a tier group, and the next of the same line:
+      `LANE · <project part> · n`      the same part, n advanced;
+      `LANE · <task id> n/m · topic`   the same task id, n advanced (the older form);
+      `LANE · topic`                   any desk of the lane (the older form).
+    With `mine` unknown, an older-form desk keeps the 0.1.7 rule (its lane's group). A project-form
+    desk does not: its group is its project, which only a read of itself can name, so unknown refuses.
+    Across forms nothing counts: an older-form desk whose successor took the project form is archived
+    by its router, not by itself.
     """
     own_role, own_lane = role_of(own_title)
     title = str(row.get("title") or "")
@@ -333,42 +415,73 @@ def is_successor(own_title: str | None, row: dict) -> bool:
         return False
     if row.get("isArchived") is not False:
         return False
-    group = row.get("group")
-    group_name = str(group.get("name") or "") if isinstance(group, dict) else ""
+    theirs = group_of(row)
     role, lane = role_of(title)
     if role != own_role:
         return False
     if own_role in TIERS:
-        if group_name.upper() != own_role:
+        if theirs is None or theirs[1].upper() != own_role:
             return False
         if own_role == "ROUTER":
-            mine, theirs = _router_number(own_title or ""), _router_number(title)
-            if mine is not None and (theirs is None or theirs <= mine):
+            m, t = _router_number(own_title or ""), _router_number(title)
+            if m is not None and (t is None or t <= m):
                 return False
         return True
-    if lane != own_lane or group_name.upper() != (own_lane or ""):
+    if lane != own_lane or theirs is None or theirs[1].upper() in TIERS:
         return False
-    mine = DESK_TASK.search(own_title or "")
-    if mine:
-        theirs = DESK_TASK.search(title)
-        if not theirs or theirs.group(1) != mine.group(1) or int(theirs.group(2)) <= int(mine.group(2)):
+    mine_line, their_line = desk_line(own_title), desk_line(title)
+    if mine is not None:
+        if not same_group(mine, theirs):
             return False
-    return True
+    elif mine_line is not None and mine_line[0] == "part":
+        return False
+    elif theirs[1].upper() != (own_lane or ""):
+        return False
+    if mine_line is None:
+        return True
+    return their_line is not None and part_key(their_line) == part_key(mine_line) and their_line[2] > mine_line[2]
 
 
 def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
     """The reason to refuse archiving yourself, or None when a live successor has been seen."""
-    if any(is_successor(own_title, r) for r in rows):
+    mine = own_group(rows)
+    if any(is_successor(own_title, r, mine) for r in rows if not r.get("_self")):
         return None
     role, lane = role_of(own_title)
-    where = lane if role == "DESK" else role
+    line = desk_line(own_title)
+    if role == "DESK" and mine is not None:
+        where = f"your own group, {mine[1] or mine[0]}"
+    elif role == "DESK" and line is not None and line[0] == "part":
+        where = ("your project's group, which this session has not read: run `get_session` with `self` "
+                 "so the guard can see it")
+    elif role == "DESK":
+        where = f"{lane}, or your own group once `get_session` with `self` has shown it"
+    else:
+        where = role if role in TIERS else "unfiled: title and file yourself first"
     return (
         "THE WAY: you may not archive yourself until your successor is live and visible in its "
-        f"sidebar group ({where or 'unfiled: title and file yourself first'}). Owner, 2026-10-02: a "
+        f"sidebar group ({where}). Owner, 2026-10-02: a "
         "session never leaves before its successor exists. If the successor can only be a paste "
         "prompt, give the owner the prompt and STAY OPEN: the successor archives you once it is live. "
-        "If you started it yourself, run `list_sessions` with that group and archive only once the "
-        "result shows it, not archived."
+        "If you started it yourself, run `list_sessions` with that group (a desk also `get_session` "
+        "with `self`) and archive only once the result shows it, not archived."
+    )
+
+
+def bulk_move_refusal(inp: dict) -> str | None:
+    """Why this `move_sessions` call is refused, or None. Owner, 2026-10-07: existing sessions move
+    one at a time, never in bulk. One id per call (`self` or another session) is always allowed."""
+    ids = inp.get("session_ids") if isinstance(inp, dict) else None
+    if not isinstance(ids, list):
+        return None
+    distinct = {str(i).strip().lower() for i in ids if str(i or "").strip()}
+    if len(distinct) <= 1:
+        return None
+    return (
+        f"THE WAY: this call moves {len(distinct)} sessions at once. Owner, 2026-10-07: sessions move "
+        "one at a time, never in bulk. Move one session per call, and only a session you are filing "
+        "now (a desk you just opened) or yourself on your own first turn; migrating other existing "
+        "sessions is the owner's, one at a time."
     )
 
 
@@ -439,13 +552,30 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
         "1. Invoke the skill `leadfuel-way:way` now, before any work, then the skill for your role "
         "(`leadfuel-way:conductor`, `leadfuel-way:router` or `leadfuel-way:desk`).",
     ]
+    line = desk_line(title) if role == "DESK" else None
     if role == "UNFILED":
         lines.append(
-            "2. You are not filed. Before any work, title yourself `LANE · topic`, `ROUTER #N` or "
-            "`CONDUCTOR · topic` and move yourself into the sidebar group of that name."
+            "2. You are not filed. Before any work, title and file yourself (`leadfuel-way:way`, section 2a): "
+            "a desk `LANE · <project part> · n` in its PROJECT's sidebar group, never its lane's (a project "
+            "with no group gets one from `leadfuel-way:new-project`, step 2); a router `ROUTER #N · <project>` "
+            "in the ROUTER group; the conductor `CONDUCTOR · topic` in the CONDUCTOR group. Move only "
+            "yourself (`self`)."
+        )
+    elif role == "DESK" and line is not None and line[0] == "part":
+        lines.append(
+            f"2. Your title files you as a desk: lane {lane}, project part '{line[1]}', session {line[2]}. "
+            f"Check you are in your project's sidebar group (not the {lane} lane group)."
+        )
+    elif role == "DESK":
+        lines.append(
+            "2. Your title is in an older desk form; every hook still reads it. Desks are now filed by "
+            "project (owner, 2026-10-07): `LANE · <project part> · n` in the project's sidebar group. On "
+            "this first turn you may migrate yourself, and only yourself, if your brief names the project "
+            "and its group exists; otherwise keep your title and group. Never move or retitle other "
+            "sessions to migrate them: one at a time, never in bulk."
         )
     else:
-        lines.append("2. Your title files you. Check you are in the sidebar group it names.")
+        lines.append(f"2. Your title files you. Check you are in the {role} sidebar group.")
     lines.append(
         f"3. Handoff guard is live for model {model or 'unknown'}: hand off at {soft // 1000}k, "
         f"hard stop at {hard // 1000}k. Size now: {size}. Past {soft // 1000}k the Stop hook sends "
@@ -591,6 +721,18 @@ def handle(event: dict) -> dict | None:
     guard_off = os.environ.get("SESSION_GUARD_OFF") == "1"
     roles_on = os.environ.get("WAY_ENFORCE_ROLES", "1") != "0"
     tool = str(event.get("tool_name") or "")
+    tin = event.get("tool_input")
+    tin = tin if isinstance(tin, dict) else {}
+    # Session-tool refusals, as (state counter, reason). The agent rule speaks first: it is the more
+    # specific answer when an agent names `self` among several sessions.
+    session_refusal: tuple[str, str] | None = None
+    if name == "PreToolUse" and roles_on:
+        if agent and tool.endswith(SELF_TOOLS + ("__archive_session",)):
+            reason = agent_session_refusal(tool, tin)
+            session_refusal = ("session_tools_refused", reason) if reason else None
+        if session_refusal is None and tool.endswith("__move_sessions"):
+            reason = bulk_move_refusal(tin)
+            session_refusal = ("bulk_moves_refused", reason) if reason else None
 
     if name == "SessionStart":
         if event.get("source") in ("compact", "clear"):
@@ -634,19 +776,22 @@ def handle(event: dict) -> dict | None:
                         "the one prompt for a fresh session, then end your turn."
                     )}
 
+    elif session_refusal:
+        # An agent touching `self` is told why that is never its call; anyone moving several sessions
+        # at once (agents included) is told to move one at a time.
+        key, reason = session_refusal
+        tally[key] = int(tally.get(key) or 0) + 1
+        out = {"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }}
+
     elif name == "PreToolUse" and agent and roles_on and tool.endswith(SELF_TOOLS + ("__archive_session",)):
-        reason = agent_session_refusal(tool, event.get("tool_input") or {})
-        if reason:
-            astate["session_tools_refused"] = int(astate.get("session_tools_refused") or 0) + 1
-            out = {"hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": reason,
-            }}
+        pass  # an agent's session-tool call that names another session, one at a time: not this hook's
 
     elif name == "PreToolUse" and tool.endswith("__archive_session"):
-        inp = event.get("tool_input") or {}
-        target = str(inp.get("session_id") or "").strip()
+        target = str(tin.get("session_id") or "").strip()
         if os.environ.get("WAY_ARCHIVE_GUARD", "1") != "0" and target.lower() == "self":
             title = cached_title(tpath, state)
             reason = archive_refusal(title, sessions_seen(tpath))
@@ -659,8 +804,7 @@ def handle(event: dict) -> dict | None:
                 }}
 
     elif name == "PreToolUse" and roles_on:
-        inp = event.get("tool_input") or {}
-        path = str(inp.get("file_path") or inp.get("notebook_path") or "")
+        path = str(tin.get("file_path") or tin.get("notebook_path") or "")
         role = None
         if tool in WRITE_TOOLS and path:
             # Read the title fresh: a session can retitle itself after SessionStart. For an agent this
