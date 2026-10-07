@@ -14,6 +14,11 @@ Session local_09713dbf. Router: ROUTER #24 local_17705746. Blocked, not at cap. 
 - q313=B: **keep f6a9997a.** WATCH RESEND-CHECK confirms first, then #24 archives it.
 - Sent to #24, queued (#24 was mid-turn): an ASK on PR-TRIAGE 1bfe7e56 (passes the checks; the owner's "hand the 16 green PRs to MERGE-TRAIN" never went out; default A, archive). Also flagged: two SITES-FUNNELS 3/3 sessions (4ad294c5, 349a38bb) and the stale lock file `.locks/full-suite.running/20261002T232811Z-DOORS-ATLAS-B1-*`.
 
+## Update 2026-10-07 03:4xZ (#24 ruled A on PR-TRIAGE)
+- Archived PR-TRIAGE 1bfe7e56 after my own last check: idle since 02:24Z 10-06, clean, HEAD 46d1a47 in hub origin/main (fresh fetch), no nested worktree, no children. Session total: 5 (2b83204b, 57b8a031, 70fae0d7, 12597f42, 1bfe7e56).
+- Moved (did not delete) the stale ATLAS-B1 register marker to `.locks/full-suite.stale/sweep003-20261007T034122Z/` with a MOVED.txt. Holder gone: the session is archived, no process references jovial-allen-bfcad0 or 331d5be, and the only pytest processes on the box (13956, 28328) started 02:46Z under CC-ROUTE-MOVE's gates.sh, which correctly holds heavy slot-1 since 02:45Z. full-suite.running is now empty.
+- **OWED: a STATUS to ROUTER #25 once it is live** (board router/current still showed #24 "rotating" at 03:4xZ; #24's handoff is claude/router-24 @ 5f98f52). Not sent anywhere yet.
+
 ## Held (re-read before acting)
 - (superseded by the update above) q293 used to hold WAY-1 and ATLAS-B1. The others on q281's list still owe work or have open PRs, so they stay.
 - **f6a9997a** (WATCH Resend routine run, 09-24): keep it (q313=B). Verified 20:3xZ: its task etgai-resend-verification is absent from the scheduler, and it has no worktree.
