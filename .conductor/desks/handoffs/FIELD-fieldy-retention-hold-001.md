@@ -15,8 +15,17 @@ Session `local_ccbb8afd-09ad-49fe-ab48-86bf5cde9405` (FIELD group, Fable), 2026-
 ## Next
 Send ROUTER #26 (`local_0185d288-2c99-49e5-8c15-5412aecd8eaf`) a brief: (1) FIELD — diagnose the empty extraction pass (hub `/api/fieldy/report` has `probe`/`trace` diagnostics, service-token only); (2) WATCH — fieldy watchdog stale signal; (3) `data_policy.html` wording while hold is on. Owner has not said to queue them — ask first.
 
+## Owner direction (2026-10-07, in this session, verbatim intent)
+"This is the kind of reporting we need to go to the brain when we are doing the reporting." The manual write-up delivered in chat is the TARGET OUTPUT for the hub's Fieldy day report (`fieldy_report.synthesize` → the brain / master briefing), not a one-off. Spec, abstracted:
+1. **Where** — the location feed (Overland `kind=location`) joined into a route in the wearer's local zone: named stations, landmarks, neighbourhoods, stationary periods, the "base"; transit lines inferred from fix sequence + transcript.
+2. **People** — one entry per person present or discussed: relationship, what they said about themselves, disclosures, named third parties, roster gaps (person not yet in `fieldy_identity` roster).
+3. **What the wearer did** — chronological, wearer's own actions and voiced ideas/numbers, attributed by content (segments arrive `Unknown`).
+4. **Open items** — real commitments and plans with dates, not regex "I'll" lines.
+5. Media/TV filtered out; verified vs. inferred flagged; privacy-sensitive third-party content flagged for retention.
+Carry this to ROUTER #26 as the acceptance bar for the digest-extraction fix (Next 1). Owner has not yet queued it.
+
 ## Owed
-None sent to other sessions. No owner decision pending.
+None sent to other sessions. No owner decision pending beyond queuing the above.
 
 ## Gotchas
 - `railway ssh` quotes args containing `(` or `"` itself; single quotes become literal. Pipe the script on stdin: `Get-Content script.py -Raw | railway ssh --service NovaHub -- /opt/venv/bin/python -`.
