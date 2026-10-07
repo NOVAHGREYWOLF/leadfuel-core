@@ -2,7 +2,7 @@
 
 Session: `DESIGN · ONE-PLACE-DESIGN 5/5 · one-interface mock-up`, Fable 5.1 (owner's pin), opened by the owner's
 paste. Router: ROUTER #26 local_0185d288-2c99-49e5-8c15-5412aecd8eaf. Predecessor 4/4
-local_0502a2fa-bb6f-4200-b04f-faf366f75dc2 archived by me (handoff 012b624 on origin, worktree clean, verified
+local_92440134-97fc-43bb-b79d-26f423a9c26d (its own note wrote local_0502a2fa, which is not a session id) archived by me (handoff 012b624 on origin, worktree clean, verified
 with `git ls-remote` and `git status`). No PR (design only). Branch `one-place-design-003`.
 
 ## Done
@@ -32,4 +32,4 @@ check.py, project/). Not committed: the artboard embeds atlas notes with local p
 repo is public.
 
 ## Owed / not delivered
-Nothing. The desk does not archive itself; the router archives it through its gate.
+Nothing. Context guard crossed 300k after the publish; no successor needed, the task is done. The desk does not archive itself; the router archives it through its gate.
