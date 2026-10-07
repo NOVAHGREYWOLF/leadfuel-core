@@ -1,6 +1,6 @@
 # Handoff: CONDUCTOR · system build, 020 (2026-10-07 ~19:50Z UTC, rotating at ~300k)
 
-Ids only (public repo). This session: local_042c7286-d308-454d-8efb-acbde8deb52e, branch claude/conductor-020. Pages: Conductor desk MKAx49RAskZ3cV7f2EkDMF, Router desk LzmP6QcxmYh9TdvMMjS883, Build Board A4uS9xn1emqupohdE4DUfV (router/current). Tick cron cd4f8b1b dies with this session: re-create at minutes 13,43 (prompt as in 013's note). Cards: start at n >= 347 (q346 open); picks: decided_at > 2026-10-07T18:16:55Z.
+Ids only (public repo). This session: local_042c7286-d308-454d-8efb-acbde8deb52e, branch claude/conductor-020. Pages: Conductor desk MKAx49RAskZ3cV7f2EkDMF, Router desk LzmP6QcxmYh9TdvMMjS883, Build Board A4uS9xn1emqupohdE4DUfV (router/current). Tick cron cd4f8b1b was CANCELLED by 020 before rotating (so two conductors never tick at once): re-create at minutes 13,43 (prompt as in 013's note). 020 stays open, does nothing, until 021 is titled and filed and archives it. Cards: start at n >= 347 (q346 open); picks: decided_at > 2026-10-07T18:16:55Z.
 
 ## Done (verified by me unless marked)
 - Archived 019 (local_1a4942ec) through the gate. Kept conductor 005 (local_083bdfe0) and ROUTER #11, #12, #13.
