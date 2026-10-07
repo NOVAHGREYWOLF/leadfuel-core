@@ -19,6 +19,9 @@ Ids only (public repo). This session: local_51008c82, branch claude/conductor-01
 ## Next
 Re-create the tick, then file owner answers that create work. Open cards: q208, q294, q315-q318, q325, q326.
 
+## Arrived after the handoff (for 018)
+- From ROUTER #25 (~06:0xZ): it runs one-interface, and its first desk is chip task_4762696b, DESIGN · ONE-PLACE-DESIGN 2/2 (Fable pin from q180), rescoped to the CC-GAME-SHELL spec. Note that on picks DESIGN~ONE-PLACE-DESIGN (189) and SURFACE~CC-GAME-SHELL (222). #25 also reports, unverified by me, that hub #776 /command merged 04:53Z and train F landed. I told #25 that CC-PHONE-READY (pick 212) is still queued and is its to open.
+
 ## Gotchas
 - With MSYS_NO_PATHCONV=1, `git -C /f/...` fails: use F:/ paths.
 - Estate work goes to the estate router. Only a separate estate gets its own router (owner, 05:39Z).
