@@ -26,10 +26,13 @@ Events (one entry point, dispatched on `hook_event_name`):
                       2026-10-07: sessions move one at a time, never in bulk.
 
 Titles and groups (owner, 2026-10-07: "The sidebar group becomes the master project ... The title
-becomes LANE · project part · n"). A desk is titled `LANE · <project part> · n` and filed in its
-PROJECT's sidebar group; the lane stays in the title. ROUTER and CONDUCTOR keep their tier groups.
-Every older form is still read exactly as before, so nothing breaks while sessions migrate one at a
-time: `LANE · <task id> n/m · topic`, `LANE · topic`, `ROUTER #N`, `CONDUCTOR · topic`. Because a
+becomes LANE · project part · n", and card q346 = B). A desk is titled `LANE · <project> part · n`
+(the lane, the project's name followed by the word `part`, then n; the owner's example is
+`INTELLIGENCE · world intel part · 3`) and filed in its PROJECT's sidebar group; the lane stays in
+the title. ROUTER and CONDUCTOR keep their tier groups. Every older form is still read exactly as
+before, so nothing breaks while sessions migrate one at a time: the 0.1.8 wording with a free-text
+part (`SURFACE · shell · 1`), `LANE · <task id> n/m · topic`, `LANE · topic`, `ROUTER #N`,
+`CONDUCTOR · topic`. Because a
 desk's group is no longer named by its title, the archive guard reads the desk's own group from a
 `get_session` on `self`; for an older-form desk that has not read itself, the 0.1.7 rule (its lane's
 group) still applies. This hook never moves or retitles a session.
@@ -68,7 +71,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -94,9 +97,11 @@ SHELL_WRITES = re.compile(
 )
 # The older desk title carries its task id and session count: `LANE · <task id> n/m · topic`.
 DESK_TASK = re.compile(r"·\s*(\S+)\s+(\d+)\s*/\s*\d+")
-# The project form (owner, 2026-10-07): `LANE · <project part> · n`. The sidebar group is the project,
-# the lane stays first in the title, the part says what the session does, n counts the sessions that
-# have done that part. Same lane rule as DESK_TITLE: never ROUTER or CONDUCTOR.
+# The project form (owner, 2026-10-07; reworded by card q346 = B): `LANE · <project> part · n`. The
+# sidebar group is the project, the lane stays first in the title, the middle is the project's name
+# followed by the word `part`, n counts that lane's desks in the project. The pattern does not look at
+# the middle beyond "no `·`", so it reads the 0.1.8 wording (`LANE · shell · 1`, a free-text part)
+# exactly as well. Same lane rule as DESK_TITLE: never ROUTER or CONDUCTOR.
 DESK_PART = re.compile(r"^\s*(?!(?:ROUTER|CONDUCTOR)\b)([A-Z][A-Z0-9_-]+)\s*·\s*([^·]*[^·\s])\s*·\s*(\d+)\s*$")
 SESSION_READS = ("list_sessions", "get_session")
 # Session tools whose `self` means the parent session when a subagent calls them.
@@ -344,7 +349,8 @@ def desk_line(title: str | None) -> tuple[str, str, int] | None:
     """Which line of sessions a desk title belongs to, so a successor can be told from a stranger.
 
     ("task", <task id>, n) for the older form `LANE · <task id> n/m · topic`;
-    ("part", <project part>, n) for the project form `LANE · <project part> · n` (owner, 2026-10-07);
+    ("part", "<project> part", n) for the project form `LANE · <project> part · n` (owner, 2026-10-07);
+    a 0.1.8 title with a free-text part (`LANE · shell · 1`) reads the same way, key "shell";
     None for anything else, such as `LANE · topic`. The older form is tried first, so a title that
     carries `n/m` is read exactly as 0.1.7 read it. The part keeps its case; compare with part_key.
     """
@@ -363,6 +369,14 @@ def part_key(line: tuple[str, str, int]) -> tuple[str, str]:
     is compared exactly, as before."""
     form, key, _ = line
     return form, key.casefold() if form == "part" else key
+
+
+def project_of(part: str) -> str | None:
+    """The project's name in a project-form middle: `world intel part` -> `world intel`. None when the
+    middle does not end in the word `part` (the 0.1.8 free-text wording) or is only that word. Used for
+    the banner's wording only; no check reads it."""
+    m = re.match(r"^(.*\S)\s+part$", part.strip(), re.I)
+    return m.group(1) if m else None
 
 
 def group_of(row: dict) -> tuple[str, str] | None:
@@ -401,7 +415,9 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one).
     DESK: the same lane (it stays in the title), in the same sidebar group as this session (`mine`,
     read from a `get_session` on `self`), never a tier group, and the next of the same line:
-      `LANE · <project part> · n`      the same part, n advanced;
+      `LANE · <project> part · n`      the same project, n advanced (the title cannot tell two tasks of
+                                       one lane in one project apart, so any later desk of that lane in
+                                       the project's group counts);
       `LANE · <task id> n/m · topic`   the same task id, n advanced (the older form);
       `LANE · topic`                   any desk of the lane (the older form).
     With `mine` unknown, an older-form desk keeps the 0.1.7 rule (its lane's group). A project-form
@@ -556,20 +572,29 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
     if role == "UNFILED":
         lines.append(
             "2. You are not filed. Before any work, title and file yourself (`leadfuel-way:way`, section 2a): "
-            "a desk `LANE · <project part> · n` in its PROJECT's sidebar group, never its lane's (a project "
+            "a desk `LANE · <project> part · n` (the lane, then the project's name followed by the word `part`, "
+            "then n) in its PROJECT's sidebar group, never its lane's (a project "
             "with no group gets one from `leadfuel-way:new-project`, step 2); a router `ROUTER #N · <project>` "
             "in the ROUTER group; the conductor `CONDUCTOR · topic` in the CONDUCTOR group. Move only "
             "yourself (`self`)."
         )
     elif role == "DESK" and line is not None and line[0] == "part":
-        lines.append(
-            f"2. Your title files you as a desk: lane {lane}, project part '{line[1]}', session {line[2]}. "
-            f"Check you are in your project's sidebar group (not the {lane} lane group)."
-        )
+        project = project_of(line[1])
+        if project:
+            lines.append(
+                f"2. Your title files you as a desk: lane {lane}, project '{project}', session {line[2]}. "
+                f"Check you are in the '{project}' project's sidebar group (not the {lane} lane group)."
+            )
+        else:  # the 0.1.8 wording, a free-text part: it still works, nobody is asked to retitle it
+            lines.append(
+                f"2. Your title files you as a desk: lane {lane}, part '{line[1]}', session {line[2]} (the 0.1.8 "
+                f"wording; it still works, leave it). Check you are in your project's sidebar group (not the "
+                f"{lane} lane group)."
+            )
     elif role == "DESK":
         lines.append(
             "2. Your title is in an older desk form; every hook still reads it. Desks are now filed by "
-            "project (owner, 2026-10-07): `LANE · <project part> · n` in the project's sidebar group. On "
+            "project (owner, 2026-10-07): `LANE · <project> part · n` in the project's sidebar group. On "
             "this first turn you may migrate yourself, and only yourself, if your brief names the project "
             "and its group exists; otherwise keep your title and group. Never move or retitle other "
             "sessions to migrate them: one at a time, never in bulk."

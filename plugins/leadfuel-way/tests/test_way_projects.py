@@ -3,7 +3,8 @@ The title becomes LANE · project part · n ... Existing sessions would move one
 bulk."
 
 What the hook must do about it, and must keep doing for the older forms while sessions migrate:
-- read `LANE · <project part> · n` as a desk of LANE, and every older form exactly as before;
+- read `LANE · <project> part · n` (the owner's wording, card q346 = B) as a desk of LANE, and every
+  other form exactly as before, the 0.1.8 `LANE · <project part> · n` with a free-text part included;
 - judge a desk's successor by the desk's OWN group (its project), read from `get_session` on `self`,
   never by assuming the lane's group for a project-form title;
 - refuse `move_sessions` that names more than one session;
@@ -45,6 +46,8 @@ def test_role_of_the_project_form(hook, title, expected):
         (OWNER_EXAMPLE, ("part", "world intel part", 3)),
         ("SURFACE ·  photo   store upload  · 12", ("part", "photo store upload", 12)),
         ("SURFACE·shell·1", ("part", "shell", 1)),
+        ("SURFACE · one-interface part · 1", ("part", "one-interface part", 1)),
+        ("SURFACE · shell · 1", ("part", "shell", 1)),         # the 0.1.8 free-text part is still read
         # The older forms read exactly as 0.1.7 read them.
         ("NODE · WAY-1 1/2 · build", ("task", "WAY-1", 1)),
         ("DOORS · G6 2/5 · topic", ("task", "G6", 2)),
@@ -109,10 +112,40 @@ def test_the_context_guard_and_stop_gate_read_the_model_not_the_title(hook, tran
 
 # --- the banner -----------------------------------------------------------------------------
 
+def banner_line_2(text: str) -> str:
+    """The banner's second line, where the title is explained. Line 1 quotes the whole title, so a check
+    on the whole text would pass whatever the explanation says."""
+    return next(l for l in text.splitlines() if l.startswith("2. "))
+
+
 def test_banner_for_a_project_form_desk(hook):
     text = hook.banner("startup", OWNER_EXAMPLE, "DESK", "INTELLIGENCE", None, None, 300_000, 450_000)
-    assert "world intel part" in text and "session 3" in text and "project's sidebar group" in text
-    assert "not the INTELLIGENCE lane group" in text and "older desk form" not in text
+    line = banner_line_2(text)
+    assert "lane INTELLIGENCE" in line and "project 'world intel'" in line and "session 3" in line
+    assert "project's sidebar group" in line and "not the INTELLIGENCE lane group" in line
+    assert "world intel part" not in line  # the project is named; the word `part` is not part of its name
+    assert "older desk form" not in text
+
+
+def test_banner_names_the_project_not_the_word_part(hook):
+    """The title carries the project's name and the word `part`; the banner must name the project only."""
+    text = hook.banner("startup", "SURFACE · one-interface part · 1", "DESK", "SURFACE", None, None, 300_000, 450_000)
+    line = banner_line_2(text)
+    assert "project 'one-interface'" in line and "one-interface part" not in line
+
+
+def test_banner_for_a_0_1_8_free_text_part_still_works(hook):
+    """`SURFACE · shell · 1` was taught by 0.1.8. It keeps working and nobody is told to retitle it."""
+    text = hook.banner("startup", "SURFACE · shell · 1", "DESK", "SURFACE", None, None, 300_000, 450_000)
+    line = banner_line_2(text)
+    assert "lane SURFACE" in line and "'shell'" in line and "session 1" in line
+    assert "project's sidebar group" in line and "retitle" not in line.lower()
+
+
+def test_banner_for_a_title_that_is_only_the_word_part(hook):
+    """No project name to take out: the banner must not print an empty one."""
+    text = hook.banner("startup", "SURFACE · part · 2", "DESK", "SURFACE", None, None, 300_000, 450_000)
+    assert "project ''" not in text and "session 2" in banner_line_2(text)
 
 
 @pytest.mark.parametrize("title", ["DOORS · G6 2/5 · topic", "DOORS · topic"])
@@ -120,11 +153,13 @@ def test_banner_for_an_older_form_desk_offers_self_migration_only(hook, title):
     text = hook.banner("startup", title, "DESK", "DOORS", None, None, 300_000, 450_000)
     assert "older desk form" in text and "still reads it" in text
     assert "only yourself" in text and "never in bulk" in text
+    assert "`LANE · <project> part · n`" in text and "<project part>" not in text
 
 
 def test_banner_for_an_unfiled_session_teaches_the_project_form(hook):
     text = hook.banner("startup", None, "UNFILED", None, None, None, 300_000, 450_000)
-    assert "`LANE · <project part> · n`" in text and "PROJECT's sidebar group" in text
+    assert "`LANE · <project> part · n`" in text and "PROJECT's sidebar group" in text
+    assert "<project part>" not in text and "followed by the word `part`" in text
     assert "never its lane's" in text and "leadfuel-way:new-project" in text
     assert "`ROUTER #N · <project>`" in text and "`CONDUCTOR · topic`" in text
 
@@ -191,8 +226,8 @@ WI = grp("world intel")
 
 @pytest.mark.parametrize("successor, group", [
     ("INTELLIGENCE · world intel part · 4", WI),
-    ("INTELLIGENCE · World Intel  part · 4", WI),        # case and spacing in the part do not matter
-    ("INTELLIGENCE · world intel part · 6", WI),         # any later session of the part
+    ("INTELLIGENCE · World Intel  part · 4", WI),        # case and spacing in the project do not matter
+    ("INTELLIGENCE · world intel part · 6", WI),         # any later session of the lane in the project
     ("INTELLIGENCE · world intel part · 4", {"name": "World Intel"}),  # no ids: matched by name
 ])
 def test_a_project_desk_may_archive_once_its_successor_is_live_in_its_own_group(hook, transcript, successor, group):
@@ -229,7 +264,7 @@ def test_a_project_desk_never_falls_back_to_its_lane_group(hook, transcript):
     {"title": "INTELLIGENCE · world intel part · 4", "group": WI},            # archived unknown
     row("INTELLIGENCE · world intel part · 3", WI),                           # yourself
     row("INTELLIGENCE · world intel part · 2", WI),                           # your predecessor
-    row("INTELLIGENCE · globe feeds · 4", WI),                                # another part
+    row("INTELLIGENCE · globe feeds part · 4", WI),                           # another project's name
     row("SURFACE · world intel part · 4", WI),                                # another lane
     row("INTELLIGENCE · WI-3 4/4 · world intel", WI),                         # the older form: not provably the same line
     row("ROUTER #29 · world intel", WI),                                      # another tier
@@ -402,12 +437,58 @@ def test_the_hook_never_moves_or_retitles_anything_itself():
 
 SKILL = {name: (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
          for name in ("way", "desk", "router", "handoff", "new-project", "conductor")}
-NEW_FORM = "`LANE · <project part> · n`"
+NEW_FORM = "`LANE · <project> part · n`"
 
 
-@pytest.mark.parametrize("name", ["way", "desk", "router", "handoff"])
+@pytest.mark.parametrize("name", ["way", "desk", "router", "handoff", "conductor"])
 def test_the_desk_title_skills_teach_the_project_form(name):
     assert NEW_FORM in SKILL[name], name
+
+
+@pytest.mark.parametrize("name", ["way", "router"])
+def test_the_owners_own_example_is_in_the_skills_that_title_desks(name):
+    assert OWNER_EXAMPLE in SKILL[name], name
+
+
+def test_the_way_defines_the_title_in_the_owners_words():
+    """Lane, then the project's name followed by the word `part`, then n; the task is not in the title."""
+    text = SKILL["way"]
+    assert "followed by the word `part`" in text and "The task id leaves the title" in text
+    assert "What the desk does is not in the title" in text
+
+
+# The 0.1.8 wording of the middle: a free-text "project part". 0.1.9 replaced it with the project's name
+# and the word `part`, and nothing that teaches a title may bring the placeholder or the phrase back.
+OLD_PART_WORDING = re.compile(r"<project part>|lower-case words|a part names one task only")
+SHIPPED_TEXT = {
+    **{f"skills/{n}": SKILL[n] for n in SKILL},
+    "README.md": (PLUGIN / "README.md").read_text(encoding="utf-8"),
+    "hooks/way_hook.py": HOOK_PATH.read_text(encoding="utf-8"),
+}
+
+
+@pytest.mark.parametrize("where", sorted(SHIPPED_TEXT))
+def test_nothing_shipped_teaches_the_0_1_8_part_wording(where):
+    found = OLD_PART_WORDING.search(SHIPPED_TEXT[where])
+    assert not found, (where, found.group(0))
+
+
+def test_the_readme_names_the_new_form_and_the_owners_example():
+    text = SHIPPED_TEXT["README.md"]
+    assert NEW_FORM in text and OWNER_EXAMPLE in text
+
+
+@pytest.mark.parametrize("middle, project", [
+    ("world intel part", "world intel"),
+    ("World  Intel PART", "World  Intel"),
+    ("one-interface part", "one-interface"),
+    ("shell", None),            # the 0.1.8 free-text part
+    ("part", None),             # only the word: no project to name
+    ("departed", None),         # the word must stand alone
+    ("photo store upload", None),
+])
+def test_project_of_takes_the_word_part_off_the_end(hook, middle, project):
+    assert hook.project_of(middle) == project
 
 
 # The 0.1.7 wording that filed a desk by its lane. It must not come back in any skill.

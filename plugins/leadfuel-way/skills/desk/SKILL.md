@@ -1,17 +1,17 @@
 ---
 name: desk
-description: The DESK session. Does one task in one worktree and opens one draft PR. Use when the title reads `LANE · <project part> · n` (or the older `LANE · <task id> n/m · topic`), or when you were opened by a router to do one task. Covers isolation, the checks, reporting to the router with STATUS or ASK, and handing off.
+description: The DESK session. Does one task in one worktree and opens one draft PR. Use when the title reads `LANE · <project> part · n` (or the older `LANE · <task id> n/m · topic`), or when you were opened by a router to do one task. Covers isolation, the checks, reporting to the router with STATUS or ASK, and handing off.
 ---
 
 # desk (one task)
 
-You do one task. A router opened you, picked your model, and titled and filed you: `LANE · <project part> · n`, in your project's sidebar group (`leadfuel-way:way`, section 2a). Read `leadfuel-way:way` first; this is your part of it.
+You do one task. A router opened you, picked your model, and titled and filed you: `LANE · <project> part · n`, in your project's sidebar group (`leadfuel-way:way`, section 2a). Read `leadfuel-way:way` first; this is your part of it.
 
 **Your lane is one of the owner's desk lanes, never ROUTER or CONDUCTOR** (those are tiers; a title starting with either is treated by the hooks as a coordinator and loses its edit tools in a git checkout). **Your sidebar group is your project, not your lane** (owner, 2026-10-07). If your title carries a tier word as its lane, or the lane does not match the files your task touches, say so to your router with `ASK:` and stop; do not retitle yourself to make the problem go away.
 
 ## Start
-1. **Know your brief.** It names the true source of the instruction (a session id the router can be asked about), the task id, the lane, the project and the project part, the done-criteria, and your router's session id. If any of those is missing, ask your router (`ASK:` below) before you touch anything.
-   - **An older title** (`LANE · <task id> n/m · topic`, from a router that ran before desks were grouped by project) still works in every hook. You may migrate yourself on this first turn, and only yourself: retitle to `LANE · <project part> · n` and `move_sessions` with `["self"]` into your project's group, if your brief names the project and that group exists. Otherwise leave your title and group alone. Never move or retitle another session.
+1. **Know your brief.** It names the true source of the instruction (a session id the router can be asked about), the task id, the lane, the project and n, the done-criteria, and your router's session id. If any of those is missing, ask your router (`ASK:` below) before you touch anything.
+   - **An older title** (`LANE · <task id> n/m · topic`, from a router that ran before desks were grouped by project) still works in every hook. You may migrate yourself on this first turn, and only yourself: retitle to `LANE · <project> part · n` and `move_sessions` with `["self"]` into your project's group, if your brief names the project and that group exists. Otherwise leave your title and group alone. Never move or retitle another session.
 2. **Check ownership.** Name the files you will change and check the owner's session map. If another desk owns them, hand off with `SendMessage` to that session by its full name and stop. Reading is always allowed.
 3. **Isolate.** In a shared checkout, take a worktree before editing: `git worktree add .claude/worktrees/<task> -b <task>`, then work only there. The harness may refuse edits outside the worktree this session was started in; if it does, check out the branch in your own worktree instead of working around it. Commit early.
 
@@ -37,7 +37,7 @@ DEFAULT: A (why)
 
 ## Finish or hand off
 - Done: `STATUS: DONE` with the PR, and the final report as the last message. On DONE the router archives you through its gate (PR really merged, a final report, nothing unpushed). Do not archive yourself.
-- At the cap with work left, or blocked: `leadfuel-way:handoff` (desk row), then **stay open** (owner, 2026-10-02). You never leave before your successor is live: the router opens a fresh desk for your task, titled `LANE · <project part> · n` with the same lane and part and n advanced, in your project's group, and archives you only once that desk is live in that group and nothing of yours is unpushed.
+- At the cap with work left, or blocked: `leadfuel-way:handoff` (desk row), then **stay open** (owner, 2026-10-02). You never leave before your successor is live: the router opens a fresh desk for your task, titled `LANE · <project> part · n` with the same lane and project and n advanced, in your project's group, and archives you only once that desk is live in that group and nothing of yours is unpushed.
 
 ## If you are a background agent
 A router may run you with the Agent tool instead of opening a session (pilot, AUTO-DESKS). You can tell: your brief says so, there was no session-start banner, and your working directory is `.claude/worktrees/agent-<id>`. Everything above holds, except:
