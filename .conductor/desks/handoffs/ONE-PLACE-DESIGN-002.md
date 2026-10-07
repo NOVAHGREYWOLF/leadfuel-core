@@ -37,8 +37,17 @@ and out as far as can. micro macro. also where is the live?" Read, three gaps th
    the way Atlas Live v11 is (a plain artifact reading the brain connector), since a Design-type
    artboard cannot call the network.
 
+Third message: "i also want it all to be one screen. Everything should be interactive on a
+single screen". Read: the mock is ONE artboard, not ten. The Design type supports it (format.md:
+a flow that shares state is one artboard; handlers set `state`, `renderVals()` returns one flag per
+panel, each panel in its own `<sc-if>`). The ten screens become states of `Main.dc.html`: menu
+picks summon panels, the overlay rows toggle, Focus/Act/Ask/Jump/Quests open in place, the
+owner toggle and the register switch change the same screen. Keep the other files only as
+reference until Main holds everything, then remove them from `canvas.json`.
+
 ## Next (one step)
-First, replace the stage with the spatial atlas: the crystal (hex prism, pyramid caps, lattice
+Rebuild `Main.dc.html` as the single interactive screen (above), and in it replace the stage
+with the spatial atlas: the crystal (hex prism, pyramid caps, lattice
 cross-sections, parts placed by region and row as Atlas v11 does; sensors on the lower faces,
 arms on the upper, Core at the origin, Novah above), drawn so you move THROUGH it: selecting a
 part flies the camera to it (~1.6 s ease), the HUD panels overlay the crystal, Home is the
