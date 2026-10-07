@@ -17,7 +17,9 @@ Session local_09713dbf. Router: ROUTER #24 local_17705746. Blocked, not at cap. 
 ## Update 2026-10-07 03:4xZ (#24 ruled A on PR-TRIAGE)
 - Archived PR-TRIAGE 1bfe7e56 after my own last check: idle since 02:24Z 10-06, clean, HEAD 46d1a47 in hub origin/main (fresh fetch), no nested worktree, no children. Session total: 5 (2b83204b, 57b8a031, 70fae0d7, 12597f42, 1bfe7e56).
 - Moved (did not delete) the stale ATLAS-B1 register marker to `.locks/full-suite.stale/sweep003-20261007T034122Z/` with a MOVED.txt. Holder gone: the session is archived, no process references jovial-allen-bfcad0 or 331d5be, and the only pytest processes on the box (13956, 28328) started 02:46Z under CC-ROUTE-MOVE's gates.sh, which correctly holds heavy slot-1 since 02:45Z. full-suite.running is now empty.
-- **OWED: a STATUS to ROUTER #25 once it is live** (board router/current still showed #24 "rotating" at 03:4xZ; #24's handoff is claude/router-24 @ 5f98f52). Not sent anywhere yet.
+- 04:04Z: the owner said #25 was live, but I could not find it. No session was named ROUTER #25, router/current still named #24 ("rotating"), worktree router-25 sat at 5f98f52 = router-24, and at 04:03Z #24 wrote that #25 still had to be started. I sent the full STATUS to #24 as router of record, marked for #25 and asking #24 to pass it on (delivered, message 3ad490b5).
+- **Successor's first check:** once router/current names #25, confirm #25 has that report (list_events or a transcript search for NODE-SESSION-SWEEP-003). If not, re-send it in one message; the text is the update lines above.
+- I handed off at the 300k guard (04:0xZ, 10-07). Successor: NODE · session sweep 004, from the owner's paste. It archives me (local_09713dbf-1632-4bd9-bc58-aa69b818bb1f) once it is live: my worktree sweep-003 holds only this note, and it is pushed.
 
 ## Held (re-read before acting)
 - (superseded by the update above) q293 used to hold WAY-1 and ATLAS-B1. The others on q281's list still owe work or have open PRs, so they stay.
