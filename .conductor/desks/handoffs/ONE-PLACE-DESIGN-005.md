@@ -33,3 +33,6 @@ repo is public.
 
 ## Owed / not delivered
 Nothing. Context guard crossed 300k after the publish; no successor needed, the task is done. The desk does not archive itself; the router archives it through its gate.
+
+## Re-route (owner, 2026-10-07 ~08:35Z: "its router 27 now")
+DONE and the owner decision "make it real, use it fully" re-sent to ROUTER #27 local_dc4fea43-2246-4e1d-a042-b376ad61bdc5 (queued: that session was mid-turn; message id ebad368b). The copies sent to ROUTER #26 local_0185d288 are superseded.
