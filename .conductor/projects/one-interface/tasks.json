@@ -22,7 +22,8 @@
     {"key": "SURFACE~SPATIAL-6b-customer-view", "rank": 119, "role": "customer view V37"},
     {"key": "SURFACE~TUFTE-G1-cc-correctness", "rank": 66, "role": "command center correctness"},
     {"key": "SURFACE~TUFTE-G2-cc-outcome", "rank": 67, "role": "command center outcome layer"},
-    {"key": "SURFACE~GOAL-iphone-command-center", "rank": 59, "role": "owner goal: the iPhone app shows the command center only"}
+    {"key": "SURFACE~GOAL-iphone-command-center", "rank": 59, "role": "owner goal: the iPhone app shows the command center only"},
+    {"key": "SURFACE~ONE-INTERFACE-S1-SHELL", "rank": 228, "role": "build stage 1/6: /command as the signed-in home, Command skin (self-hosted fonts), one session-authed atlas JSON read; DOORS reads the route", "source": "owner in ROUTER #27 local_dc4fea43 chat ~09:0xZ 10-07: 'we need to do this', after accepting mock-up TL21cZ8Bh5GnKixuQFjwaM v8 in DESIGN ONE-PLACE-DESIGN 5/5 local_121307e7 ('how do we make this real? ... I want it to be able to use it fully'). Stages 2-6 (ONE-INTERFACE-S2..S6) are filed on the Conductor desk, not queued."}
   ],
   "stays_with_estate_router": "The merge train itself (NODE MERGE-TRAIN desks) stays with the estate router (ROUTER #25 local_447575ed). This project's PRs land through that train like any other."
 }
