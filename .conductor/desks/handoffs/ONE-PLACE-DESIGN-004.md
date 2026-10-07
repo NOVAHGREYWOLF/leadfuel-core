@@ -24,8 +24,8 @@ Read ONLY `BUILD-SPEC.md` (private folder above), the 2/2 `Main.dc.html` beside 
 `Main.dc.html`, publish once, then STATUS: DONE to ROUTER #26 with the url.
 
 ## Owed / not delivered
-- Owner: the Higgsfield estate artifact link (asked in this session's chat ~08:1xZ; unanswered). Build proceeds
-  from the open-source repo if it has not arrived.
+- Higgsfield: RESOLVED by the owner in this session ~08:2xZ: use the open-source repo as the model, and the
+  studio lane goes inside the estate (part of the one interface, behind the hub's doors). Recorded in the spec.
 - No STATUS sent to the router this session (the way says a desk at cap hands off and stays open; no sends used).
 
 ## Gotchas
