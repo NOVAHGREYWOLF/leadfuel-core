@@ -17,16 +17,28 @@ local_447575ed-7d43-46a1-9189-5723397c433f. Reason: context guard crossed 300k m
   (subagent read of Atlas Live v11, LeadFuel Command, the review page, the Conductor desk):
   the 55 picks L01–L18 / V01–V37 and their names, used verbatim in Map.dc.html.
 
+## Owner reaction (typed in this session, 2026-10-07 ~06:5xZ; true source: local_94485af5)
+"okay great. but we are missing the spacial atlas. this is good but i think it could be better.
+write the hand off. DOes this seem like a video game? its getting there."
+Read: the world must be the SPATIAL atlas (the 3D crystal of Atlas Live v11 / hub
+`goal_atlas.html`), not the flat ring; and the whole thing must feel more like a game.
+
 ## Next (one step)
-Write and publish the 4 missing artboards, one Write then one publish each, same `url`, `root` =
-a folder holding `project/`, chrome copied from Main.dc.html: `Quests.dc.html` (quest log over the
-world: goals + campaigns, worst first, next step with disposition), `Owner.dc.html` (whole estate:
-amber scope pill "whole estate", Mine/Estate toggle, all 90 places lit, estate census pane in
-Today, owner powers under a menu divider: Estate, Desks, Train, Spend, Runners), `Phone.dc.html`
-(390×844: world fills, Today/Act bottom sheet, tab bar Home·Map·Quests·Act·Ask, no fake status
-bar), `Hud.dc.html` (the same Home in the LeadFuel Command cyan HUD skin: Barlow Condensed /
-Barlow / JetBrains Mono via one Google Fonts link, hex pips, bracket panels; option B for the
-owner). Then report STATUS: DONE to ROUTER #25 with the artifact url.
+First, replace the stage with the spatial atlas: the crystal (hex prism, pyramid caps, lattice
+cross-sections, parts placed by region and row as Atlas v11 does; sensors on the lower faces,
+arms on the upper, Core at the origin, Novah above), drawn so you move THROUGH it: selecting a
+part flies the camera to it (~1.6 s ease), the HUD panels overlay the crystal, Home is the
+character at the core looking out, overlays are the live layers (comets, fog, routes) on the
+crystal. Cheapest sure path: an isometric SVG crystal in `Main.dc.html` and `Map.dc.html` with
+the HUD over it. Better: one 3D artboard, three.js uploaded as a .js asset (Design type step 3),
+orbit + fly-to + click a part → Focus. The 2D ring becomes the minimap and the no-WebGL /
+reduced-motion fallback. Then the 4 missing artboards, one Write then one publish each:
+`Quests.dc.html`, `Owner.dc.html` (whole estate, amber scope pill, owner powers under a menu
+divider), `Phone.dc.html` (390×844, no fake status bar), `Hud.dc.html` (same Home in the
+LeadFuel Command cyan HUD skin; option B). Game feel to add everywhere: things are summoned,
+not always shown (a menu pick pulls its panel up with a short dolly); motion on arrivals and
+state changes; a sense of place (region name and depth when you enter one). Then STATUS: DONE
+to ROUTER #25 with the artifact url.
 
 ## Owed / not delivered
 - Owner choice, via a Router desk card: skin A (Novah tokens, gated q176 C2=B, screens 1–9) or
