@@ -10,6 +10,7 @@ the hooks in this plugin are the part that happens anyway.
 - **Desks are grouped by project** (owner, 2026-10-07; 0.1.8, reworded 0.1.9). A desk is titled `LANE · <project> part · n` (the lane, the project's name followed by the word `part`, then n; for example `INTELLIGENCE · world intel part · 3`) and filed in its project's sidebar group (`world intel`); the lane stays in the title, and CONDUCTOR and ROUTER keep their tier groups. The older titles (`LANE · <task id> n/m · topic`, `LANE · topic`, `ROUTER #N`, `CONDUCTOR · topic`) are still read by every hook, so sessions migrate one at a time. The `new-project` skill makes a project's group; nothing falls back to the lane's group.
 - **No self-archive before a live successor.** `archive_session` on `self` is refused until the session has read its successor back with `list_sessions` / `get_session`, live in the right group. A project-form desk's group is its own, read with `get_session` on `self`.
 - **No bulk moves.** A `move_sessions` call that names more than one session is refused: sessions move one at a time, never in bulk. The plugin itself never moves or retitles a session.
+- **The test rule is taught in `way`, `desk` and `router`** (owner, 2026-10-11, card q354 A; 0.1.10): static gates plus the test files for what you changed, locally; the full suite once, in CI, on the exact head you merge; a full local bare `pytest` only when the test setup itself changes. No hook enforces it.
 - **Six skills**: `way` (every session), `handoff` (every tier), `conductor`, `router`, `desk`, `new-project`. Invoked as `leadfuel-way:<name>`.
 
 **Install (owner step, once).** Installing writes `~/.claude/settings.json`, which sessions may not edit.
@@ -29,6 +30,6 @@ python scripts/way_caps.py clear
 
 **Switches (environment).** `SESSION_SOFT_TOKENS` / `SESSION_HARD_TOKENS` override the caps; `SESSION_GUARD_OFF=1` disables the guard and the Stop gate; `WAY_ENFORCE_ROLES=0` disables the coordinator edit rule, the background-agent rules and the bulk-move rule; `WAY_ARCHIVE_GUARD=0` disables the self-archive guard; `WAY_STATE_DIR` moves the per-session state (default: a `leadfuel-way` folder under the temp directory).
 
-**Tests.** From the repo root, bare `pytest` (it collects `plugins/`; see `pyproject.toml` for why).
+**Tests.** CI runs the full suite on every PR (workflow `test`, job `pytest`: a bare `pytest` from the repo root, which collects `plugins/`; see `pyproject.toml` for why). Locally, run the test files for what you changed, for example `pytest plugins/leadfuel-way/tests/test_plugin_layout.py`. A change to `pytest.ini`, the pytest config in `pyproject.toml`, a `conftest.py` or the test workflow still gets a full local bare `pytest` (0.1.10; owner, 2026-10-11, card q354 A).
 
 The repo is public: this plugin carries ids, titles, status and PR numbers only.

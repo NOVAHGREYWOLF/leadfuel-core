@@ -17,11 +17,11 @@ You do one task. A router opened you, picked your model, and titled and filed yo
 
 ## Work
 - One task, one session, one PR. Open a **draft PR** early; say in the body what you verified yourself and what you took on trust.
-- Run the repo's own gate script (`sh scripts/gates.sh` where there is one; it prints its own gate count) and then **bare `pytest`**, never `pytest tests/` and never a `-k` sweep. Say in the PR that you ran them.
-- Never repair a test whose job is to refuse a colour (it asserts something is NOT green) to make it pass: find out what changed first.
-- Heavy jobs (a full test run, a CI run you trigger) take the lock in the owner's work queue first.
+- **Testing (owner, 2026-10-11, card q354 A).** Locally, run the repo's static gates (`SKIP_TESTS=1 sh scripts/gates.sh` where there is one; it prints its own gate count) and pytest on the test files for what you changed. **No local full `pytest`.** The full suite runs once, in CI, on the exact head you merge, after current main is merged in: in the hub that is workflow `tests`, job `pytest` (`tests/` on xdist workers, then the root-level suite, which together are what a bare `pytest` collects). **Exception:** a change to the test setup itself (`conftest.py`, the pytest config in `pytest.ini` or `pyproject.toml`, `scripts/gates.sh`, the test workflow) still gets a full local bare `pytest`, as does a repo with no CI job that runs its full suite. Say in the PR which gates and which test files you ran, and that the full suite is CI's.
+- Never confirm with `pytest tests/` or a `-k` sweep: an explicit path overrides `testpaths` and silently deselects suites. Never repair a test whose job is to refuse a colour (it asserts something is NOT green) to make it pass: find out what changed first.
+- Heavy jobs (a full local test run under the exception above, `gates.sh` without `SKIP_TESTS=1`, a CI run you trigger) take the lock in the owner's work queue first.
 - Anything that leaves the machine (a send, a post, a webhook, a spend, a push to a public repo) needs the owner's approval, relayed through your router. Pushing your own branch is covered by the standing rules, but the content must be safe for a public repo: ids, titles, status, PR numbers.
-- Merge only your own PR, once every check on its current head is green, merged with current main in, and re-checked inside the CI hold. A plain merge is never a question for the owner.
+- Merge only your own PR, once every check on its current head is green, merged with current main in, and re-checked inside the CI hold. For the full suite, green means the CI `pytest` job concluded `success` on that exact head SHA; skipped, cancelled, queued or 0-step is not green. A plain merge is never a question for the owner.
 
 ## Report to your router
 Send with `SendMessage` to the router's session name or id from your brief. The first line is machine-readable and the rest is five lines at most:
