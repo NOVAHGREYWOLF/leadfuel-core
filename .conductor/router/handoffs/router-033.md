@@ -18,3 +18,8 @@ Cards q208, q294 open. Time-critical: the LeadfuelBackup task runs 03:30 local 1
 
 ## Gotchas
 ArtifactData list without out_dir floods context (picks = 336 docs): use out_dir then python. Git paths with a colon need MSYS_NO_PATHCONV=1. Sends since owner typed: 1 of 10.
+
+## Board and context (added ~10:05Z, owner: 'make the router bigger or put this context down')
+- Board router/current was 228 KB and 432 keys; it is now 49 KB and 139 keys. 294 history keys (incarnations up to 31) were MOVED, intact, to router/archive_pre33 (read back identical). See key board_note_33.
+- What filled #33 fast: the Artifact tool schema loaded twice by ToolSearch (use ArtifactData only), printing the 336-pick list, whole-board key dumps, whole sweep reports. Rules for #34: read board keys by name with python; send any read wider than one page to a read-only agent that writes a file and returns 12 lines; never print directories.
+
