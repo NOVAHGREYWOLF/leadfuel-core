@@ -1,0 +1,47 @@
+name: test
+
+# Bare `pytest` from the repo root, on a GitHub-hosted runner: this repo is public, so hosted
+# minutes are free and unmetered, and the job no longer queues behind the self-hosted box
+# (CI-OVERFLOW). Bare, not `pytest tests/`: an explicit path overrides testpaths and silently
+# drops suites such as plugins/leadfuel-way/tests.
+#
+# No secrets are used here, and none may be: a hosted runner is not ours. The same-repo guard
+# stays so a fork PR does not run at all.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest
+    # push events have no pull_request payload, so they pass; a PR must come from this repo.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # ubuntu-latest ships a system python3, so actions/setup-python is not used.
+      - name: Install pytest and this package into a venv
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install pytest .
+
+      - name: pytest (bare, from the repo root)
+        run: |
+          set -o pipefail
+          . .venv/bin/activate
+          pytest -q -ra | tee pytest.out
+          # Exit 5 (nothing collected) fails the step: a run that collects nothing is not a pass.
+          n=$(grep -Eo '[0-9]+ passed' pytest.out | head -1 | cut -d' ' -f1)
+          echo "collected-and-passed: ${n:-0}"
+          test "${n:-0}" -gt 0

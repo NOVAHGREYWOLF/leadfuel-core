@@ -1,0 +1,293 @@
+<title>Merge Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column. Feeder freshness line, five-number summary strip, filters, then repo groups of PR rows with their lane under each title.
+   Colour: cool paper greys like the Conductor desk, one teal accent for actions and selection; stage colours carry meaning (green = can land, blue = running, red = red, amber = waiting on a person, grey = not started). */
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --ink:#15201f; --muted:#566562; --line:#d3dbd9; --line-soft:#e5eae8;
+  --accent:#0a6e6a; --accent-ink:#ffffff; --accent-soft:#dcf0ee;
+  --go:#2f6b1f; --go-soft:#e1f0da; --run:#31506d; --run-soft:#e2ebf4; --bad:#a8261d; --bad-soft:#fbe6e3; --wait:#9a5400; --wait-soft:#fcefd9; --idle:#5d6663; --idle-soft:#eceeed; --train:#5b3f8c; --train-soft:#ece6f6;
+  --font-body:'Hanken Grotesk','Segoe UI',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1413; --surface:#161d1c; --ink:#e4ecea; --muted:#9bacaa; --line:#2a3634; --line-soft:#212b29;
+    --accent:#4fc1ba; --accent-ink:#06201e; --accent-soft:#15302e;
+    --go:#8fd37a; --go-soft:#1c2e17; --run:#8fb6dc; --run-soft:#17283a; --bad:#ff9087; --bad-soft:#34191a; --wait:#f0b15c; --wait-soft:#2e2312; --idle:#a2b0ad; --idle-soft:#1f2927; --train:#c4a8f0; --train-soft:#2a2040;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1413; --surface:#161d1c; --ink:#e4ecea; --muted:#9bacaa; --line:#2a3634; --line-soft:#212b29;
+  --accent:#4fc1ba; --accent-ink:#06201e; --accent-soft:#15302e;
+  --go:#8fd37a; --go-soft:#1c2e17; --run:#8fb6dc; --run-soft:#17283a; --bad:#ff9087; --bad-soft:#34191a; --wait:#f0b15c; --wait-soft:#2e2312; --idle:#a2b0ad; --idle-soft:#1f2927; --train:#c4a8f0; --train-soft:#2a2040;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;padding-inline:16px}
+.wrap{max-width:1000px;margin-inline:auto;padding-block:20px 64px}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.mono{font-family:var(--font-mono);font-size:.84em}
+.mast{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px;max-width:72ch}
+.fresh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:12px;font-size:13.5px;color:var(--muted)}
+.fresh .pill{padding:2px 10px;border-radius:999px;font-weight:600;font-size:12.5px}
+.fresh .ok{background:var(--go-soft);color:var(--go)}
+.fresh .stale{background:var(--bad-soft);color:var(--bad)}
+.fresh .unk{background:var(--idle-soft);color:var(--idle)}
+.banner{margin-block:10px;padding:10px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad);font-size:14px}
+.note{margin-block:10px;padding:10px 12px;border-radius:8px;background:var(--wait-soft);color:var(--wait);font-size:13.5px}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-block:16px 12px}
+.stat{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:12.5px;color:var(--muted)}
+.stat.go b{color:var(--go)}.stat.train b{color:var(--train)}
+.tools{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:10px}
+.tools input[type=search]{flex:1 1 200px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.tools select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;max-width:100%}
+.chipset{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.fchip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500}
+.fchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fchip .c{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+.repo{margin-bottom:18px}
+.repo>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding-block:4px}
+.repo>summary .n{font-family:var(--font-mono);font-size:12.5px;color:var(--muted)}
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;margin-top:6px}
+.row{border-top:1px solid var(--line-soft);padding:11px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.row:first-child{border-top:0}
+.row.hold{background:var(--wait-soft)}
+.title{overflow-wrap:anywhere}
+.title .num{font-family:var(--font-mono);font-size:.84em;margin-right:8px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:12px;padding:1px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;font-weight:600}
+.s-green-waiting{background:var(--go-soft);color:var(--go);border-color:transparent}
+.s-ci-running{background:var(--run-soft);color:var(--run);border-color:transparent}
+.s-ci-red{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.s-draft,.s-no-pr{background:var(--idle-soft);color:var(--idle);border-color:transparent}
+.s-in-train{background:var(--train-soft);color:var(--train);border-color:transparent}
+.s-merged{background:var(--go-soft);color:var(--go);border:1px solid var(--go)}
+.s-unknown{background:none;color:var(--idle);border:1px dashed var(--line)}
+.i-pending{background:var(--wait-soft);color:var(--wait);border-color:transparent}
+.i-done{background:var(--go-soft);color:var(--go);border-color:transparent}
+.i-no{background:var(--idle-soft);color:var(--idle);border-color:transparent}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:13.5px}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.more{border:0;background:none;color:var(--accent);padding:0;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.why{font-size:13px;color:var(--muted);overflow-wrap:anywhere;border-left:2px solid var(--line);padding-left:10px}
+.empty{padding:22px 16px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13.5px;z-index:9;max-width:calc(100% - 32px)}
+footer{margin-top:24px;font-size:12.5px;color:var(--muted);max-width:75ch}
+@media (prefers-reduced-motion:no-preference){.btn,.fchip{transition:background .12s,border-color .12s}}
+</style>
+
+<div class="wrap">
+  <div class="mast"><h1>Merge desk</h1><span class="mono" id="clock"></span></div>
+  <p class="sub">Every open PR in every repo, and every queued desk task that has no PR yet. Buttons only record what you want. Nothing merges, readies a draft or messages anyone from a click here.</p>
+  <div class="fresh" id="fresh"></div>
+  <div id="banner" class="banner" hidden></div>
+  <div id="notes"></div>
+  <div class="strip" id="strip"></div>
+
+  <div class="tools">
+    <input type="search" id="search" placeholder="Search title, PR number, lane" aria-label="Search rows">
+    <select id="reposel" aria-label="Filter by repo"></select>
+    <select id="lanesel" aria-label="Filter by lane"></select>
+  </div>
+  <div class="chipset" id="stfilter" role="group" aria-label="Filter by stage"></div>
+  <div id="list"></div>
+  <footer>Times are Pacific. ETA is the live slot-queue position times the measured median CI time for that repo. It reads unknown when the feeder cannot measure it. Intent rows are described in docs/MERGE_DESK_INTENTS.md in leadfuel-core.</footer>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s);};
+function h(tag,attrs){
+  var e=document.createElement(tag);
+  if(attrs){for(var k in attrs){var v=attrs[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else e.setAttribute(k,v===true?'':v);}}
+  for(var i=2;i<arguments.length;i++){var c=arguments[i];
+    (Array.isArray(c)?c:[c]).forEach(function(x){if(x==null||x===false)return;e.append(x.nodeType?x:document.createTextNode(String(x)));});}
+  return e;
+}
+var STL={'green-waiting':'Green, waiting for slot','ci-running':'CI running','ci-red':'CI red','draft':'Draft','no-pr':'No PR','in-train':'In train','merged':'Merged','unknown':'Unknown'};
+var STORDER=['green-waiting','in-train','ci-running','ci-red','draft','no-pr','unknown','merged'];
+var INTENT_LBL={faster:'Push through faster',ready:'Mark ready',hold:'Hold',unhold:'Release hold'};
+var S={feed:null,intents:{},text:'',repo:'all',lane:'all',st:{},more:{},me:null,db:null,closed:{}};
+var db=null,pending=false;
+
+function pt(v){
+  if(!v)return 'unknown';
+  var d=new Date(v);if(isNaN(d.getTime()))return String(v);
+  try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(d);}catch(e){return String(v)+' (UTC)';}
+}
+function dur(min){
+  if(min==null||isNaN(min))return 'unknown';
+  if(min<0)min=0;
+  if(min<1)return '<1m';
+  if(min<90)return Math.round(min)+'m';
+  var hh=Math.floor(min/60);if(hh<48)return hh+'h '+Math.round(min-hh*60)+'m';
+  return Math.floor(hh/24)+'d '+(hh%24)+'h';
+}
+function ago(v){if(!v)return null;var d=new Date(v);if(isNaN(d.getTime()))return null;return (Date.now()-d.getTime())/60000;}
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true;},3500);}
+function banner(m){var b=$('#banner');b.textContent=m;b.hidden=!m;}
+
+/* Latest intent per row. A hold stays until a later unhold; the rest are shown as the latest request. */
+function intentsFor(rowId){
+  var list=Object.keys(S.intents).map(function(k){return S.intents[k];}).filter(function(i){return i.row_id===rowId;}).sort(function(a,b){return a.ts<b.ts?-1:1;});
+  var held=false,latest={};
+  list.forEach(function(i){
+    if(i.intent==='hold')held=true;else if(i.intent==='unhold')held=false;
+    latest[i.intent==='unhold'?'hold':i.intent]=i;
+  });
+  return {held:held,latest:latest,list:list};
+}
+function intentChip(i){
+  var st=i.status||'recorded';
+  if(st==='recorded')return h('span',{class:'chip i-pending',text:INTENT_LBL[i.intent]+': recorded, waiting for the merge train'});
+  if(st==='honoured')return h('span',{class:'chip i-done',text:INTENT_LBL[i.intent]+': honoured'+(i.note?' ('+i.note+')':'')});
+  return h('span',{class:'chip i-no',text:INTENT_LBL[i.intent]+': '+st+(i.note?' ('+i.note+')':'')});
+}
+function record(row,intent){
+  if(!db){toast('Not saved: this view cannot reach the store.');return;}
+  var ts=new Date().toISOString().replace(/\.\d+Z$/,'Z');
+  var compact=ts.replace(/[-:]/g,'');
+  var id=(compact+'-'+row.repo+'-'+(row.number!=null?'pr'+row.number:'task')+'-'+intent).replace(/[^A-Za-z0-9_.-]/g,'-').slice(0,190);
+  var doc={intent_id:id,row_id:row.id,repo:row.repo,pr:row.number==null?null:row.number,task_key:row.kind==='task'?row.id.replace(/^task~/,''):null,intent:intent,ts:ts,who:S.me,status:'recorded'};
+  S.intents[id]=doc;render();
+  db.doc('intents/'+id).set(doc).then(function(){toast('Recorded: '+INTENT_LBL[intent]+' for '+(row.number!=null?row.repo+' #'+row.number:row.title.slice(0,50)));})
+    .catch(function(e){delete S.intents[id];render();toast('Not saved ('+(e&&e.code?e.code:'error')+'). Try again.');});
+}
+
+function rowEl(r){
+  var it=intentsFor(r.id);
+  var opened=!!S.more[r.id];
+  var since=ago(r.since);
+  var etaTxt=r.eta_min==null?'unknown':(r.stage==='merged'?'landed':'about '+dur(r.eta_min));
+  var el=h('div',{class:'row'+(it.held?' hold':'')});
+  el.append(h('div',{class:'title'},h('span',{class:'num',text:r.number!=null?'#'+r.number:'task'}),r.url?h('a',{href:r.url,target:'_blank',rel:'noopener',text:r.title}):r.title));
+  var chips=h('div',{class:'chips'},h('span',{class:'chip s-'+r.stage,text:STL[r.stage]||r.stage}));
+  if(r.stage==='in-train'&&r.batch!=null)chips.append(h('span',{class:'chip s-in-train',text:'Batch '+r.batch}));
+  if(it.held)chips.append(h('span',{class:'chip i-pending',text:'Hold requested'}));
+  Object.keys(it.latest).forEach(function(k){if(k!=='hold')chips.append(intentChip(it.latest[k]));else if(it.held)chips.append(intentChip(it.latest[k]));});
+  el.append(chips);
+  el.append(h('div',{class:'meta'},
+    h('span',{},'Held by ',h('b',{class:'mono',text:r.holder&&r.holder!=='n/a'?r.holder:'unknown'})),
+    h('span',{},r.stage==='merged'?'Merged ':'In this stage ',h('b',{text:r.stage==='merged'?pt(r.since):(since==null?'unknown':dur(since))})),
+    h('span',{},'ETA ',h('b',{text:etaTxt})),
+    r.slot&&r.slot.ahead!=null?h('span',{},'Slot queue: ',h('b',{text:r.slot.ahead+' ahead'})):null));
+  if(r.stage!=='merged'){
+    var latestReady=it.latest.ready,latestFast=it.latest.faster;
+    el.append(h('div',{class:'acts'},
+      h('button',{type:'button',class:'btn primary',disabled:!!(latestFast&&latestFast.status==='recorded'),onclick:function(){record(r,'faster');}},'Push it through faster'),
+      h('button',{type:'button',class:'btn',disabled:!!(latestReady&&latestReady.status==='recorded')||r.stage==='green-waiting'||r.stage==='in-train'||r.stage==='ci-running',title:'Asks the desk to take the draft out of draft. Only a draft or a missing PR needs it.',onclick:function(){record(r,'ready');}},'Mark ready'),
+      h('button',{type:'button',class:'btn',onclick:function(){record(r,it.held?'unhold':'hold');}},it.held?'Release hold':'Hold'),
+      h('button',{type:'button',class:'more','aria-expanded':opened?'true':'false',onclick:function(){S.more[r.id]=!S.more[r.id];render();}},opened?'Hide detail':'How these were worked out')));
+  }
+  if(opened){
+    el.append(h('div',{class:'why'},
+      h('div',{text:'Stage since: '+pt(r.since)+' ('+(r.since_basis||'basis not recorded')+')'}),
+      h('div',{text:'Holder: '+(r.holder_basis||'not recorded')}),
+      h('div',{text:'ETA: '+(r.eta_basis||'not recorded')}),
+      h('div',{text:'Lane: '+(r.lane||'unassigned')+(r.slot&&r.slot.held_by?'. Slot '+r.slot.lock+' is held by '+r.slot.held_by+'.':'')})));
+  }
+  return el;
+}
+
+function render(){
+  var F=S.feed;
+  var fresh=$('#fresh');fresh.replaceChildren();
+  var strip=$('#strip');strip.replaceChildren();
+  var notes=$('#notes');notes.replaceChildren();
+  if(!F){
+    fresh.append(h('span',{class:'pill unk',text:'No feed yet'}),h('span',{text:S.db===false?'This view cannot read the store.':'The feeder has not written a snapshot. Rows appear after its first refresh.'}));
+    $('#list').replaceChildren(h('div',{class:'empty',text:'Nothing to show yet.'}));
+    $('#stfilter').replaceChildren();return;
+  }
+  var age=ago(F.refreshed_at);
+  var limit=F.stale_after_min||15;
+  var isStale=age==null||age>limit;
+  fresh.append(h('span',{class:'pill '+(age==null?'unk':isStale?'stale':'ok'),text:age==null?'Unknown':isStale?'Stale':'Fresh'}),
+    h('span',{text:'Last refresh '+pt(F.refreshed_at)+(age!=null?' ('+dur(age)+' ago)':'')+'. '+(isStale?'Older than '+limit+' minutes, so stages and ETAs below may have moved.':'Refreshes every few minutes.')}));
+  (F.errors||[]).forEach(function(e){notes.append(h('div',{class:'note',text:'Feeder note: '+e}));});
+  if(F.train_present===false)notes.append(h('div',{class:'note',text:'The merge train is not running yet. Requests are recorded and wait for it.'}));
+  var sm=F.summary||{};
+  function stat(cls,v,l){return h('div',{class:'stat '+cls},h('b',{text:v==null?'unknown':String(v)}),h('span',{text:l}));}
+  strip.append(stat('',sm.open_prs,'open PRs'),stat('go',sm.green_waiting,'green, waiting for a slot'),stat('train',sm.in_train,'in train'),stat('',sm.landed_today,'landed today'),
+    stat('',sm.median_minutes_to_land_7d==null?null:dur(sm.median_minutes_to_land_7d),'median time to land, 7 days'));
+
+  var rows=(F.rows||[]);
+  // filters
+  var repos={},lanes={};rows.forEach(function(r){repos[r.repo]=1;if(r.lane)lanes[r.lane]=1;});
+  var rs=$('#reposel'),ls=$('#lanesel');
+  rs.replaceChildren(h('option',{value:'all',text:'All repos'}));Object.keys(repos).sort().forEach(function(k){rs.append(h('option',{value:k,text:k}));});rs.value=S.repo;
+  ls.replaceChildren(h('option',{value:'all',text:'All lanes'}));Object.keys(lanes).sort().forEach(function(k){ls.append(h('option',{value:k,text:k}));});ls.value=S.lane;
+  var counts={};rows.forEach(function(r){counts[r.stage]=(counts[r.stage]||0)+1;});
+  var sf=$('#stfilter');sf.replaceChildren();
+  STORDER.forEach(function(s){if(!counts[s])return;sf.append(h('button',{type:'button',class:'fchip','aria-pressed':S.st[s]?'true':'false',onclick:function(){S.st[s]=!S.st[s];render();}},STL[s],h('span',{class:'c',text:String(counts[s])})));});
+  var anySt=STORDER.some(function(s){return S.st[s];});
+  var q=S.text.toLowerCase();
+  var list=rows.filter(function(r){
+    if(S.repo!=='all'&&r.repo!==S.repo)return false;
+    if(S.lane!=='all'&&r.lane!==S.lane)return false;
+    if(anySt&&!S.st[r.stage])return false;
+    if(q&&((r.title||'')+' '+(r.number||'')+' '+(r.lane||'')+' '+r.repo).toLowerCase().indexOf(q)<0)return false;
+    return true;});
+  var root=$('#list');root.replaceChildren();
+  if(!list.length){root.append(h('div',{class:'empty',text:'No rows match. Clear the search or the filters.'}));return;}
+  var byRepo={};list.forEach(function(r){(byRepo[r.repo]=byRepo[r.repo]||[]).push(r);});
+  Object.keys(byRepo).sort(function(a,b){
+    var na=byRepo[a].filter(function(r){return r.stage!=='draft'&&r.stage!=='merged';}).length,nb=byRepo[b].filter(function(r){return r.stage!=='draft'&&r.stage!=='merged';}).length;
+    return nb-na||(a<b?-1:1);
+  }).forEach(function(repo){
+    var items=byRepo[repo];
+    var live=items.filter(function(r){return r.stage!=='draft'&&r.stage!=='merged';}).length;
+    var byLane={};items.forEach(function(r){(byLane[r.lane||'unassigned']=byLane[r.lane||'unassigned']||[]).push(r);});
+    var open=S.closed[repo]!==undefined?!S.closed[repo]:live>0;
+    var det=h('details',{class:'repo',open:open,ontoggle:function(e){S.closed[repo]=!e.target.open;}},
+      h('summary',{},h('h2',{text:repo}),h('span',{class:'n',text:items.length+' rows, '+live+' past draft'})));
+    Object.keys(byLane).sort().forEach(function(lane){
+      var li=byLane[lane].sort(function(a,b){return STORDER.indexOf(a.stage)-STORDER.indexOf(b.stage)||((a.number||0)-(b.number||0));});
+      det.append(h('div',{class:'meta',style:'margin-top:8px'},h('span',{},'Lane ',h('b',{text:lane}))),h('div',{class:'rows'},li.map(rowEl)));
+    });
+    root.append(det);
+  });
+}
+function schedule(){var a=document.activeElement;if(a&&a.tagName==='INPUT'){pending=true;return;}render();}
+document.addEventListener('focusout',function(){setTimeout(function(){if(pending){pending=false;render();}},0);});
+$('#search').addEventListener('input',function(e){S.text=e.target.value;render();});
+$('#reposel').addEventListener('change',function(e){S.repo=e.target.value;render();});
+$('#lanesel').addEventListener('change',function(e){S.lane=e.target.value;render();});
+setInterval(function(){var a=document.activeElement;if(!(a&&a.tagName==='INPUT'))render();},60000);
+render();
+
+(async function(){
+  var c=window.claude;
+  if(!c||!c.use){S.db=false;banner('This copy cannot save requests or read the feed. Open Merge desk from your claude.ai artifacts.');render();return;}
+  try{db=await c.use('db');}catch(e){db=null;}
+  if(!db){S.db=false;banner('Requests cannot be saved in this view. Open Merge desk from your claude.ai artifacts while signed in.');render();return;}
+  S.db=true;
+  try{var u=await c.use('user');S.me=u&&u.id?await u.id():null;}catch(e){S.me=null;}
+  function stop(w){return function(e){banner(w+' stopped updating ('+(e&&e.code?e.code:'error')+'). Reload the page.');};}
+  db.collection('feed').onSnapshot(function(s){var cur=null;s.docs.forEach(function(d){if(d.id==='current')cur=d.data();});S.feed=cur;schedule();},stop('The feed'));
+  db.collection('intents').onSnapshot(function(s){var o={};s.docs.forEach(function(d){o[d.id]=d.data();});S.intents=o;schedule();},stop('Requests'));
+})();
+})();
+</script>
