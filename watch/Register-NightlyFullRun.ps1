@@ -3,6 +3,7 @@ Register (or update, or remove) the Windows scheduled task "WATCH nightly full r
 
   .\Register-NightlyFullRun.ps1              copy nightly_full_run.py to %LOCALAPPDATA%\nightly-full-run and register the task
   .\Register-NightlyFullRun.ps1 -Remove      unregister the task (the copied script and the log are left alone)
+  .\Register-NightlyFullRun.ps1 -StartOn 2026-10-12   first night is that date (default: the next 05:30)
   .\Register-NightlyFullRun.ps1 -WhatIf      show what would be registered, change nothing
 
 The task runs ONE full serial bare pytest on the hub's origin/main, on this PC, every night, under the
@@ -29,6 +30,7 @@ param(
     [string]$Python = 'C:\Users\novah\AppData\Local\Programs\Python\Python312\python.exe',
     [string]$Script = (Join-Path $PSScriptRoot 'nightly_full_run.py'),
     [string]$Time = '05:30',
+    [string]$StartOn = '',
     [string]$TaskName = 'WATCH nightly full run',
     [switch]$Remove,
     [switch]$WhatIf
@@ -49,6 +51,10 @@ if ($Remove) {
 if (-not (Test-Path -LiteralPath $Python)) { throw "Python not found at $Python" }
 if (-not (Test-Path -LiteralPath $Script)) { throw "Script not found at $Script" }
 $at = [datetime]::ParseExact($Time, 'HH:mm', [Globalization.CultureInfo]::InvariantCulture)
+if ($StartOn -ne '') {
+    $day = [datetime]::ParseExact($StartOn, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+    $at = $day.Date.Add($at.TimeOfDay)
+}
 if ($at.Hour -eq 3 -and $at.Minute -ge 30) { throw "$Time is inside the LeadfuelBackup window (03:30-04:00); pick another time." }
 
 $deployDir = Join-Path $env:LOCALAPPDATA 'nightly-full-run'
@@ -57,7 +63,7 @@ $argLine = '--headless "{0}" "{1}"' -f $Python, $deployed
 
 if ($WhatIf) {
     "WHATIF: would copy $Script -> $deployed"
-    "WHATIF: would register '$TaskName': daily $Time, conhost.exe $argLine, user $env:USERNAME, interactive, limited, IgnoreNew, 5 h limit, no start-when-available, no wake"
+    "WHATIF: would register '$TaskName': daily $Time (first at $at), conhost.exe $argLine, user $env:USERNAME, interactive, limited, IgnoreNew, 5 h limit, no start-when-available, no wake"
     exit 0
 }
 
