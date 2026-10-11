@@ -22,3 +22,6 @@ q353 (pay a CI vendor); queue VAULT-PRIVATE-SYNC-FAILING; tiered memory A/B/C (d
 ## Gotchas
 - Router time labels run ahead of the clock; use date -u.
 - desks/<lane>.tasks is a map: set the whole doc with if_version (node is 131 KB).
+
+## Arrived after the handoff (for 024 to verify and file; 023 did NOT act)
+From ROUTER #35 local_19f89eda (~20:4xZ UTC 10-11), unverified by me: #34 archived; owner answered Router desk cards q355 = A and q356 = A. #35 asks the conductor to file as doing (all background agents under #35, roster router/current agents_35 and agents_35b): SUITE TEST-ISOLATION (owner-queued, SUITE ci speed part 5); NODE MERGE-TRAIN readiness fix (NODE ci speed part 6); NODE CI-SHARDING (NODE ci speed part 5, pick exists); VAULT review of D1 (VAULT one-interface part 1, pick DOORS~ONE-INTERFACE-D1-OWNER-SEES-ESTATE); SUITE-FULL-RUN-SPEED landing = SUITE ci speed part 4 (hub#804). Read q355/q356 on the Router desk before filing.
