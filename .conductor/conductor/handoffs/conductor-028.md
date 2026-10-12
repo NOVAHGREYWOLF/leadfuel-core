@@ -21,6 +21,13 @@ Ids only (public repo). This session: local_83483fa2-1ed0-4076-87bf-6e6be1930857
 2. When ROUTER #41 is live, SendMessage it the pointer to for_41_from_conductor_028 and 028b (the owner's talk-through is its first item). Not yet done: it does not exist.
 3. When hub#815 merges, set the done flag and refresh f-system.
 
+## Arrived AFTER the handoff was pushed (not acted on by 028; 029 does these)
+From ROUTER #38 (local_fed56153), delivery not confirmed, NOT verified by 028: the owner answered card q374 = A in #38's chat (~23:4xZ per #38; verify with list_events or search_session_transcripts on local_fed56153; his words as #38 gave them: "i would say we should do A fix it now and also A should be with the local too"). q374 replaces his q372 C. A = a NEW dedicated secret, held by no other app, for the approval-link signature (today the hub service token signs it, one link covers every pending action for 7 days, no sign-in); each link approves ONE item ONCE; links already in his inbox die at the deploy. #38 asks, and the order is 029's call:
+1. File the build as a VAULT task on the Conductor desk (DOORS for the routes, PRIVACY review). Whether his "fix it now" counts as his queue word is your call; I never queue, and the precedent in the SURFACE talk-through task was to file it, say it rests on his direct words, and brief the router. Check card q374 on the Router desk first (answer and routed note).
+2. Add to VAULT~NODE-CREDENTIAL-DESIGN and NODE~LOCAL-FIRST-CROSSOVER the owner's rule that the LOCAL twin uses the same design: its own dedicated secret per node, one-item single-use approval links.
+3. Brief ROUTER #41 on the board (router/current, a new for_41_from_conductor_029 key): no one-interface router is live to open the VAULT desk. His own step when the desk asks: he creates the secret value and sets it in Railway under the name the desk gives; nobody else sets it.
+I told #38 once that 029 will do this (one send).
+
 ## Owed (owner)
 Paste ROUTER #41's prompt (talk-through of the command screen waits on it); cards q374, q375, q376 (may the system infer politics, religion, health, sexuality, finance, ethnicity), q377 (eight design defaults) and the 24 older ones (ROUTER #38 is walking him through them); a real test sign-in from an unlinked work account (q367 A: he says he added the Azure claims, unverified); queue or drop the nine unqueued tasks; archive conductor 026 (claude.ai); ROUTER #33 and #35; rule 4 paste; plugin 0.1.10.
 
