@@ -17,7 +17,7 @@ The owner opened 029 with the cloud conductor 026's START-HERE.md (OneDrive fold
 ## State (re-read before acting)
 - Hub main 14cf097f. hub#815 (VAULT q371 A, approve is person-only) is an open draft, head 9d5c3a0f, CLEAN (gh, 029); the VAULT part 3 desk (local_0510ec9a, idle) merges on green. When it merges: verify with gh and git, then the line "The two approval switches" in dash f-system.
 - ROUTER #41 local_c17aaac6 claimed at 23:41Z (router/current claim_41). ROUTER #40 local_c4f9af1e (owed questions) is live. ROUTER #38 and #39 are idle past their caps. SURFACE one-interface part 13 (local_4a06afda) is the q369 talk-through (router's word; the session exists and runs).
-- Unanswered Router desk cards: 27 (q375, q376, q377 recent; 24 older), counted by 029 from all 377 cards at ~23:43Z.
+- Router desk cards: 3 OPEN (q376, q377, q378). q375 is answered (amended B). CORRECTION: the first version of this note said 27 unanswered; 24 of those have status withdrawn with a withdrawn_reason (read by 029 on each card at ~00:1xZ), parked or folded by their routers. Do not repeat the 27 or 28 from earlier notes.
 - Children: none.
 
 ## Next
@@ -26,7 +26,7 @@ The owner opened 029 with the cloud conductor 026's START-HERE.md (OneDrive fold
 3. When hub#815 merges, set the line in f-system and check the follow-ups ROUTER #39 named: MCP approve error (ARMS~MCP-APPROVE-PERSON-ONLY-MESSAGE) and the CONNECTOR_APPROVE_ENABLED deploy-config cleanup (owner card from the router).
 
 ## Owed (owner)
-Cards q375, q376, q377 and the 24 older (ROUTER #40 walks him through them); queue or drop the ten unqueued tasks; real test sign-in from an unlinked work account (q367 A); archive conductor 026 on claude.ai (the PC cannot reach it); archive ROUTER #33 and #35; rule 4 paste; plugin 0.1.10; delete or refresh the stale START-HERE.md in the OneDrive handoff folder.
+Cards q376, q377, q378; queue or drop the twelve unqueued tasks (incl. DOORS~EARNED-ACCESS-RETENTION, desks/doors v25, from q375 amended B: shape forever, soft-retire words after 90 days); real test sign-in from an unlinked work account (q367 A); archive conductor 026 on claude.ai (the PC cannot reach it); archive ROUTER #33 and #35; rule 4 paste; plugin 0.1.10; delete or refresh the stale START-HERE.md in the OneDrive handoff folder.
 
 ## Gotchas
 - ArtifactData: always use out_dir. To change a desk task, write {"tasks": <whole map>} from a file_path pinned to the version read; compare the unchanged entries first.
@@ -35,3 +35,9 @@ Cards q375, q376, q377 and the 24 older (ROUTER #40 walks him through them); que
 
 ## Arrived after the first push (029 acted)
 - ~23:50Z: NODE · claude audit part · 2 (local_41191020-50f2-43bc-b64d-b3d88be9dcdf) sent the owner's three-levels decision (project = corpus, workstream = goal and sidebar group, desk = one task). 029 read the pushed handoff NODE-claude-audit-001.md on claude/claude-audit @ 16728fa6 (= ls-remote) and a transcript hit in part 2; the owner's raw message (said in the archived part 1, local_6f61aa7c) was NOT read. Filed NODE~WAY-WORKSTREAM-WORDING UNQUEUED (desks/node v64). 029 keeps its own title and the current wording until the owner queues it. The Conductor desk 'Projects' tab change belongs to the session that owns that page (local_18eeff8c), not to the conductor.
+
+## Later (029)
+- ~00:0xZ: the owner said, first-hand in 029's chat: 'the character sheet looks right ... send all this info over to that desk so it doesnt ask me what we are already doing. it looks good what you are doing on the command'. 029 sent the settled list to SURFACE one-interface part 13 (local_4a06afda, queued) and ROUTER #41 (delivered) and wrote it as router/current key for_surface13_from_conductor_029 (v457). 'Looks right' does NOT answer q376/q377; 'good on the command' does NOT pick A or B on q369.
+- hub#815 still waits: green, desk idle, ci-novahub lock held since 22:31Z by that desk; the owner types the go in that chat (ROUTER #41's reading). 029 does not merge or change permission modes.
+- ROUTER #41 posted q378 (did 'fix it now' mean start the approval-link build today?).
+- ROUTER #40 told of the withdrawn-card correction (queued/delivered status in 029's chat).
