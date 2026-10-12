@@ -32,3 +32,6 @@ Cards q375, q376, q377 and the 24 older (ROUTER #40 walks him through them); que
 - ArtifactData: always use out_dir. To change a desk task, write {"tasks": <whole map>} from a file_path pinned to the version read; compare the unchanged entries first.
 - Git Bash mangles `rev:path`: run git show from PowerShell. `git worktree add ... origin/<branch>` sets a wrong upstream: `git branch --unset-upstream`.
 - Messages report "queued/delivered", never "read". 029 used 2 sends since the owner last typed here; the cap is 10.
+
+## Arrived after the first push (029 acted)
+- ~23:50Z: NODE · claude audit part · 2 (local_41191020-50f2-43bc-b64d-b3d88be9dcdf) sent the owner's three-levels decision (project = corpus, workstream = goal and sidebar group, desk = one task). 029 read the pushed handoff NODE-claude-audit-001.md on claude/claude-audit @ 16728fa6 (= ls-remote) and a transcript hit in part 2; the owner's raw message (said in the archived part 1, local_6f61aa7c) was NOT read. Filed NODE~WAY-WORKSTREAM-WORDING UNQUEUED (desks/node v64). 029 keeps its own title and the current wording until the owner queues it. The Conductor desk 'Projects' tab change belongs to the session that owns that page (local_18eeff8c), not to the conductor.
