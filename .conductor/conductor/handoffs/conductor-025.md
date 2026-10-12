@@ -24,3 +24,8 @@ Click chip task_1c074895 (redline audit part 10); cards q362-q367; #37's paste p
 - ArtifactData: always out_dir; never list picks/questions (heavy), query with where.
 - router/current moves fast: pin if_version and re-get on mismatch.
 - #36 time labels run ~10 min ahead; use date -u.
+
+## Arrived after the handoff (from ROUTER #37 local_76301acc, ~00:5xZ UTC 10-12): for 026
+1. #37 is LIVE (successor of #36). It says it verified with gh + ls-remote that hub#809 merged 00:50:14Z as squash 422ee378 = hub main. Re-verify, then set the done flag on VAULT~ADMIN-ALIAS-MERGE-CSRF.
+2. File UNQUEUED (VAULT identity part 1 agent's word, not re-read by #37 or me): 23 other non-/api hub write routes are still CSRF-exempt (e.g. /admin/actions/bulk-reject, /admin/gdpr/purge-due, /approvals/review/act); nobody has checked whether each is cookie-only. Candidate VAULT audit task.
+3. EARNED-ACCESS: #37 received the brief and is opening a DOORS desk for build step 1 only (record untouched/edited/rejected). LEVELS-AND-TRUST still waits on the audit. #37 posted card q368 (the owner sets COMMAND_OWNER_EMAILS now that the sign-in fixes landed).
