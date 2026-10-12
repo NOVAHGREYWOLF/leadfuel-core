@@ -13,6 +13,12 @@ Walk the owner through the open cards one at a time (five lines, options, my rec
 - q368-q373 go to ROUTER #39 (not #37, which is spent). #39 was not live at handoff; the owner pastes its prompt.
 - q369: he prefers B but wants to read the docs first. Present it as his call.
 
+## UPDATE ~22:3xZ UTC
+- START AT q318, not q317 (q316 and q317 done; 13 open: q318, q362-q373).
+- q318: owner fixed his settings file (verified valid JSON, entries present). Test desk local_e22bd45b-2ab7-47ea-b1ff-afabe1bba97a (NODE · owed questions part · 1, group `owed questions`, now Haiku) is in bypassPermissions, so its test means nothing. Owner must set it to default mode in the app, then ask it to read F:/Claude Sessions/SESSION_MAP.md and say if a prompt appeared. Then answer q318 A or C.
+- Live routers: ROUTER #39 · one-interface = local_11693482-5f7c-441f-93d5-13de56ece00a (ROUTER group): send q368-q373 answers there. Live conductor = local_83483fa2-1ed0-4076-87bf-6e6be1930857 (027, local_7058d9c7, is ARCHIVED); send the end-of-walk findings there.
+- Desk local_8387ff2c (SESSION_MAP documentation) asked who writes five owed map rows; told to hold. Put it to the owner as a card when the walk pauses.
+
 ## Owed / not delivered
 - Tell conductor 027 the two findings in owed38 (finding_for_conductor, finding_for_conductor_2).
 - Desk local_7ddb1c08 is idle and its question is moot.
