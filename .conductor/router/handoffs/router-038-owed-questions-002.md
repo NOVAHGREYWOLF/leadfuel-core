@@ -36,3 +36,8 @@ Owner compared the first 3 characters of the hub's MS_CLIENT_SECRET (NovaHub, Ra
 
 ## RETRACTION ~23:3xZ UTC (supersedes the "FINDING on q367" and the expired-secret lead above)
 Owner corrected himself: the first 3 characters of the hub's MS_CLIENT_SECRET are W4g = "NovaHawk - Production", valid to 5/21/2028. The earlier "369" reading was wrong. The "matches neither Azure secret" finding is WITHDRAWN. The expired v0-local secret (9k7, lapsed 8/20/2026) is not the hub's, so the expired-secret theory for mail/Teams silence since Oct 1 is DEAD (3-char match on the owner's own screen; not otherwise verified). q367 now needs only: owner adds ID-token optional claims email + xms_edov on Novah_Email_app, says "q367 done", then tell ROUTER #39.
+
+## FINAL UPDATE ~23:5xZ UTC (at the 450k cap)
+- q367: owner said "I added it" (the email + xms_edov claims on Novah_Email_app); recorded on the card (not verified by me); ROUTER #39 told (delivered, not confirmed read) to test an unlinked work account. The card stays open until that test or his "done". The hub's secret is the production one (W4g, valid to 5/21/2028); the old v0-local one (expired 8/20/2026) is not the hub's.
+- Owner asked to rename the Azure app so it is findable. Advice given: rename the app display name only (cosmetic), do NOT rename secrets (needs rotation). Offer pending: ask the live conductor local_83483fa2-1ed0-4076-87bf-6e6be1930857 to file, unqueued, a small desk task for a credentials map line (app name, client id 396093c2-a360-4277-b3ea-f2f6a961b711, hub vars MS_CLIENT_ID and MS_CLIENT_SECRET on NovaHub). Owner has not said yes.
+- Still open: q368 (unanswered, recommend A), q369, q374, q375, plus q367's test.
