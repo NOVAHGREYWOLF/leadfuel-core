@@ -53,3 +53,6 @@ The Azure app Novah_Email_app (client id 396093c2-a360-4277-b3ea-f2f6a961b711) i
 - Credentials-map task: owner said yes; sent to the live conductor local_83483fa2 (delivered, not confirmed read); it files it UNQUEUED. Do not resend. Check the Conductor desk before saying it exists.
 - Owner raised a product-naming question (LeadFuel as the umbrella vs a new umbrella; NovahOS = system, NovahPrime = character already in use; LeadFuel = sales/marketing suite). He has not yet asked for a card. Offer one (A keep LeadFuel as umbrella, B new umbrella with LeadFuel as the business suite, C full rebrand later), after the open cards.
 - Owner wants to keep walking the questions; next is q368 (unanswered, recommend A).
+
+## CLOCK CORRECTION (date -u read 23:01:17Z 10-12 at this point)
+My time stamps after 22:29Z in this note and on the cards (q367 routed "23:4xZ", the "00:xZ 10-13" lines) were GUESSES and run ahead by about an hour or more: read them as ordering only. Use date -u. Conductor local_83483fa2 filed VAULT~CREDENTIALS-MS-SIGNIN-ENTRY (desks/vault v18, UNQUEUED; target F:/Claude Sessions/CREDENTIALS.md; delivered 23:0xZ). Still open: q367 test, q368 (unanswered), q369, q374, q375.
