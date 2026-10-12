@@ -48,3 +48,8 @@ Owner corrected himself: the first 3 characters of the hub's MS_CLIENT_SECRET ar
 
 ## RENAME DONE ~00:1xZ UTC 10-13 (owner's word, not verified by me)
 The Azure app Novah_Email_app (client id 396093c2-a360-4277-b3ea-f2f6a961b711) is now named "LeadFuel Hub - Sign-in and Connects" (the first try with the word Microsoft in it was rejected by Entra). Client id, redirect URIs and secrets unchanged. Credentials-map line (app name, client id, hub vars MS_CLIENT_ID and MS_CLIENT_SECRET on NovaHub) still NOT filed; ask the owner, then the live conductor local_83483fa2-1ed0-4076-87bf-6e6be1930857, unqueued.
+
+## ~00:3xZ UTC 10-13
+- Credentials-map task: owner said yes; sent to the live conductor local_83483fa2 (delivered, not confirmed read); it files it UNQUEUED. Do not resend. Check the Conductor desk before saying it exists.
+- Owner raised a product-naming question (LeadFuel as the umbrella vs a new umbrella; NovahOS = system, NovahPrime = character already in use; LeadFuel = sales/marketing suite). He has not yet asked for a card. Offer one (A keep LeadFuel as umbrella, B new umbrella with LeadFuel as the business suite, C full rebrand later), after the open cards.
+- Owner wants to keep walking the questions; next is q368 (unanswered, recommend A).
