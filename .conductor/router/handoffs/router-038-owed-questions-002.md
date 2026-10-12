@@ -45,3 +45,6 @@ Owner corrected himself: the first 3 characters of the hub's MS_CLIENT_SECRET ar
 ## LAST LINES ~00:0xZ UTC 10-13 (from ROUTER #39's reply)
 - #39 (local_11693482) is handing off to ROUTER #41 · one-interface (note router-039.md, branch claude/router-41). Until #41 is live, send one-interface answers to #39; after, to #41.
 - q367 test is a PERSON step, no desk opens it (no desk may enter an account password): the owner signs in to the hub once with a real, unlinked Microsoft WORK account and reports if it lands signed in (one-click) or is asked to link first, via #39/#41. Optional: he said nobody he knows uses one. Azure app rename is his display-name change only; no secret is rotated.
+
+## RENAME DONE ~00:1xZ UTC 10-13 (owner's word, not verified by me)
+The Azure app Novah_Email_app (client id 396093c2-a360-4277-b3ea-f2f6a961b711) is now named "LeadFuel Hub - Sign-in and Connects" (the first try with the word Microsoft in it was rejected by Entra). Client id, redirect URIs and secrets unchanged. Credentials-map line (app name, client id, hub vars MS_CLIENT_ID and MS_CLIENT_SECRET on NovaHub) still NOT filed; ask the owner, then the live conductor local_83483fa2-1ed0-4076-87bf-6e6be1930857, unqueued.
