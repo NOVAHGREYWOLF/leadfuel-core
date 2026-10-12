@@ -11,6 +11,12 @@ q294 B; q315 A (Google key rotated, old gone, gcloud ids); q316 A (queries run; 
 ## OPEN, in the order to walk (6)
 q363 (mxbai re-embed now? unanswered), q367 (Azure claims, his own step), q368 (COMMAND_OWNER_EMAILS), q369 (rebuild /command or add levels; he prefers B but wants to read docs first; never relay an unclicked B), q374 (plain note on the approval-link secret; asked by owner on q372), q375 (how long to keep earned-access draft text). Send one-interface answers (q367-q369, q374, q375) to #39. q363 goes to local_b62be96c.
 
+## UPDATE ~23:0xZ UTC (supersedes the open list above where it differs)
+- q363 = C recorded and sent (desk replied DONE; q366 count already ran; no Voyage-vs-mxbai test exists, spec section 9 lists it owed).
+- q367 = A recorded: OWNER does it. The sign-in app is `Novah_Email_app`, client id 396093c2-a360-4277-b3ea-f2f6a961b711 (= hub MS_CLIENT_ID, a public id I read from Railway filtered to that one line; shown redirect URIs include /auth/microsoft/callback plus mail, calendar and Teams connect callbacks). NOT `leadfuel_approvals` (no redirect URI). Owner adds optional ID-token claims email + xms_edov, then says "q367 done"; tell ROUTER #39.
+- LEAD, not verified: the Azure app list showed that app's secret as Expired. That app also serves the mail, calendar and Teams connects, so an expired secret could explain "mailbox / Teams stopped reporting since Oct 1" in the command book and the q316 mail question. Owner was asked to read the secret's expiry DATE on Certificates & secrets. If expired, rotating it is HIS step; tell #39 (VAULT) and desk local_786396c4.
+- q368 was asked (A recommended) and is unanswered. Still open: q367 (waiting his done), q368, q369, q374, q375.
+
 ## Owner-only follow-ups, not cards
 - q366: he types "go" in INTELLIGENCE · tiered memory part · 2's own chat for the production count.
 - q370/q371: click chip "VAULT · one-interface part · 3" and type "go" in its chat.
