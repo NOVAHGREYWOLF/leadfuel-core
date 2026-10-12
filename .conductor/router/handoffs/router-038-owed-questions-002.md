@@ -30,3 +30,6 @@ q363 (mxbai re-embed now? unanswered), q367 (Azure claims, his own step), q368 (
 
 ## Gotchas
 ArtifactData without out_dir floods context. Pin card writes to if_version; #39 also writes cards. Never relay a default. Bash tool halves backslashes: use chr(92) in python.
+
+## UPDATE ~23:2xZ UTC: FINDING on q367 (owner's own screen read, 3 characters only)
+Owner compared the first 3 characters of the hub's MS_CLIENT_SECRET (NovaHub, Railway) with Azure's Novah_Email_app secrets: the hub's starts 369; Azure lists 9k7 (v0-local, expired 8/20/2026) and W4g (NovaHawk - Production, valid to 5/21/2028). It matches NEITHER. Reading: the hub holds a secret that is not on that app now, so Microsoft sign-in and the mail/Teams connects cannot exchange codes (UNVERIFIED: not tested in production; the variable or service could be a different one). Fix is the owner's: new client secret on the app, VALUE copied once, set as MS_CLIENT_SECRET on NovaHub, redeploy, test. Tell ROUTER #39 (VAULT) and desk local_786396c4. q367 stays open until he adds the claims AND says done.
