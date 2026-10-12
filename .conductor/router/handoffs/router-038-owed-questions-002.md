@@ -56,3 +56,9 @@ The Azure app Novah_Email_app (client id 396093c2-a360-4277-b3ea-f2f6a961b711) i
 
 ## CLOCK CORRECTION (date -u read 23:01:17Z 10-12 at this point)
 My time stamps after 22:29Z in this note and on the cards (q367 routed "23:4xZ", the "00:xZ 10-13" lines) were GUESSES and run ahead by about an hour or more: read them as ordering only. Use date -u. Conductor local_83483fa2 filed VAULT~CREDENTIALS-MS-SIGNIN-ENTRY (desks/vault v18, UNQUEUED; target F:/Claude Sessions/CREDENTIALS.md; delivered 23:0xZ). Still open: q367 test, q368 (unanswered), q369, q374, q375.
+
+## STATE AT THE END (date -u was 23:01Z earlier; later stamps are approximate)
+- DONE since the last note: q368 = B (variable unset; owner model: customer view vs separate admin; conductor filed VAULT~ADMIN-CUSTOMER-SEPARATION unqueued); q369 = C (talk-through; conductor filed SURFACE~ONE-INTERFACE-TALK-THROUGH and briefed #41, nothing built); q374 = A (new dedicated approval-link secret, one item once, apply to local too; replaces q372 C).
+- q374 BUILD IS NOT FILED: conductor 028 handed off; its successor 029 is an unused paste prompt. 028 wrote the build + the two additions (node-credential, local-first) + the board brief for #41 into conductor-028.md as owed to 029. Do not resend unless 029 asks.
+- Unused paste prompts waiting on the owner: ROUTER #40 (owed questions, this), ROUTER #41 (one-interface), CONDUCTOR 029.
+- OPEN: q375 (retention of earned-access draft text: read the card, summarize, ask), q367 (claims added, sign-in test optional). Then ask about the naming card (LeadFuel umbrella) and the SESSION_MAP owed rows.
