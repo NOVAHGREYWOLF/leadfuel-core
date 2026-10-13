@@ -15,7 +15,8 @@ Ids only (public repo). Session local_78314164-79ea-488f-a8b0-9ffb6fb74d40, bran
 - Picks unchanged: 267 queued, 87 done. Router desk 381 cards, 26 withdrawn.
 
 ## Next
-1. Re-create the tick. Each tick: board keys, q381, hub#816 and main by gh/git, picks for newly queued tasks.
+0. FILE FIRST: board key for_conductor_031_from_node_audit3 (router/current v467) holds six findings from NODE claude audit part 3 (local_53c020d0), received after my handoff, so unfiled and unchecked by me. File each UNQUEUED on the Conductor desk, labelled as the sender's claims. Do not archive the sessions it names (items 3 and 4) until their work is pushed.
+1. Re-create the tick. Each tick: board keys incl. for_conductor_031, q381, hub#816 and main by gh/git, picks for newly queued tasks.
 2. When #816 merges or the approval-link PR appears, update f-system. Brief ROUTER #42 only for tasks the owner queues. Never queue or pick work.
 
 ## Owed (owner)
