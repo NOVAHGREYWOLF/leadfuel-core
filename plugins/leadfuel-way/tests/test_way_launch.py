@@ -33,6 +33,17 @@ def test_the_slot_block_has_every_placeholder_and_the_self_check():
         assert needle in block, needle
 
 
+def test_the_not_bypass_signal_is_a_line_in_the_transcript_not_a_send():
+    """Measured 2026-10-13: a run in default mode cannot send a message (it needs a person's approval),
+    so the first launch's SLOT-NOT-BYPASS never reached its launcher. The line has to be readable from
+    the session's transcript."""
+    block = re.search(r"## The slot block\n.*?```\n(.*?)```", LAUNCH, re.S).group(1)
+    step2 = re.search(r"^2\. .*$", block, re.M).group(0)
+    assert 'end your turn with the single line "SLOT-NOT-BYPASS' in step2 and "refused" in step2
+    assert "send_message to" not in step2
+    assert "list_events" in LAUNCH and "cannot send one" in LAUNCH
+
+
 def test_the_skill_does_not_claim_what_was_not_measured():
     low = LAUNCH.lower()
     assert "notifyoncompletion" in low and "not verified" in low

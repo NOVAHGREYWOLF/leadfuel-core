@@ -28,6 +28,19 @@ looks the way it does, and what was measured versus taken on trust.
   earlier run (ROUTER #48's test) got fable-5-1 at high effort. The rule is unknown; a launcher
   must set model and effort, and cannot rely on inheriting.
 
+## End-to-end check of the skill's own slot block (2026-10-13, slot way-slot-06, a fresh slot)
+- Launched with the block exactly as the skill gives it. The session started, ran the self-check,
+  found permission mode `default`, and stopped without a title change, a file or a PR: the Bypass
+  self-check works.
+- Its attempt to send `SLOT-NOT-BYPASS` to the launcher was refused: "it needs a person's approval
+  and nobody has opened this scheduled run". So the block now has the session end its turn with that
+  line, and the launcher reads it with `list_events`.
+- `set_session_model` on the running first turn replied that the current turn finishes on the previous
+  model: the reason the block makes the first turn a short check that ends with `READY`.
+- **Not run:** the `READY`, `GO`, report path, which needs a slot in Bypass. After the owner sets
+  Bypass on a slot, one launch of a harmless brief proves it, and settles whether a Bypass run can
+  send a message to its launcher. Until then the skill's claim for that path is a design, not a result.
+
 ## Taken on trust (ROUTER #48's SUCCESSOR-TEST run, 2026-10-13; read from its report and `get_session`)
 - The way's session-start banner appeared in the run (plugin 0.1.9, title None, role UNFILED), and
   the run could retitle itself.
@@ -42,6 +55,8 @@ looks the way it does, and what was measured versus taken on trust.
   either finished. Nothing is built on it. A launched session reports by message.
 - Whether a freshly created task stops on tool approvals at its first run (the tool text warns it
   may). The probes used only ToolSearch and `get_session` and did not stop.
+- Whether a run in Bypass can send a message to its launcher (a run in default cannot; see the
+  end-to-end check). The launcher also reads a session's transcript, so reports are not lost either way.
 - Whether any tool can set a routine's stored permission mode. It looks owner-only, in the app.
   Until it is Bypass, a launched session starts in default mode and stalls; the slot block's first
   step catches that (`SLOT-NOT-BYPASS`).
