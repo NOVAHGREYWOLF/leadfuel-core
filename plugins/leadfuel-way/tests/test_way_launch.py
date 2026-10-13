@@ -54,6 +54,19 @@ def test_the_skill_does_not_claim_what_was_not_measured():
     assert "returning an id says a session began" in LAUNCH
 
 
+def test_the_model_is_pinned_in_the_slot_file_and_effort_is_not_claimed_to_be():
+    """Measured 2026-10-13: a `model:` frontmatter line in the slot's SKILL.md starts the run on that
+    model; an `effort:` line is ignored. The procedure must pin the model on every launch (a stale line
+    would be reused silently) and must not promise an effort pin."""
+    step4 = re.search(r"^4\. \*\*Load and run it\.\*\*.*$", LAUNCH, re.M).group(0)
+    assert "`model: <model_id>`" in step4 and "on every launch" in step4
+    assert "Effort cannot be pinned this way" in step4
+    limits = LAUNCH.split("## Limits")[1]
+    assert "An `effort:` line is ignored" in limits
+    assert "`model:` line in the slot's `SKILL.md` frontmatter sets the run's model" in limits
+    assert "`model:` line" in DOC and "an `effort:` line is not" in DOC
+
+
 def test_the_skill_says_a_slot_session_has_no_group_and_does_not_try_to_give_it_one():
     assert "No project group, ever" in LAUNCH
     assert "Never move or retitle another session" in LAUNCH

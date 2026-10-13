@@ -41,6 +41,22 @@ looks the way it does, and what was measured versus taken on trust.
   Bypass on a slot, one launch of a harmless brief proves it, and settles whether a Bypass run can
   send a message to its launcher. Until then the skill's claim for that path is a design, not a result.
 
+## Measured later the same day (NODE · auto-launch part · 2, 06:00 to 06:07 UTC, slot way-slot-01, all runs archived, slot restored to idle)
+- **Bypass is still not set.** A second fresh slot, launched with the skill's slot block, stopped on its
+  self-check with `SLOT-NOT-BYPASS way-slot-01 mode=default`, readable from `list_events`. The
+  `READY`, `GO`, report path is therefore still not run; it waits on the owner's step 1 below. The
+  WATCH desk's handoff (ROUTINE-NO-PROMPT-001, 2026-10-06) read the app and says a routine's
+  permission mode is a per-task field the scheduled-task tools cannot set; `create_scheduled_task` has
+  no such field either (checked 2026-10-13).
+- **A `model:` line in a slot's `SKILL.md` frontmatter sets the run's model.** Suggested by the same
+  WATCH handoff. With `model: claude-haiku-4-5-20251001` the run's `get_session` reported
+  `claude-haiku-4-5-20251001` (a fresh run of the same slot without the line had been
+  `claude-sonnet-5-5`). `update_scheduled_task` on the title, description and prompt left the line in
+  place. A later run with `model: claude-sonnet-5-5` and `effort: low` reported sonnet at effort
+  `medium`: the model line is honoured, an `effort:` line is not (the key spelled `effort` only).
+- So the launcher pins the model before the run and the first turn already starts on it. Effort
+  still needs `set_session_effort`, which applies from the next turn, so the `READY`, `GO` step stays.
+
 ## Taken on trust (ROUTER #48's SUCCESSOR-TEST run, 2026-10-13; read from its report and `get_session`)
 - The way's session-start banner appeared in the run (plugin 0.1.9, title None, role UNFILED), and
   the run could retitle itself.
