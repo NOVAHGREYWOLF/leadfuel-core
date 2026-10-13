@@ -19,3 +19,11 @@ NODE~HUB-RAILWAY-TS-DRIFT (filed unqueued by conductor 032; ROUTER #44's finding
 ## Gotchas
 - `railway config apply` redeploys the service. The permission check refused a deploy-status read once (10-05).
 - Read-only plan: run from the repo's railway-iac worktree; railway/iac resolves from the repo-root node_modules.
+
+## Addendum: read-only plan agent result (10-13, agent's word, not re-run by me)
+- 0 to destroy and no variable changes in any plan. The file says `checkSuites: true` with no checkSuites diff, so wait-for-CI is live on: orbit, signal, echo, novahub-mcp, scope.
+- lucid's file says false (excluded by design: lucid CI is GitHub-hosted).
+- Only the known default lines remain: restartPolicyType everywhere, plus numReplicas on NovaHound.
+- reach: applied by this desk 10-05 (re-plan then showed only restartPolicyType). odyssey #51: NOT planned (no railway-iac worktree): unknown whether applied.
+- The agent detached the railway-iac worktrees of orbit, signal, echo, novahub-mcp, scope and lucid to origin/main.
+- ROUTER #45 send UNDELIVERED 10-13 (no start within 20s).
