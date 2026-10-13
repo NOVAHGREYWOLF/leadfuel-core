@@ -37,14 +37,13 @@ looks the way it does, and what was measured versus taken on trust.
   line, and the launcher reads it with `list_events`.
 - `set_session_model` on the running first turn replied that the current turn finishes on the previous
   model: the reason the block makes the first turn a short check that ends with `READY`.
-- **Not run:** the `READY`, `GO`, report path, which needs a slot in Bypass. After the owner sets
-  Bypass on a slot, one launch of a harmless brief proves it, and settles whether a Bypass run can
-  send a message to its launcher. Until then the skill's claim for that path is a design, not a result.
+- That run could not take the `READY`, `GO`, report path (it needs a slot in Bypass). The path was
+  run the same day once the owner had set Bypass: see "Bypass end-to-end" below.
 
 ## Measured later the same day (NODE · auto-launch part · 2, 06:00 to 06:07 UTC, slot way-slot-01, all runs archived, slot restored to idle)
-- **Bypass is still not set.** A second fresh slot, launched with the skill's slot block, stopped on its
-  self-check with `SLOT-NOT-BYPASS way-slot-01 mode=default`, readable from `list_events`. The
-  `READY`, `GO`, report path is therefore still not run; it waits on the owner's step 1 below. The
+- **Bypass was not yet set at 06:00 UTC.** A second fresh slot, launched with the skill's slot block,
+  stopped on its self-check with `SLOT-NOT-BYPASS way-slot-01 mode=default`, readable from
+  `list_events`. The `READY`, `GO`, report path waited on the owner's step 1 below. The
   WATCH desk's handoff (ROUTINE-NO-PROMPT-001, 2026-10-06) read the app and says a routine's
   permission mode is a per-task field the scheduled-task tools cannot set; `create_scheduled_task` has
   no such field either (checked 2026-10-13).
@@ -56,6 +55,27 @@ looks the way it does, and what was measured versus taken on trust.
   `medium`: the model line is honoured, an `effort:` line is not (the key spelled `effort` only).
 - So the launcher pins the model before the run and the first turn already starts on it. Effort
   still needs `set_session_effort`, which applies from the next turn, so the `READY`, `GO` step stays.
+
+## Bypass end-to-end (2026-10-13 12:40 to 12:50 UTC, NODE · auto-launch part · 2, after owner card q399 A)
+The owner set Bypass on the six slots (card q399 answered A at 12:29 UTC, relayed by ROUTER #51;
+ROUTER #50 also relayed his "I set all six", unverified by this desk). Nobody can read a routine's
+mode, so each run's own `get_session` is the proof. All runs below were archived afterwards and the
+six slot files restored to idle.
+- **All six slots are in Bypass.** Each of the six launched runs reported `permissionMode:
+  bypassPermissions` from its own `get_session` and ended its first turn `READY way-slot-NN`
+  (slots 02 to 06: self-check only, no `GO`, archived; slot 01: the full path below).
+- **The full path ran on slot 01** with the skill's steps: `update_scheduled_task`, the `model:` pin
+  in the slot file (Haiku), `run_scheduled_task`, `set_session_effort low`, read back, `GO`. The run
+  started on `claude-haiku-4-5-20251001` (the pin worked on all six), its first turn ended `READY
+  way-slot-01`, `GO` was delivered, and it answered it with one `mcp__ccd_session_mgmt__send_message`
+  to the launcher and `PROBE-DONE`. Its own `get_session` showed `effort: low`.
+- **A Bypass run can send.** The run's `send_message` returned `delivery: queued`, "that session is
+  holding it (a turn is in progress there ...) and runs it when that clears": the launcher was
+  mid-turn, so the message waits for the launcher's turn to end. It is not refused, which is what a
+  default-mode run got. It was delivered: after the launcher ended its turn the message arrived in
+  its conversation, from the probe's session id, with the line the brief asked for. The launcher
+  therefore must end its turn to receive a report; a launcher that never does reads the run with
+  `list_events` instead.
 
 ## Taken on trust (ROUTER #48's SUCCESSOR-TEST run, 2026-10-13; read from its report and `get_session`)
 - The way's session-start banner appeared in the run (plugin 0.1.9, title None, role UNFILED), and
@@ -71,11 +91,12 @@ looks the way it does, and what was measured versus taken on trust.
   either finished. Nothing is built on it. A launched session reports by message.
 - Whether a freshly created task stops on tool approvals at its first run (the tool text warns it
   may). The probes used only ToolSearch and `get_session` and did not stop.
-- Whether a run in Bypass can send a message to its launcher (a run in default cannot; see the
-  end-to-end check). The launcher also reads a session's transcript, so reports are not lost either way.
-- Whether any tool can set a routine's stored permission mode. It looks owner-only, in the app.
+- Whether any tool can set a routine's stored permission mode. It looks owner-only, in the app
+  (the WATCH handoff says so; `create_scheduled_task` and `update_scheduled_task` have no such field).
   Until it is Bypass, a launched session starts in default mode and stalls; the slot block's first
   step catches that (`SLOT-NOT-BYPASS`).
+- Whether a slot's Bypass survives the owner editing a routine or a plugin or app update. Each launch's
+  self-check re-proves it, so nothing depends on it staying set.
 
 ## What the design does about each
 - **Six slots**, `way-slot-01` to `way-slot-06`, so up to six launches are in flight at once.
@@ -91,7 +112,8 @@ looks the way it does, and what was measured versus taken on trust.
   that specific action") is addressed in the block: the brief lists the write actions it asks for.
 
 ## Owner steps (no session can do them)
-1. Open each `way-slot-NN` routine in the app and set its permission mode to Bypass, once.
+1. ~~Open each `way-slot-NN` routine in the app and set its permission mode to Bypass, once.~~ Done
+   2026-10-13 (card q399 A); proven by the six runs above.
 2. Update the installed plugin to 0.1.11 once this merges: pull the marketplace checkout, then
    `claude plugin update leadfuel-way@leadfuel`, and start a fresh session.
 3. Accept that launched sessions show under Scheduled, named by their title, not in a project group.
