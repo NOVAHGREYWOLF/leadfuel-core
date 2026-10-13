@@ -1,7 +1,7 @@
 # Handoff: SURFACE · one-interface part · 13 (task ONE-INTERFACE-TALK-THROUGH, written at the 300k guard, 2026-10-12 ~23:55Z)
 
 Session local_4a06afda-68b0-4b14-a894-bad73546c232 (Sonnet 5.5), group one-interface, branch claude/zealous-heisenberg-tlqil3.
-Routers: ROUTER #41 local_c17aaac6-253f-4e7a-b175-be8d6b56e131 (live; my note to it expired UNDELIVERED, permission modes differ); ROUTER #38 local_fed56153-e4fc-4391-945e-2c3c5cf178cd (past cap, asked for this talk-through).
+Router NOW: ROUTER #42 local_a45ad6b7-28c4-4139-8f0b-fad5f41778e2 (verified: Build Board router/current session_id, v464; report STATUS/ASK there). Earlier: ROUTER #41 local_c17aaac6-253f-4e7a-b175-be8d6b56e131 (my note to it expired UNDELIVERED, permission modes differ); ROUTER #38 local_fed56153-e4fc-4391-945e-2c3c5cf178cd (past cap, asked for this talk-through).
 No build, no PR, nothing sent outside this machine.
 
 ## Done
@@ -16,10 +16,11 @@ No build, no PR, nothing sent outside this machine.
 - Audit docs are stale on Q-A2, Q-V1-2/3/4, part of Q-R1-6 (cards q368, q370, q371, q374, q364).
 
 ## Next (one step)
-Finish the talk-through with the owner: confirm what "ground up" meant (levels and autonomy, or the whole screen), settle what "estate" means in his 23:14Z words (his own data, or the platform machinery view), then ask A, B or between. Record his exact words in DECISIONS.md and OWNER-QUESTIONS.md, then tell ROUTER #41. Also produce the full write-up he asked for from the compile.
+Finish the talk-through with the owner: confirm what "ground up" meant (levels and autonomy, or the whole screen), settle what "estate" means in his 23:14Z words (his own data, or the platform machinery view), then ask A, B or between. Record his exact words in DECISIONS.md and OWNER-QUESTIONS.md, then tell ROUTER #42. Also produce the full write-up he asked for from the compile.
 
 ## Owed / not delivered
 - Message to ROUTER #41 (msg 25ac14ad) expired undelivered; re-send only if the owner asks.
+- STATUS to ROUTER #42 sent 00:5xZ 10-13; delivery not confirmed at write time. Its board key settled_41 (read by me): q369 C, q376 A, q377 A, q378 A, q380 A, q375 B amended.
 - Conductor note says a Fable pin; unverified; I am Sonnet.
 
 ## Gotchas
