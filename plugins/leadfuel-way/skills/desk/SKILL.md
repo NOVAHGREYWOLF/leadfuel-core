@@ -39,6 +39,9 @@ DEFAULT: A (why)
 - Done: `STATUS: DONE` with the PR, and the final report as the last message. On DONE the router archives you through its gate (PR really merged, a final report, nothing unpushed). Do not archive yourself.
 - At the cap with work left, or blocked: `leadfuel-way:handoff` (desk row), then **stay open** (owner, 2026-10-02). You never leave before your successor is live: the router opens a fresh desk for your task, titled `LANE · <project> part · n` with the same lane and project and n advanced, in your project's group, and archives you only once that desk is live in that group and nothing of yours is unpushed.
 
+## If you were launched into a slot
+Your brief ends with a slot block, and the notice at the top of your first message says you are an automated scheduled run (`leadfuel-way:launch`). You are a real session, not an agent, with these differences: you cannot be filed in a sidebar group (the app refuses, so never call `move_sessions`; your launcher tracks you on its roster); your Bash has no git on PATH, so use PowerShell for git; the generic `SendMessage` is refused, so report with `mcp__ccd_session_mgmt__send_message` to the launcher's session id; and you never archive yourself, your launcher does. Do the slot block's self-check first, end the turn with its `READY` line, and start the task only on the launcher's `GO`.
+
 ## If you are a background agent
 A router may run you with the Agent tool instead of opening a session (pilot, AUTO-DESKS). You can tell: your brief says so, there was no session-start banner, and your working directory is `.claude/worktrees/agent-<id>`. Everything above holds, except:
 - **You are not a sidebar session.** Never title, file or archive anything: `self` in a session tool is the router that started you, and the hook refuses `set_session_title`, `move_sessions` and `archive_session` on it. Skip the way's first-turn titling step, and the migration step above.

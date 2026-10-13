@@ -17,7 +17,7 @@ SKILLS = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
 
 
 def test_the_expected_skills_exist():
-    assert set(SKILLS) == {"way", "handoff", "desk", "conductor", "router", "new-project"}
+    assert set(SKILLS) == {"way", "handoff", "desk", "conductor", "router", "new-project", "launch"}
 
 
 def test_plugin_manifest():
