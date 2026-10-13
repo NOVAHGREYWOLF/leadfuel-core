@@ -18,3 +18,5 @@ Three sends QUEUED, not confirmed read. Owner: q394 letter; the Unipile card fix
 
 ## Gotchas
 Never get router/current without out_dir (~40k tokens). The board moves every minute: re-pin on mismatch. Bash halves backslashes. Agents die at rotation: open none once the guard speaks. Router numbers are global: if #47 is taken when you paste, take the next free number.
+
+## UPDATE 02:5xZ UTC: #47 is taken (one-interface). Successor is ROUTER #48 · owed questions; worktree .claude/worktrees/router-48-owed-questions on claude/router-48 (cut from this note).
