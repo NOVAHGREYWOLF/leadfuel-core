@@ -25,8 +25,12 @@ The Set A cutover is real and live. Every claim in the predecessor's handoff hel
 - ROUTER #44's "subscription is past due" banner: not visible to a CLI; the owner has been told.
 - That clearing a service's config path makes Railway fall back to the stored service value: from #44's plan reading and the toml's own comments, not tested.
 
-## Next (all need ROUTER's word; none started)
-See the ASK in the message that points here. Pre-work done: nothing to undo.
+## Next (answered 10-13 ~03:4xZ; nothing started, desk idles)
+ROUTER #48 (one-interface, rotating) replied that it is NOT the router for Railway and decides none of RW-1..RW-3: Railway Set A is held by the owed-questions routers (#43, #44, #46; #46 is rotating, successor ROUTER #50 is a paste prompt, not yet live). Only owner-queued tasks start.
+- **Landed (board router/current, now v524, committed):** key `for_conductor_034_from_node_railway_part_3` (files NODE~RAILWAY-SET-B and NODE~RAILWAY-TOML-AND-DOCS-CLEANUP, both unqueued, my claim) and key `for_router_50_from_node_railway_part_3` (the three owner decisions, for #50). ROUTER #48 recorded my message on router/relay48 key railway_asks.
+- **Not sent:** nothing to ROUTER #46 or #50 (neither is taking messages; the board key is the channel). My first send to #48 was queued, not confirmed read.
+- **Waiting on the owner's queue click or typed word, in order:** NODE~HUB-RAILWAY-TS-DRIFT (preserve() for the six variables in hub .railway/railway.ts, re-plan to 0 destroy, draft PR, CI, merge; the apply stays a Router card; then he clears cron-daily's path; hub #737 must not be applied first) then NODE~RAILWAY-TOML-AND-DOCS-CLEANUP, then NODE~RAILWAY-SET-B (first question: migrate or retire JobHunter and howlclip).
+- Anyone starting NODE~HUB-RAILWAY-TS-DRIFT: work from a hub worktree on a fresh branch from origin/main; #737 is stale and has not been rebased.
 
 ## Gotcha for the next desk (cost me ten minutes)
 `railway config plan` fails with "requires Railway CLI 5.42.1 or newer" even on 5.43.1 when run from Git Bash or via the `railway` npm shim: the SDK runs `$_ --version`. Use PowerShell with `$env:_` set to the real exe, `C:\Users\novah\AppData\Roaming\npm\node_modules\@railway\cli\bin\railway.exe`, and run from a worktree whose repo root has `node_modules/railway`.
