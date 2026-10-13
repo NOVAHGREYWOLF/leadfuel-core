@@ -18,5 +18,12 @@ Hub main ee0730ee (13:13Z), 8 open PRs (818 790 778 756 737 710 704 592). ROUTER
 ## Owed / not delivered
 Owner: q399 step (six slots to Bypass; ROUTER #50 says he did, unverified), queue clicks (GOAL-WEEKLY-NUDGE, APOLLO-LOOK, RW-1..3), ~70 unqueued, rule 4 paste, plugin 0.1.10. Sent: #51 brief (queued) and reply (delivered), #50 (delivered, asks a card for the standing-envelopes decision).
 
+## Inbound after the handoff (ROUTER #51 message ~13:5xZ, unverified by me; re-read each before writing)
+1. SURFACE~ESTATE-WORD-RENAME: #51 says hub#821 MERGED 13:38:55Z as 41c80c85, word 'platform'. Check with gh, then flip pick + task done (the pick is rank 260; also touches INTELLIGENCE's command_ask.py).
+2. SURFACE~ONE-INTERFACE-ADD-PANELS: #51 says Opus desk SURFACE one-interface part 16 started 13:4xZ. Add an OPENED note to pick rank 261.
+3. FILE UNQUEUED DOORS~VOICE-MEASUREMENT-PROVENANCE: hub should stamp who measured the voice on the user_model voice row; POST /api/model (app.py ~9471) lets a caller write fingerprint.measured_similarity (reviewer's reading at 25b3cf01); until it exists LEVELS-AND-TRUST level 2 reports unknown.
+4. INTELLIGENCE~WATCHTOWER-REGISTER-FLAKE (already filed): add a third data point, first attempt of hub#821 head aa8e76e8, run 38404998305 (lander agent's word; check gh).
+5. LEVELS-AND-TRUST P1-2 built on branch intelligence/levels-p1-2, no PR; a DOORS fix desk (part 11) is on it. Info only.
+
 ## Gotchas
 ArtifactData update deep-merges nested objects (tested on a scratch doc); arrays need a whole-field write. Build JSON patches with pwsh -File scripts. Picks done-flip: done true, rank null, note appended. gh repo NOVAHGREYWOLF/novahub. Pick counts 265/96 are derived, never recounted.
