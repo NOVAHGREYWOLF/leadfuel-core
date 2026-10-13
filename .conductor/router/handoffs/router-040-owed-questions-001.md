@@ -19,3 +19,11 @@ Priority from owner: "work on the command fully, anything to do with this; then 
 ## Gotchas
 Bash tool and PowerShell differ: give the owner PowerShell paths. SendMessage by full local_ id. ArtifactData reads need out_dir.
 Predecessor #40 stays open until you are live; archive it through the gate (branch claude/router-40 and claude/router-43 pushed, nothing unpushed).
+
+## UPDATE ~02:1xZ UTC 10-13: THE ETG.AI MAIL ROOT CAUSE (SENSORS desk local_786396c4, STATUS NEEDS-NOVAH)
+Desk says: envelope.uid_from_legacy cuts the event uid to 96 chars ("mailbox:" + Graph id, ids are 152 chars and share their first ~141); event_uid is VARCHAR(96); so after the first etg.ai message every later one is deduped by the door as already held, while the cursor still advances. Gmail ids are short, so Gmail flows. VERIFIED BY ME on hub origin/main: envelope.py lines 101 and 103 return key[:96] and f"{src}:{key}"[:96]; models.py event_uid String(96). NOT verified by me: the 152-char shared-prefix claim (desk read it from the live Inbox), that prod shows it, the timing (door switch B3.3 a74ad5bc, 2026-08-14 06:39Z, desk's git read).
+OPEN, owner's calls, in order:
+1. Q10 (read-only, counts and lengths, file book_inbox_q10.py in that desk's scratchpad): needs his go. The desk asks; default yes. Read the script first as with Q8/Q9, then give him the PowerShell command with the real path, or run it on his explicit "do it".
+2. Who owns envelope.py and intake.py (door/ingestion owner, not the SENSORS rail files)? Check F:\Claude Sessions\SESSION_MAP.md, name the owner, route the fix there: hash any key over 96 chars, leave short keys untouched. Fix applies to every rail, not just mail.
+3. Recovery is a PRODUCTION WRITE (re-pull Aug 14 to now, or reset the cursor; check backfill_uids did not stamp truncated uids): a card for the owner, his yes only.
+4. Other long-id rails may be hit the same way: a count, separate from this.
