@@ -5,6 +5,8 @@ ROUTER #51 = local_ced863d2-73f1-4cab-9907-23eb10d58f26 (Sonnet 5.5). Ids only. 
 ## Done
 hub#820 (D7 Ask, OFF) MERGED 13:13:16Z ee0730ee. hub#821 (ESTATE-WORD-RENAME, word 'platform') MERGED 13:38:55Z 41c80c85. NODE auto-launch part 2: PR 41 merged into way/plugin (eed03a8b). Cards: q398 A routed; q399 A done; q401 posted (phone Ask local-only drop, default A).
 
+## UPDATE 13:57Z (after this note was pushed): hub#822 LEVELS P1-2 MERGED 13:56:31Z as 9beed18a (gh + ls-remote). The lander a64eecbf is DONE; only ae502453b1b2e2670 is running. hub#818 must renumber its migration to 0014 when it lands (alembic head is now 0013_quest_progression). Details: board router/roster51 key levels_landed.
+
 ## Running (agents; reports reach #51 ONLY)
 - a64eecbfa30477cb6 lander: holds ci-novahub since 13:46:29Z for LEVELS P1-2: branch intelligence/levels-p1-2 @ 2ed9a094 (voice rule unknown after a DOORS fix). Opens PR, CI, squash. Then verify merge with gh.
 - ae502453b1b2e2670 SURFACE part 17 (Opus): ADD-PANELS from branch surface/add-panels @ 99e72ac8 and handoff SURFACE-ADD-PANELS-001.md; PR-less, writes a ticket naming me. Then a read-only DOORS review (Opus), then land via a lander agent.
