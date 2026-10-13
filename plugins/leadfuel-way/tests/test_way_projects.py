@@ -436,7 +436,7 @@ def test_the_hook_never_moves_or_retitles_anything_itself():
 # --- the skills say the same thing ----------------------------------------------------------
 
 SKILL = {name: (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
-         for name in ("way", "desk", "router", "handoff", "new-project", "conductor")}
+         for name in ("way", "desk", "router", "handoff", "new-project", "conductor", "launch")}
 NEW_FORM = "`LANE · <project> part · n`"
 
 
@@ -526,3 +526,99 @@ def test_migration_is_one_at_a_time(name):
 
 def test_the_older_forms_are_still_named_as_accepted():
     assert "`LANE · <task id> n/m · topic`" in SKILL["way"] and "still" in SKILL["way"]
+
+
+# --- a successor launched into a slot (0.1.11, leadfuel-way:launch) --------------------------
+# The app refuses to file a scheduled run in any sidebar group, so a slot successor's `group` is
+# null by construction. The archive guard reads its `way-slot-NN` scheduledTaskId in the group's
+# place, and every other test (live, same role, the next of the same line) still applies.
+
+def slot(title, task="way-slot-01", archived=False, **extra):
+    return {"sessionId": "local_slot", "title": title, "isArchived": archived, "group": None,
+            "scheduledTaskId": task, **extra}
+
+
+def saw_slot(transcript, value):
+    read(transcript, GET, {"session_id": "local_slot"}, value)
+
+
+@pytest.mark.parametrize("own, successor", [
+    ("ROUTER #9", "ROUTER #10 · atlas"),
+    ("ROUTER #9 · atlas", "ROUTER #10 · atlas"),
+    ("CONDUCTOR · system build", "CONDUCTOR · system build 2"),
+])
+def test_a_tier_successor_launched_into_a_slot_counts_without_a_group(hook, transcript, own, successor):
+    transcript.add(title_rec(own))
+    saw_slot(transcript, slot(successor))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("task", [f"way-slot-{n:02d}" for n in range(1, 7)])
+def test_every_slot_counts(hook, transcript, task):
+    transcript.add(title_rec("ROUTER #9"))
+    saw_slot(transcript, slot("ROUTER #10", task=task))
+    assert archive(hook, transcript) is None
+
+
+def test_a_project_desk_may_archive_once_its_slot_successor_is_live(hook, transcript):
+    transcript.add(title_rec(OWNER_EXAMPLE))
+    saw_self(transcript, OWNER_EXAMPLE, WI)
+    saw_slot(transcript, slot("INTELLIGENCE · world intel part · 4"))
+    assert archive(hook, transcript) is None
+
+
+def test_a_slot_successor_is_judged_without_the_desks_own_group(hook, transcript):
+    """The slot id replaces the group comparison, so a desk that never read itself is not stuck."""
+    transcript.add(title_rec(OWNER_EXAMPLE))
+    saw_slot(transcript, slot("INTELLIGENCE · world intel part · 4"))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("own, seen", [
+    ("ROUTER #9", slot("ROUTER #10", archived=True)),                    # already gone
+    ("ROUTER #9", {k: v for k, v in slot("ROUTER #10").items() if k != "isArchived"}),  # archived unknown
+    ("ROUTER #9", slot("ROUTER #8")),                                     # an older router
+    ("ROUTER #9", slot("ROUTER #9")),                                     # yourself
+    ("ROUTER #9", slot("CONDUCTOR · x")),                                 # another tier
+    ("ROUTER #9", slot("INTELLIGENCE · world intel part · 4")),           # a desk is not a router
+    ("ROUTER #9", slot("ROUTER #10", task="daily-standup")),              # some other scheduled task
+    ("ROUTER #9", slot("ROUTER #10", task="way-slot-1")),                 # not a slot id
+    ("ROUTER #9", slot("ROUTER #10", task="way-slot-001")),
+    ("ROUTER #9", slot("ROUTER #10", task="xway-slot-01")),
+    ("ROUTER #9", slot("ROUTER #10", task="")),
+    ("ROUTER #9", {k: v for k, v in slot("ROUTER #10").items() if k != "scheduledTaskId"}),  # unknown
+    (OWNER_EXAMPLE, slot("INTELLIGENCE · world intel part · 2")),         # the predecessor, not the successor
+    (OWNER_EXAMPLE, slot("INTELLIGENCE · world intel part · 3")),         # the same part number
+    (OWNER_EXAMPLE, slot("INTELLIGENCE · reports part · 4")),             # another project
+    (OWNER_EXAMPLE, slot("DOORS · world intel part · 4")),                # another lane
+    (OWNER_EXAMPLE, slot("ROUTER #10")),                                  # a tier
+])
+def test_what_does_not_count_as_a_slot_successor(hook, transcript, own, seen):
+    transcript.add(title_rec(own))
+    saw_self(transcript, own, WI)
+    saw_slot(transcript, seen)
+    assert refused(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("value, expected", [
+    ({"scheduledTaskId": "way-slot-01"}, True),
+    ({"scheduledTaskId": " way-slot-06 "}, True),
+    ({"scheduledTaskId": "way-slot-1"}, False),
+    ({"scheduledTaskId": "way-slot-001"}, False),
+    ({"scheduledTaskId": "daily-standup"}, False),
+    ({"scheduledTaskId": None}, False),
+    ({}, False),
+])
+def test_is_slot_row_reads_only_a_slot_id(hook, value, expected):
+    assert hook.is_slot_row(value) is expected
+
+
+def test_the_refusal_tells_a_session_how_a_slot_successor_is_proved(hook, transcript):
+    transcript.add(title_rec("ROUTER #9"))
+    reason = archive(hook, transcript)["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "leadfuel-way:launch" in reason and "way-slot-NN" in reason and "STAY OPEN" in reason
+
+
+def test_the_banner_tells_an_unfiled_session_that_a_slot_session_cannot_be_filed(hook):
+    text = hook.banner("startup", None, "UNFILED", None, None, None, 1, 2)
+    assert "leadfuel-way:launch" in text and "cannot be filed" in text

@@ -22,6 +22,9 @@ Events (one entry point, dispatched on `hook_event_name`):
                       session's successor live (not archived) in its sidebar group. Owner,
                       2026-10-02: a router does not leave itself until it has a successor, and a
                       desk at its limit hands off and stays open until the new desk is live.
+                      A successor launched into a slot (`leadfuel-way:launch`, 0.1.11) counts
+                      without a group: a scheduled run cannot be filed in one, so its
+                      `scheduledTaskId` (`way-slot-NN`) stands in for the group test.
                       Also: `move_sessions` naming more than one session is refused. Owner,
                       2026-10-07: sessions move one at a time, never in bulk.
 
@@ -71,7 +74,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.10"
+VERSION = "0.1.11"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -406,10 +409,25 @@ def own_group(rows: list[dict]) -> tuple[str, str] | None:
     return None
 
 
+SLOT_TASK = re.compile(r"^way-slot-\d{2}$")
+
+
+def is_slot_row(row: dict) -> bool:
+    """True when the row is a session launched into a launch slot (`leadfuel-way:launch`): a scheduled
+    run whose `scheduledTaskId` is a `way-slot-NN`. The app refuses to file a scheduled run in any
+    sidebar group, so such a row can never name one; the slot id is what stands in for it. Only a row
+    that says so counts: a row with no `scheduledTaskId` (list_sessions may leave it out) is unknown."""
+    return bool(SLOT_TASK.match(str(row.get("scheduledTaskId") or "").strip()))
+
+
 def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None = None) -> bool:
     """True only if `row` (a session as list_sessions / get_session returns it) is provably this
     session's successor: live, filed in the right group, and the next of the same line. Anything the
     row does not say (no `isArchived`, no `group`) is unknown, and unknown is not live.
+
+    A session launched into a slot (`is_slot_row`) is the one exception to "filed in the right group":
+    it cannot have one, so its slot id is read in the group's place. Everything else still applies:
+    live, the same role, and the next of the same line.
 
     ROUTER #N: another ROUTER, numbered above N when both carry a number, in the ROUTER group.
     CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one).
@@ -432,21 +450,24 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     if row.get("isArchived") is not False:
         return False
     theirs = group_of(row)
+    slot = is_slot_row(row)
     role, lane = role_of(title)
     if role != own_role:
         return False
     if own_role in TIERS:
-        if theirs is None or theirs[1].upper() != own_role:
+        if not slot and (theirs is None or theirs[1].upper() != own_role):
             return False
         if own_role == "ROUTER":
             m, t = _router_number(own_title or ""), _router_number(title)
             if m is not None and (t is None or t <= m):
                 return False
         return True
-    if lane != own_lane or theirs is None or theirs[1].upper() in TIERS:
+    if lane != own_lane or (not slot and (theirs is None or theirs[1].upper() in TIERS)):
         return False
     mine_line, their_line = desk_line(own_title), desk_line(title)
-    if mine is not None:
+    if slot:
+        pass  # no group to compare: the slot id stood in for it above, the line test below still applies
+    elif mine is not None:
         if not same_group(mine, theirs):
             return False
     elif mine_line is not None and mine_line[0] == "part":
@@ -480,7 +501,10 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
         "session never leaves before its successor exists. If the successor can only be a paste "
         "prompt, give the owner the prompt and STAY OPEN: the successor archives you once it is live. "
         "If you started it yourself, run `list_sessions` with that group (a desk also `get_session` "
-        "with `self`) and archive only once the result shows it, not archived."
+        "with `self`) and archive only once the result shows it, not archived. A successor you "
+        "launched into a slot (`leadfuel-way:launch`) has no group: read it with `get_session` on its "
+        "id, and it counts once that row is live, correctly titled, and carries its `way-slot-NN` "
+        "`scheduledTaskId`."
     )
 
 
@@ -576,7 +600,8 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
             "then n) in its PROJECT's sidebar group, never its lane's (a project "
             "with no group gets one from `leadfuel-way:new-project`, step 2); a router `ROUTER #N · <project>` "
             "in the ROUTER group; the conductor `CONDUCTOR · topic` in the CONDUCTOR group. Move only "
-            "yourself (`self`)."
+            "yourself (`self`). A session launched into a slot (`leadfuel-way:launch`; your first message "
+            "says it is an automated scheduled run) cannot be filed, the app refuses: title yourself and skip the group."
         )
     elif role == "DESK" and line is not None and line[0] == "part":
         project = project_of(line[1])
