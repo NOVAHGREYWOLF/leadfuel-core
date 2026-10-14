@@ -19,8 +19,8 @@
 - PR body rewritten (stacked, done, not done, verified vs trust).
 
 ## Left for the next desk
-1. Wait for hub `tests` CI (workflow test.yml, job pytest) on 46cdc1d3 and report the result. No merge,
-   no undraft, no ci-novahub lock.
+1. Hub `tests` CI on 46cdc1d3: run 38643558383, job pytest SUCCESS (11 steps), read after the push.
+   Re-check after any new commit. No merge, no undraft, no ci-novahub lock.
 2. Ask DOORS (and PRIVACY) to re-review the new head: the door change, `terms-seen`, the ways in.
 3. Owner's calls, untouched: deck scans (download), the terms wording (COUNSEL draft, not agreed),
    the teller's name, whether the tent's look suits.
