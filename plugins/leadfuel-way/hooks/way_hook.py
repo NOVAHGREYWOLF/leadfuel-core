@@ -25,13 +25,16 @@ Events (one entry point, dispatched on `hook_event_name`):
                       A successor launched into a slot (`leadfuel-way:launch`, 0.1.11) counts
                       without a group: a scheduled run cannot be filed in one, so its
                       `scheduledTaskId` (`way-slot-NN`) stands in for the group test.
-                      Also (0.1.12): a session the hook can tell was launched into a slot (its first
-                      message carries the slot block) may not call `run_scheduled_task` or
-                      `update_scheduled_task`, which the app refuses it anyway (measured 2026-10-14);
-                      it is told to ask the launcher. A slot-run router or conductor that writes a
-                      handoff and tries to stop without having sent a `LAUNCH-REQUEST` is sent back
-                      once per stop (three at most). A regular session cannot be told from any other,
-                      so for it the rule is advice.
+                      Also (0.1.12, reworded 0.1.14): a session the hook can tell was launched into a
+                      slot (its first message carries the slot block) may not call
+                      `run_scheduled_task`, which the app refuses every scheduled run in every state
+                      (measured 2026-10-14). `update_scheduled_task` is NOT refused here since
+                      0.1.14: launching your own successor is a `fireAt` update
+                      (`leadfuel-way:launch`, "Launch your successor yourself"), which the app allows
+                      a run a person has typed into. A slot-run router or conductor that writes a
+                      handoff and tries to stop having neither armed a successor with `fireAt` nor
+                      sent a `LAUNCH-REQUEST` is sent back once per stop (three at most). A regular
+                      session cannot be told from any other, so for it the rule is advice.
                       Also: `move_sessions` naming more than one session is refused. Owner,
                       2026-10-07: sessions move one at a time, never in bulk.
 
@@ -81,7 +84,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.13"
+VERSION = "0.1.14"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -121,10 +124,12 @@ AGENT_WORKTREE = re.compile(r"/\.claude/worktrees/agent-[^/]+/", re.I)
 
 
 # A launch-slot run (`leadfuel-way:launch`) is told so in its first message, by the slot block.
-# Measured 2026-10-14 (conductor 037): such a run can neither update nor run a scheduled task, so a
-# router or conductor launched into a slot cannot start its own successor. It asks the launcher.
+# Measured 2026-10-14: a scheduled run can never `run_scheduled_task` (the app's own rule), so it
+# starts its successor by arming a slot with a one-time `fireAt` (`update_scheduled_task`, 0.1.14).
+# That update is refused by the app for a run nobody has typed into; such a run asks the launcher.
 SLOT_RUN = re.compile(r"launched into a way slot \((way-slot-\d+)\)")
-SCHEDULE_TOOLS = ("__run_scheduled_task", "__update_scheduled_task")
+SCHEDULE_TOOLS = ("__run_scheduled_task",)
+FIRE_TOOLS = ("update_scheduled_task", "create_scheduled_task")
 LAUNCH_REQUEST = "LAUNCH-REQUEST"
 HEAD_BYTES = 256 * 1024
 
@@ -345,6 +350,29 @@ def asked_launcher(transcript_path: str) -> bool:
                 continue
             inp = block.get("input") if isinstance(block.get("input"), dict) else {}
             if str(inp.get("message") or "").lstrip().startswith(LAUNCH_REQUEST):
+                return True
+    return False
+
+
+def armed_successor(transcript_path: str) -> bool:
+    """True if this session armed a slot with a one-time `fireAt` (an update or create of a scheduled
+    task whose input carries a non-empty `fireAt`; main thread, within the tail). That is how a session
+    launches its own successor since 0.1.14. A call the app then refused still reads as armed here:
+    the hook sees the call, not its result, so the skill tells the session to read the run back."""
+    try:
+        text, _ = _tail(transcript_path)
+    except OSError:
+        return False
+    for rec in _records(text):
+        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            if not str(block.get("name") or "").endswith(FIRE_TOOLS):
+                continue
+            inp = block.get("input") if isinstance(block.get("input"), dict) else {}
+            if str(inp.get("fireAt") or "").strip():
                 return True
     return False
 
@@ -889,15 +917,17 @@ def handle(event: dict) -> dict | None:
                      and int(state.get("slot_stops_blocked") or 0) < 3 and is_slot_run(tpath, state))
         if slot_gate:
             role, _lane = role_of(cached_title(tpath, state))
-            if role in TIERS and handoff_written_since(tpath, max(0, size - TAIL_BYTES))                     and not asked_launcher(tpath):
+            if (role in TIERS and handoff_written_since(tpath, max(0, size - TAIL_BYTES))
+                    and not asked_launcher(tpath) and not armed_successor(tpath)):
                 state["slot_stops_blocked"] = int(state.get("slot_stops_blocked") or 0) + 1
                 out = {"decision": "block", "reason": (
                     f"THE WAY: you are a {role} launched into a slot, and you wrote a handoff without "
-                    "asking the launcher for your successor. A slot run cannot run or update a scheduled "
-                    "task (measured 2026-10-14), so send the launcher one LAUNCH-REQUEST "
-                    "(`leadfuel-way:launch`, \"Ask the launcher\") with mcp__ccd_session_mgmt__send_message. "
-                    "If no launcher is live, give the owner the paste prompt and stay open. Do not archive "
-                    "yourself until get_session shows the successor live."
+                    "starting your successor. Launch it yourself: arm a free slot with a one-time fireAt "
+                    "about two minutes ahead (`leadfuel-way:launch`, \"Launch your successor yourself\"). "
+                    "If the app refuses that update (a run nobody has typed into is refused), send the "
+                    "launcher one LAUNCH-REQUEST with mcp__ccd_session_mgmt__send_message "
+                    "(\"Ask the launcher\"). If no launcher is live, give the owner the paste prompt and "
+                    "stay open. Do not archive yourself until get_session shows the successor live."
                 )}
 
     elif session_refusal:
@@ -920,10 +950,12 @@ def handle(event: dict) -> dict | None:
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": (
-                "THE WAY: you were launched into a slot, and a slot run can neither update nor run a "
-                "scheduled task (the app refuses both, measured 2026-10-14). Ask the launcher: send one "
-                "LAUNCH-REQUEST with mcp__ccd_session_mgmt__send_message (`leadfuel-way:launch`, "
-                "\"Ask the launcher\"). Do not archive yourself until get_session shows the successor live."
+                "THE WAY: you were launched into a slot, and the app refuses run_scheduled_task from any "
+                "scheduled run in every state (measured 2026-10-14). To start a session, arm a free slot "
+                "with update_scheduled_task and a one-time fireAt about two minutes ahead "
+                "(`leadfuel-way:launch`, \"Launch your successor yourself\"). If the app refuses that "
+                "update, ask the launcher: one LAUNCH-REQUEST with mcp__ccd_session_mgmt__send_message "
+                "(\"Ask the launcher\"). Do not archive yourself until get_session shows the successor live."
             ),
         }}
 

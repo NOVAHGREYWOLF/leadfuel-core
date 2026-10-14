@@ -1,4 +1,6 @@
-# SLOT-LAUNCH: starting a session with no click (way plugin 0.1.11)
+# SLOT-LAUNCH: starting a session with no click (way plugin 0.1.11; self-launch by `fireAt` since 0.1.14)
+
+**Read "Measured 2026-10-14" first.** It corrects two claims below: that a slot run cannot update a scheduled task (true only for a run nobody has typed into), and that a launcher is needed (it is now the fallback). The standing method is in the skill, "Launch your successor yourself".
 
 Owner, 2026-10-13: "when a session needs to create a new session this should be automated. I
 shouldn't have to say yes." The procedure is the skill `leadfuel-way:launch`; this file is why it
@@ -11,7 +13,7 @@ looks the way it does, and what was measured versus taken on trust.
 | `claude --bg` from a shell | none | Dead. The session never reaches the sidebar and the command line is not logged in (AUTO-LAUNCH 1/1, 2026-10-07; not re-tested). |
 | `spawn_task` chip | one | The click the owner objected to. |
 | Background agent (Agent tool) | none | Works for desks (way 0.1.7, ROUTER #25 and #26: 8 agents, 97 edits, 0 refusals). It dies with its router and is not a sidebar session, so it cannot be a successor. |
-| **Scheduled-task run** (`run_scheduled_task`) | **none** | **Measured below. This is the launch slot. Only a regular session may run it (2026-10-14): the launcher does, for everyone.** |
+| **Scheduled-task run** (`run_scheduled_task`) | **none** | **Measured below. This is the launch slot. `run_scheduled_task` works from a regular session only; the standing method since 0.1.14 does not use it: the session sets a one-time `fireAt` on a slot and the app starts the run.** |
 
 ## Measured on 2026-10-13 (NODE · auto-launch part · 1, two probes, both cleaned up)
 - `run_scheduled_task` starts a new session at once and returns its id. No click.
@@ -112,15 +114,27 @@ six slot files restored to idle.
 - **The wrapper notice** ("the user is not present", "write actions only if the task file asks for
   that specific action") is addressed in the block: the brief lists the write actions it asks for.
 
-## Three walls, measured 2026-10-14 by conductor 037 (taken on trust here; this desk did not re-run them)
+## Measured 2026-10-14 (NODE~LAUNCH-BY-FIREAT, a background desk agent; read from the app's task list, run lists, session records and the transcripts of conductors 037, 039, 040)
+Owner, to conductor 039: "yes make sure you can do this. auto create slots". What this desk read itself:
+- **`fireAt` starts a session with no paste.** `list_task_runs` for way-slot-03 shows a run, `local_bc9fbea8`, started 18:28:16Z, 46 s after the `fireAt` of 18:27:30Z that conductor 039 (itself a slot run) had set at 18:23:30Z with `update_scheduled_task`. Its record: `scheduledTaskId` way-slot-03, `permissionMode` bypassPermissions, sonnet-5-5, effort medium, first turn ended `READY way-slot-03`. The task then showed `enabled: false` with its `fireAt` kept, and `lastRunAt` 18:28:16Z.
+- **Correction: `fireAt` did not start conductor 040.** 040 (`local_e4b83fc3`) started at 18:22:09Z, before the `fireAt` was set (18:23:30Z) and before the run it was attributed to. The `fireAt` run, `bc9fbea8`, is a second session with the same title and brief, idle at `READY`, waiting for a `GO` from 039 that never came. How 040 itself was started is not known to this desk (conductor 039's own `run_scheduled_task` at 18:21:08Z was refused at 18:21:24Z; the owner may have pressed run). Lesson in the skill: one start per launch, and read the run list for exactly one new run.
+- **Wall 1 is conditional.** Conductor 037's `update_scheduled_task` was refused at 00:28:14Z ("nobody has opened this scheduled run") with no person having typed into the run; after the owner typed into it (01:23:15Z) the same call went through (01:24:31Z, 01:25:26Z). Conductor 039 was typed into by the owner from 18:17Z; its `update_scheduled_task` (18:19:20Z, 18:23:30Z) and `create_scheduled_task` of `way-slot-07` (18:22:15Z) all went through. 036, a regular session, updated and ran slot 02 without a refusal. So: a regular session and a slot run a person has typed into can set `fireAt`; a slot run nobody has typed into cannot (inference: the typing is the cause; whether viewing the run in the app is enough is untested).
+- **A background desk agent cannot create or update a slot.** This desk's `create_scheduled_task` came back "needs a person's approval, and nobody has opened this scheduled run" (11:30 PDT). Its `update_scheduled_task` on way-slot-07 was stopped by the 0.1.13 hook before it reached the app (the hook that 0.1.14 relaxes). So the fresh-slot test the owner asked for (create a slot, set `fireAt`, watch it start) was **not run by this desk**.
+- **A slot's `fireAt` after creation is untested end to end.** Conductor 039 created `way-slot-07` from a run (`list_scheduled_tasks` shows it, manual, never run) and set `fireAt` on the existing slot 03; no one has yet set `fireAt` on a slot created that way. The probe is two calls from a regular session: `update_scheduled_task` on `way-slot-07` with `fireAt` two minutes ahead (its idle prompt ends `SLOT-EMPTY way-slot-07`, harmless), then `list_task_runs` and `get_session` on the new run.
+- **Effort cannot be carried by the slot; model can.** The app's task-file parser (desktop app 2.26454.2, `app.asar`, function `o4`) reads `name`, `description` and `model:` only; `default` or `inherit` for the model means none. The session record of both way-slot-03 runs has `effort: medium` and `effortInherited: true`. This matches 2026-10-13, when an `effort: low` line was ignored. The same code shows an internal update path that accepts a model, but the scheduled-tasks tool in this build exposes no model or effort field. Effort is set from outside with `set_session_effort` after `READY` (proven 2026-10-13: a run read back `effort: low`).
+- **A newly created slot probably stalls in default mode.** A fresh slot started in `default` on 2026-10-13 until the owner set Bypass. Not re-measured for a slot created by a Bypass session. Until the owner sets Bypass on `way-slot-07` (nobody has run it), treat it as unproven.
+- **The scheduler tick is about a minute.** 46 s late in the one observation. Two minutes ahead is the skill's rule.
+
+## Three walls, measured 2026-10-14 by conductor 037 (taken on trust here, except wall 1, which is corrected above; this desk did not re-run them)
 Conductor 037 was itself a slot run (`way-slot-02`, `get_session` showed `bypassPermissions`) when it tried to launch a successor. Its results:
 1. **`update_scheduled_task` inside a slot run is refused**: "needs a person's approval, and nobody has opened this scheduled run". Bypass does not help, because the approval is not a tool permission.
 2. **A slot task's title must differ from the session title it sets.** Once the owner was in the session the same call went through, then failed on a duplicate title: "A scheduled task is already listed as ... way-slot-02". Rule from here on: the task's title is always `slot NN | <TITLE>` and the session's is `<TITLE>`, so they cannot be equal.
 3. **`run_scheduled_task` is refused from any scheduled-task run, in every state**: "Refusing to run a scheduled task from a scheduled-task run session. Run it from a regular session instead." The app's own rule; no setting fixes it.
 
-So the first slot hop works (conductor 036, a regular session, launched 037) and the second cannot: a slot-launched router or conductor cannot launch its own successor. Not verified by anyone yet: whether a **regular** session's `update_scheduled_task` runs unattended without an approval card. Regular sessions have called `run_scheduled_task` since 0.1.11, so the run call is known to work from one; the update call is the open question (ROUTER #52 was asked to make it).
+So the first slot hop works (conductor 036, a regular session, launched 037) and the second, for a run nobody has typed into, cannot. **Superseded for a run a person has typed into** ("Measured 2026-10-14" above). A regular session's `update_scheduled_task` ran unattended in 036's session (it updated slot 02 and ran it with no refusal).
 
-## The launcher session (0.1.12, owner pick 264, 2026-10-14: "Standing launcher session (Recommended)")
+## The launcher session (0.1.12, owner pick 264, 2026-10-14: "Standing launcher session (Recommended)"; the fallback since 0.1.14)
+Pick 264 assumed a regular session must press run. Since 0.1.14 a session launches its own successor by `fireAt`, so the launcher is needed only for a slot run nobody has typed into (and for an owner who prefers one place that launches). Nothing below is withdrawn; it is no longer on the main path, and nobody has started the launcher yet.
 **One small regular session whose only job is launching.** Any session, slot run or regular, sends it a `LAUNCH-REQUEST` (format in `skills/launch/SKILL.md`, "Ask the launcher"); it picks a free slot, runs the 0.1.11 steps, sends `GO` from its own id, and answers the requester `LAUNCHED <session id> <slot id> <title>` or `LAUNCH-FAILED <reason>`. The standing procedure is the skill's section "If you are the launcher", kept in the skill rather than in a pasted prompt so that it survives a `clear_session`.
 - **Why a regular session.** Wall 3: only a regular session may run a scheduled task.
 - **Model.** Sonnet, effort low. The work is mechanical but has several exact edits (the slot file's `model:` line, the slot block's placeholders) and a check of the brief. Haiku is the saving to try after ten clean launches, with the retry-one-tier-up rule if it fails a step twice. Not measured on either model yet.
@@ -135,13 +149,14 @@ You are NODE · launcher part · 1, the standing launcher. Set your title to tha
 ```
 That is the one paste the system asks for; after it, no launch needs the owner.
 
-## A stop for the walls, in the plugin (0.1.12)
-The app already refuses a slot run's `run_scheduled_task` and `update_scheduled_task`, but only after the session has done its work, and with a message that does not say what to do. The hook now (a) denies both calls from a session whose first message carries the slot block, naming the launcher, and (b) on Stop sends a slot-run router or conductor back once per stop (three at most) if it has written a handoff without a `LAUNCH-REQUEST` in its transcript. Limits: it cannot tell a regular session from any other, so "a regular session asks the launcher" is advice, not a wall; it reads the first 256 KB of the transcript for the slot marker and the last 768 KB for the request; a slot run launched from an older brief without the marker is not covered.
+## A stop for the walls, in the plugin (0.1.12; changed in 0.1.14)
+The app refuses a slot run's `run_scheduled_task` in every state, but only after the session has done its work, and with a message that does not say what to do. The hook (a) denies `run_scheduled_task` from a session whose first message carries the slot block, naming `fireAt` and the launcher, and (b) on Stop sends a slot-run router or conductor back once per stop (three at most) if it has written a handoff with neither a `LAUNCH-REQUEST` nor an `update_scheduled_task` or `create_scheduled_task` carrying a `fireAt` in its transcript. **0.1.12 and 0.1.13 also denied `update_scheduled_task`, on the wall-1 reading; that denial is what kept a slot run from using the method, and 0.1.14 removes it.** The hook sees the call, not the app's answer, so a refused `fireAt` update still satisfies the gate: the skill's step 6 (read the run list for exactly one new run) is the proof. Limits: it cannot tell a regular session from any other, so "a regular session asks the launcher" is advice, not a wall; it reads the first 256 KB of the transcript for the slot marker and the last 768 KB for the request; a slot run launched from an older brief without the marker is not covered.
 
 ## Owner steps (no session can do them)
 1. ~~Open each `way-slot-NN` routine in the app and set its permission mode to Bypass, once.~~ Done
    2026-10-13 (card q399 A); proven by the six runs above.
-2. Update the installed plugin to 0.1.12 once this merges (it carries 0.1.11): pull the marketplace checkout, then
+2. Update the installed plugin to 0.1.14 once this merges (it carries 0.1.11 to 0.1.13; the installed cache was 0.1.12 on 2026-10-14, and the 0.1.13 hook blocks the method): pull the marketplace checkout, then
    `claude plugin update leadfuel-way@leadfuel`, and start a fresh session.
 3. Accept that launched sessions show under Scheduled, named by their title, not in a project group.
-4. Start the launcher: paste the prompt above into a fresh Sonnet session and set it to Bypass (section "The launcher session"). Until it is live, a regular session runs the launch steps itself and a slot run falls back to the paste prompt.
+4. Start the launcher only if you want the fallback: paste the prompt above into a fresh Sonnet session and set it to Bypass (section "The launcher session"). The standing method does not need it.
+5. Set `way-slot-07`, and any slot a session creates later, to Bypass in the app (a new slot starts in default mode and its run stops at `SLOT-NOT-BYPASS`).

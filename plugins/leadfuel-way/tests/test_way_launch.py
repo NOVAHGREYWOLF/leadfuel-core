@@ -21,7 +21,8 @@ SKILL = {p.parent.name: p.read_text(encoding="utf-8") for p in (PLUGIN / "skills
 
 def test_the_procedure_names_the_tools_and_the_slots():
     for needle in ("run_scheduled_task", "update_scheduled_task", "list_task_runs", "set_session_model",
-                   "set_session_effort", "get_session", "list_scheduled_tasks", "way-slot-01", "way-slot-06"):
+                   "set_session_effort", "get_session", "list_scheduled_tasks", "way-slot-01", "way-slot-07",
+                   "create_scheduled_task", "fireAt"):
         assert needle in LAUNCH, needle
 
 
