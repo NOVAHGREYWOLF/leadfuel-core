@@ -17,8 +17,8 @@ and that goes through the fortune teller (see ORACLE_FORTUNE_TELLER.md).
 | Input | Needed for | Source rule |
 | --- | --- | --- |
 | Date of birth | Life Path, Birthday, Personal Year/Month/Day, Maturity | Stated by the person on the character sheet. Never inferred from mail or calendar. A birthday seen in the corpus may raise a gap quest ("is 14 July your birthday?") but the number is computed only from the stated value. |
-| Full name at birth | Expression, Soul Urge, Personality, Maturity | Stated by the person. The name in mail signatures is the *used* name, not the birth name; it produces the "minor" set only, labelled as such. |
-| Name used today | Minor Expression, Minor Soul Urge, Minor Personality | Stated, or confirmed from the signature evidence the sheet already shows. |
+| Full name at birth | Expression, Inner Self, Personality, Maturity | Stated by the person. The name in mail signatures is the *used* name, not the birth name; it produces the "minor" set only, labelled as such. |
+| Name used today | Minor Expression, Minor Inner Self, Minor Personality | Stated, or confirmed from the signature evidence the sheet already shows. |
 
 Both inputs are person statements in the Self (top tier, like every explicit statement in S3):
 confirmed by the person, confidence 1.0, never written by a distillation pass. They sit beside
@@ -39,7 +39,7 @@ set of rules and records which, so two people never get different numbers from t
 
 **Reduction.** A number reduces by summing its digits until one digit remains, except that
 11, 22 and 33 are kept as master numbers wherever they appear as a component or a result.
-The karmic debt numbers 13, 14, 16 and 19 are noted when they appear *before* a reduction
+The lesson number numbers 13, 14, 16 and 19 are noted when they appear *before* a reduction
 and then reduced normally.
 
 **Vowels.** A, E, I, O, U are vowels. Y is a vowel when the syllable has no other vowel
@@ -57,7 +57,7 @@ spaces are dropped; suffixes such as Jr are excluded unless on the birth certifi
 | Life Path | reduce(month) + reduce(day) + reduce(year), then reduce; master numbers kept at each step | The road: the lesson of the life as a whole |
 | Birthday | the day of the month, reduced (11 and 22 kept) | A gift carried from the start |
 | Expression (Destiny) | sum of all letters of the birth name, reduced | What the person is equipped to do |
-| Soul Urge (Heart's Desire) | sum of the vowels of the birth name, reduced | What the person wants underneath |
+| Inner Self | sum of the vowels of the birth name, reduced | What the person wants underneath |
 | Personality | sum of the consonants of the birth name, reduced | How the person comes across before they speak |
 | Maturity | Life Path + Expression, reduced | What the second half of life turns toward |
 | Personal Year | reduce(month of birth) + reduce(day of birth) + reduce(current year), reduced | The theme of this year, from birthday to birthday |
@@ -66,17 +66,17 @@ spaces are dropped; suffixes such as Jr are excluded unless on the birth certifi
 
 Second tier, worth adding once the core set is on the sheet: the four Challenge numbers and the
 four Pinnacles (life periods with their own number), the Hidden Passion (the most frequent letter
-value in the name), the Karmic Lessons (values absent from the name), and the Chaldean variant as
+value in the name), the Karmic Lessons (rename before building: contains a refused word) (values absent from the name), and the Chaldean variant as
 an alternative the person can switch on. None of these need new inputs.
 
 ### A worked example, which is also the first test
 
 Date of birth 14 July 1990. Month 7 gives 7. Day 14 gives 1 + 4 = 5. Year 1990 gives 1 + 9 + 9 + 0 = 19, then 1 + 9 = 10, then 1.
-Life Path = 7 + 5 + 1 = 13 (karmic debt 13 noted), then 1 + 3 = **4**.
+Life Path = 7 + 5 + 1 = 13 (lesson number 13 noted), then 1 + 3 = **4**.
 Birthday = 14 gives **5**. Personal Year for 2026 = 7 + 5 + reduce(2026) where 2026 gives 10 then 1, so 13 then **4**.
 
 Name "Ann Lee": A1 N5 N5 L3 E5 E5 = 24 gives **6** Expression. Vowels A1 E5 E5 = 11 gives **11**
-Soul Urge (master number kept). Consonants N5 N5 L3 = 13 (karmic 13) gives **4** Personality.
+Inner Self (master number kept). Consonants N5 N5 L3 = 13 (lesson number 13) gives **4** Personality.
 
 Every number on the sheet shows this arithmetic when tapped. That is its evidence, in the sense
 the Evidenced Self uses the word: the person can see exactly why the system says 4.
@@ -117,7 +117,7 @@ therefore a **faculty of the brain**, not a sensor and not an arm. It is INTELLI
 
 ## Tests that must exist
 
-- The worked example above, digit by digit, including the karmic debt note and the master number.
+- The worked example above, digit by digit, including the lesson number note and the master number.
 - Master numbers survive each reduction step they appear in (11 November 2011 keeps 11 twice).
 - Y handling: "Lynn" counts Y as a vowel; "Yolanda" counts it as a consonant.
 - Accent folding and punctuation stripping (a name such as O'Brien-Núñez).
