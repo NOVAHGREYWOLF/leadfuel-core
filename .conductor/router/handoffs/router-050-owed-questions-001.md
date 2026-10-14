@@ -14,6 +14,13 @@ ROUTER #50 = local_f6a2e469-bd24-489b-8667-ae954d6b5685 (Sonnet 5.5). Ids only. 
 3. Hand him the 30 STEPS list from owed50_census as a separate checklist (not questions).
 4. q246 cron-daily hold stands (NODE~HUB-RAILWAY-TS-DRIFT first, his queue click).
 
+## UPDATE 02:3xZ UTC 10-14 (supersedes Next items 1-3)
+- The owner ANSWERED all 21 census cards q415-q435 by page click (01:44-01:49Z). I routed every one (routed field, cards v3). Filing list for the conductor: board router/owed50 field for_conductor_036_from_router_50 (router/current refused my write, upstream_invalid_argument at v559, probably its size: do not write big keys there).
+- DELIVERY: conductor 036 local_9190119c and ROUTER #53 local_76d5692d are ARCHIVED (sends bounced). The live conductor looks like local_1dc1a95a (CONDUCTOR · system build, not in the CONDUCTOR group); my send to it was UNDELIVERED ("no sign of starting in 20s"). Re-send once; the board field is the durable channel.
+- NUMBERING: #54 is ROUTER #54 one-interface (local_2afda8d8), NOT mine. Take the next free number (#55 or later); the worktree router-54-owed-questions on claude/router-54 is mine anyway, use it.
+- q436-q449 exist (other routers' cards); not read by me.
+- Next now: (a) re-send the filing list to the live conductor; (b) check whether it filed the 12 tasks; (c) ask the owner how he wants the STEPS list (30, in owed50_census) delivered; (d) the in-chat batch was dismissed, do not re-ask.
+
 ## Owed / not delivered
 Sends: 2 to #49 about q399 (one delivered, one queued). Owner to archive #46 from the sidebar or retry. Census cards say created_at 10-14 UTC where the page may show 10-13.
 
