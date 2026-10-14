@@ -1,0 +1,38 @@
+---
+name: wake
+description: One pass of the wake-on-answer watcher. Finds Router desk cards the owner has answered that nobody has routed, sends each answer to the session that asked (or to the live router), proves delivery from the target's own transcript, and records DELIVERED, HELD, UNDELIVERED or UNKNOWN on the card. Run by the wake-on-answer scheduled task, never by a desk.
+---
+
+# wake (one watcher pass)
+
+The owner clicks a card on the Router desk page, and before this nothing woke the router: he typed "answered" in its chat. This pass replaces that typing. It runs in a scheduled task of its own (`wake-on-answer`, Haiku, every 15 minutes), because only a Claude session can read the page's database and send a session a message, a session cannot message itself (measured: "refusing to send a message to the current session"), and a router that polled would spend a full-context turn on every tick. A plugin hook cannot do it (hooks fire only inside a session that is already running, and cannot call ArtifactData), nor can a plain local script (the page's database and session messaging are reachable only through Claude's tools).
+
+**Four states, one pass.** `DELIVERED` only when the target's own transcript holds the card's token. A send that was queued or held for approval is `HELD` and is rechecked next pass, never resent. A failed send, or HELD or UNKNOWN past 120 minutes, is `UNDELIVERED` and gets a durable note on the Build Board. A pass that cannot read its inputs says `UNKNOWN`. A send is not delivered because it was sent.
+
+## The pass
+Pages: Router desk `https://claude.ai/artifact/LzmP6QcxmYh9TdvMMjS883` (collection `questions`); Build Board `https://claude.ai/artifact/A4uS9xn1emqupohdE4DUfV` (collection `router`). Script: `python "${CLAUDE_PLUGIN_ROOT}/scripts/wake_on_answer.py"`. Use PowerShell for any shell step (a scheduled run's Bash may lack tools on PATH).
+
+1. **Tools**, one ToolSearch: `select:ArtifactData,mcp__ccd_session_mgmt__get_session,mcp__ccd_session_mgmt__send_message,mcp__ccd_session_mgmt__search_session_transcripts,mcp__ccd_session_mgmt__archive_session,mcp__scheduled-tasks__list_task_runs`.
+2. **Self.** `get_session` with `self`: note your id S and `permissionMode`. Not `bypassPermissions`: end with `WAKE-PASS UNKNOWN: not in Bypass (mode=<mode>)` and do nothing else. A scheduled run in default mode cannot send (measured 2026-10-13); its send would wait for an approval nobody gives.
+3. **A fresh folder** W, new for this pass: `$env:TEMP\wake-on-answer\<UTC yyyyMMddTHHmmss>`, with `work\sent` and `work\seen` inside. Never reuse one: the script counts files.
+4. **Read the cards.** ArtifactData `query` on the Router desk, collection `questions`, query `{"where": [["routed", "==", null]], "limit": 500}`, `out_dir` W\cards. The page writes `routed: null` on every answer and every note, so this is exactly the unrouted set (measured 2026-10-14: 23 cards, the answered census cards among them). Note the count N the result reports and keep its lines: they carry each card's version. If the query fails, end with `WAKE-PASS UNKNOWN: cannot read the questions collection`.
+5. **Read the live router.** ArtifactData `get` on the Build Board, collection `router`, doc `current`, `out_dir` W\board. Never read it inline: it is about 260 KB. Read it every pass: the router rotates (it did during the proof) and the script follows `session_id`.
+6. **Plan.** `plan --cards W\cards\questions --count N --router-current W\board\router\current.json --self S --out W\plan.json`. It prints one `SEND` line per target (at most five), one `RECHECK` line per held or unknown card, a `PIN cards=…` line, or `WAKE-PASS nothing to deliver`; in that case go to step 10. `WAKE-PASS UNKNOWN` (exit 2): end with that line. Write `W\work\versions.json` as `{"<card id>": <version>}` for exactly the cards on the `PIN` line, from the step-4 lines.
+7. **Send**, for each `SEND to=<id> token=<token> ... message=<file>`: Read the message file and send its text, unchanged, with `mcp__ccd_session_mgmt__send_message` to `<id>`. Write the tool's whole result, error text included, to `W\work\sent\<token>.txt`. Only after the send has returned, `search_session_transcripts` with query `<token>` and `limit` 10, and write its whole output to `W\work\seen\<token>.txt` (`No matching sessions found.` included). Never issue the two calls together: a search raced against its send finds nothing (measured), and the card waits a pass as UNKNOWN. Send nothing else to anyone.
+8. **Recheck**, for each `RECHECK ... token=<token>`: `search_session_transcripts` with query `<token>`, output to `W\work\seen\<token>.txt`. Never resend.
+9. **Judge and write.** `judge --plan W\plan.json --work W\work --out W\out`. Then one ArtifactData `batch` on the Router desk whose `writes` are the entries of `W\out\batch.json`, exactly as written (each points at a card file and is pinned with `if_version`; on a version conflict write nothing for that card: the next pass takes it again). If `W\out\fallback.json` is not `{}`: ArtifactData `get` Build Board `router/wake_undelivered` with `out_dir` (missing is fine), then `update` it with `file_path` W\out\fallback.json, pinned to the version you read (a `set` with no pin only when it did not exist).
+10. **Tidy.** `list_task_runs` for `wake-on-answer`, `limit` 20. Archive each run that is not S, not archived, and has status `succeeded` or `failed` (never `running`), one at a time with `archive_session`. Never archive anything else.
+11. **End** with the judge's last line (`WAKE-PASS DELIVERED=… HELD=… UNDELIVERED=… UNKNOWN=…`), or the step-6 line. Ids and counts only.
+
+## What a card carries afterwards
+- `wake`: `{state, at, to, why, delivery, message_id, first_sent_at, sends, answered_at, note_at, by}`. The token is never written to a card: a router reading the card would otherwise carry it in its own transcript and a message that never arrived would look delivered.
+- `routed` (only when DELIVERED): `{at, by: "wake-on-answer", to, note}`. The page then shows the owner that his answer was picked up. The session that acts writes what it did in `routed.note`.
+- A card the owner answers again, or adds a note to, gets `routed: null` from the page and a new `answered_at` or `note_at`, so the next pass sends it again.
+
+## Who is the target
+`asker_session` when it is a full `local_` id; else a full `local_` id inside the `asker` text; else the live router, `router/current.session_id` on the Build Board. A row id such as `intelligence/local_8e471cfd-1` is not a session. A router that wants a desk woken directly puts that desk's id in `asker_session` when it posts the card, and only for a desk under 300k tokens (`leadfuel-way:router`, "Waking").
+
+## Never
+- Never change any session's permission mode to get a message through (the owner's standing rule). A held message stays HELD and then becomes UNDELIVERED with a note.
+- Never send to a session the plan did not name, never write a card's `answer`, `options` or `title`, never push to the phone. Everything here stays on this machine.
+- Never run this pass from a desk. A router may run it by hand while the task is not live: cards that target the router itself come back under `self`, and the router acts on them in its own turn.

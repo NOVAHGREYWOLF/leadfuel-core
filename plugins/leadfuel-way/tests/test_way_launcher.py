@@ -200,7 +200,8 @@ def test_the_launcher_design_answers_model_permission_rotation_and_creation_hone
 
 
 def test_the_version_is_bumped_and_the_hook_says_so(hook):
-    assert hook.VERSION == "0.1.12"
+    # 0.1.12 introduced the launcher; later bumps (0.1.13, wake) keep it, so this is a floor, not an equality
+    assert tuple(int(x) for x in hook.VERSION.split(".")) >= (0, 1, 12)
     assert "0.1.12" in (PLUGIN / "README.md").read_text(encoding="utf-8")
 
 
