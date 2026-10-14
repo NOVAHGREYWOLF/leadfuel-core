@@ -19,3 +19,5 @@ Live router: ROUTER #57 local_af23455d-a60b-4d00-9ef8-3518f5c848d5 (slot way-slo
 
 ## Gotchas
 No move_sessions in a slot run; use mcp__ccd_session_mgmt__send_message. ArtifactData update deep-merges objects but replaces arrays; pin writes; picks ids use ~ (files @). Never print the whole board doc (huge): get with out_dir. Date from `date -u`.
+
+## Update (after push): router is now ROUTER #58 local_c3bc03d9-35c9-455c-9d23-fffa7816e4d7 (router/current v567); briefs go there. UNFILED batch it sent (its word, unverified): (1) PRIVACY follow-ups FU-A/B/C on hub#835 (nested {birth:{date}} pair, interest_key/note stored together, depth-9 test); (2) connector-repo work for my_numbers, my_chart, sky_today + connector fallback to legacy token (ARMS lane hygiene); (3) SURFACE task: a session route for the Oracle sheets; (4) card candidate: ENFORCE_PRIVACY_WALL production value unknown. File 1-3 unqueued. q460/q461/q462 unanswered at that time; Opus 302, 303 held; shell parity waits on q461.
