@@ -74,7 +74,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.11"
+VERSION = "0.1.12"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
