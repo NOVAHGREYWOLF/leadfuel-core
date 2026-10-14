@@ -25,6 +25,13 @@ Events (one entry point, dispatched on `hook_event_name`):
                       A successor launched into a slot (`leadfuel-way:launch`, 0.1.11) counts
                       without a group: a scheduled run cannot be filed in one, so its
                       `scheduledTaskId` (`way-slot-NN`) stands in for the group test.
+                      Also (0.1.12): a session the hook can tell was launched into a slot (its first
+                      message carries the slot block) may not call `run_scheduled_task` or
+                      `update_scheduled_task`, which the app refuses it anyway (measured 2026-10-14);
+                      it is told to ask the launcher. A slot-run router or conductor that writes a
+                      handoff and tries to stop without having sent a `LAUNCH-REQUEST` is sent back
+                      once per stop (three at most). A regular session cannot be told from any other,
+                      so for it the rule is advice.
                       Also: `move_sessions` naming more than one session is refused. Owner,
                       2026-10-07: sessions move one at a time, never in bulk.
 
@@ -74,7 +81,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.11"
+VERSION = "0.1.12"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -112,6 +119,14 @@ SELF_TOOLS = ("__move_sessions", "__set_session_title")
 # The Agent tool's isolation worktrees: <repo>/.claude/worktrees/agent-<agent id>.
 AGENT_WORKTREE = re.compile(r"/\.claude/worktrees/agent-[^/]+/", re.I)
 
+
+# A launch-slot run (`leadfuel-way:launch`) is told so in its first message, by the slot block.
+# Measured 2026-10-14 (conductor 037): such a run can neither update nor run a scheduled task, so a
+# router or conductor launched into a slot cannot start its own successor. It asks the launcher.
+SLOT_RUN = re.compile(r"launched into a way slot \((way-slot-\d+)\)")
+SCHEDULE_TOOLS = ("__run_scheduled_task", "__update_scheduled_task")
+LAUNCH_REQUEST = "LAUNCH-REQUEST"
+HEAD_BYTES = 256 * 1024
 
 # --- transcript ---------------------------------------------------------------------------
 
@@ -287,6 +302,51 @@ def _result_text(content) -> str:
     if isinstance(content, list):
         return "\n".join(str(b.get("text") or "") for b in content if isinstance(b, dict))
     return ""
+
+
+def is_slot_run(transcript_path: str, state: dict) -> bool:
+    """True if this session was launched into a launch slot: its first user message carries the slot
+    block. Read from the head of the transcript (a tail would lose it) and remembered in `state`; an
+    unreadable transcript is not a slot run, which only means the extra rules below do not apply."""
+    if "slot_run" in state:
+        return bool(state["slot_run"])
+    try:
+        with Path(transcript_path).open("rb") as fh:
+            head = fh.read(HEAD_BYTES).decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    found = False
+    for rec in _records(head):
+        if rec.get("type") != "user":
+            continue
+        content = (rec.get("message") or {}).get("content")
+        text = content if isinstance(content, str) else " ".join(
+            str(b.get("text") or "") for b in content or [] if isinstance(b, dict))
+        found = bool(SLOT_RUN.search(text))
+        break  # only the first user message can be the launch
+    state["slot_run"] = found
+    return found
+
+
+def asked_launcher(transcript_path: str) -> bool:
+    """True if this session sent a message whose text starts with LAUNCH-REQUEST (main thread, within
+    the tail). That is the only way a slot run can start a session."""
+    try:
+        text, _ = _tail(transcript_path)
+    except OSError:
+        return False
+    for rec in _records(text):
+        if rec.get("type") != "assistant" or rec.get("isSidechain"):
+            continue
+        for block in (rec.get("message") or {}).get("content") or []:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            if not str(block.get("name") or "").endswith("send_message"):
+                continue
+            inp = block.get("input") if isinstance(block.get("input"), dict) else {}
+            if str(inp.get("message") or "").lstrip().startswith(LAUNCH_REQUEST):
+                return True
+    return False
 
 
 def sessions_seen(transcript_path: str) -> list[dict]:
@@ -825,6 +885,20 @@ def handle(event: dict) -> dict | None:
                         "write the note (path containing 'handoff'), commit and push it, give the owner "
                         "the one prompt for a fresh session, then end your turn."
                     )}
+        slot_gate = (out is None and roles_on and not event.get("stop_hook_active")
+                     and int(state.get("slot_stops_blocked") or 0) < 3 and is_slot_run(tpath, state))
+        if slot_gate:
+            role, _lane = role_of(cached_title(tpath, state))
+            if role in TIERS and handoff_written_since(tpath, max(0, size - TAIL_BYTES))                     and not asked_launcher(tpath):
+                state["slot_stops_blocked"] = int(state.get("slot_stops_blocked") or 0) + 1
+                out = {"decision": "block", "reason": (
+                    f"THE WAY: you are a {role} launched into a slot, and you wrote a handoff without "
+                    "asking the launcher for your successor. A slot run cannot run or update a scheduled "
+                    "task (measured 2026-10-14), so send the launcher one LAUNCH-REQUEST "
+                    "(`leadfuel-way:launch`, \"Ask the launcher\") with mcp__ccd_session_mgmt__send_message. "
+                    "If no launcher is live, give the owner the paste prompt and stay open. Do not archive "
+                    "yourself until get_session shows the successor live."
+                )}
 
     elif session_refusal:
         # An agent touching `self` is told why that is never its call; anyone moving several sessions
@@ -839,6 +913,19 @@ def handle(event: dict) -> dict | None:
 
     elif name == "PreToolUse" and agent and roles_on and tool.endswith(SELF_TOOLS + ("__archive_session",)):
         pass  # an agent's session-tool call that names another session, one at a time: not this hook's
+
+    elif name == "PreToolUse" and roles_on and tool.endswith(SCHEDULE_TOOLS) and is_slot_run(tpath, state):
+        state["schedule_calls_refused"] = int(state.get("schedule_calls_refused") or 0) + 1
+        out = {"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": (
+                "THE WAY: you were launched into a slot, and a slot run can neither update nor run a "
+                "scheduled task (the app refuses both, measured 2026-10-14). Ask the launcher: send one "
+                "LAUNCH-REQUEST with mcp__ccd_session_mgmt__send_message (`leadfuel-way:launch`, "
+                "\"Ask the launcher\"). Do not archive yourself until get_session shows the successor live."
+            ),
+        }}
 
     elif name == "PreToolUse" and tool.endswith("__archive_session"):
         target = str(tin.get("session_id") or "").strip()

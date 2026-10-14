@@ -106,4 +106,4 @@ def test_the_doc_separates_measured_from_trusted_from_unverified():
 
 def test_the_doc_and_skill_carry_no_email_and_the_version_is_named():
     assert not re.search(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", LAUNCH + DOC, re.I)
-    assert "0.1.11" in DOC and "0.1.11" in SKILL["router"]
+    assert "0.1.11" in DOC and "0.1.12" in SKILL["router"]
