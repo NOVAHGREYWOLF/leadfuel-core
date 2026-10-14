@@ -1,0 +1,19 @@
+# Router handoff #056 -> #57 · one-interface (2026-10-14 ~05:35Z UTC; ~280k tokens at the time)
+
+ROUTER #56 = local_824a9c4c-d4fb-4122-be9f-d22a1545a9d6 (Sonnet 5.5, slot way-slot-04, no group). #55 is ARCHIVED (gate verified). Conductor 039 = local_98f2c433-55f1-4640-a22e-541513c7e52c. Launcher = local_a6ce3e66-858d-46fe-a6e7-f3f6e50a83d7. Ids, titles and status only. The real clock is `date -u`; the #55 roster's "07:2xZ" stamps were wrong.
+
+Board A4uS9xn1emqupohdE4DUfV: router/current (v563+, claimed by #56), router/roster56 (v17+, READ FIRST: update_1..15). Get with out_dir; never print whole. Router desk LzmP6QcxmYh9TdvMMjS883 (next free card q463). Conductor desk MKAx49RAskZ3cV7f2EkDMF (do NOT list/query picks without parsing locally: it floods context).
+
+## #56 stays open until its two agents report (they die with it): ab30a23ac9c700a93 lander SUITE part 10 (hub 829, 825, 832; one rerun allowed for tests/test_linkedin_throttle_settings.py::test_the_per_send_reads_are_affordable); a12473b7eb167913b INTELLIGENCE part 23 (fixes for the hub#835 privacy review F1-F4 + FU, pushes to branch intelligence/oracle-birth-statements-fixes, fast-forwards the PR branch only when lockq shows ci-novahub FREE; if it ends CONTINUING it gives two push commands: run them). Successor archives #56 through the gate once both have reported.
+
+## State (re-read before acting)
+Hub main c2da8ea9 after hub#831 (merged 04:58Z); merged by me this session: #830, #828, #831, core PRs 44 45 46 42. Hub drafts: #829 (601b20cf, in the SUITE 10 lander), #825, #832 (docs register), #834 (6b6865d9, DOORS 18 = PASS with follow-ups; land as is after SUITE 10; follow-ups to conductor: char budget unguarded, x2/x5 pass, message), #835 (e6c48a9d, privacy review FINDINGS F1-F4), #818, #790 (not mine). Branch intelligence/levels-skill-ledger @ 2ffa5a4a has NO PR on purpose: ticket 20261014T044651Z-INTELLIGENCE--levels-skill-ledger-open-draft-pr in ci-novahub.wait; open it with `gh pr create --draft --head intelligence/levels-skill-ledger --body-file .conductor/desks/handoffs/LEVELS-AND-TRUST-003-pr-body.md` ONLY when the ci-novahub lock is FREE (a new pending pytest run replaces a pending one in the same concurrency group), then DOORS review (level state), then a lander. Thresholds in it (5 clean approvals, 20 untouched over 7 days, 50% edit = heavy) are the desk's defaults.
+
+## Next
+1 Lander for hub#834 then #835 after INT 23's fix + re-review (PRIVACY delta review). 2 GeoNames cities15000 download desk (owner q459 B) AFTER 835's fixes (same gazetteer). 3 After 829 lands: pick 287 decide-in-place (screen files, one editor at a time; chain 287 -> 288 -> 289 -> rings -> 297 -> shell parity -> 296 per docs/COMMAND_COMPLETION_PLAN.md, leadfuel-core main). 4 E2/E3 oracle engines (294 numerology, 293 astrology) after 835 lands. 5 Held Opus: 302, 303. 6 Tell conductor 039 in one message: char-budget/ceiling follow-ups on #834; second load-timing flake (linkedin throttle read bound 751 ms); superlinear scattered word edits (1.2 s at 47k, 5.3 s at 94k chars). 7 Cleanup: hub worktrees land-826, review-834 (pushed, clean per #55).
+
+## Owed (owner, unanswered cards)
+q460 first real leak scan (default A, scanner is on leadfuel-core main 1e6b658e+), q461 queue spend-gate fix / admin-customer design / shell parity (default B), q462 may a cloud assistant relay birth data through the connector (default A refuse; INT 23 implements A). Still owed cards: oracle local model + per-reading ceiling (at E6); production Echo token setup for hub#828 (level 2 reachable?). Answered and routed: q457 A Maren Strand, q458 A, q459 B.
+
+## Gotchas
+Sends used 3 of 10. Stop hook false-positives on the word "handoff" in roster writes: ignore, do not send a LAUNCH-REQUEST for it. Landers take the ci-novahub lock by bare mkdir; 24 old tickets in ci-novahub.wait are dead desks. Public repo: ids only.
