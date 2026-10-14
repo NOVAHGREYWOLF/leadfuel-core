@@ -17,9 +17,30 @@ never an encoding of a value, never a length), sends nothing and starts no proce
    and not also `...\.claude\projects`, and `F:\Leadfuel` and not also `F:\Leadfuel\repos`.
 3. **No `--exclude`, no `--state`.** An exclude hides files the same way a blind scan would. A
    state file is for later scheduled runs, not for this one.
-4. **Run it in a shell that holds the three variables**, from a `leadfuel-core` checkout that has
-   this fix merged. Do not print the variables to check them: a name that is not in the process
-   environment shows up in the report as `unknown`.
+4. **Never type or paste a value on a command line.** The three values are already in your Windows
+   user environment, so there is nothing to load. Typing one at a prompt (for example
+   `$env:BESTTIME_KEY = "..."`) writes it into the PowerShell history file,
+   `ConsoleHost_history.txt`, and that file sits inside a root of this scan: you would create the
+   very leak the scan looks for. PowerShell keeps names containing `TOKEN` out of that file, but
+   `BESTTIME_KEY` is not kept out. **While any root includes the shell history file, never type
+   or paste a value at any prompt.**
+5. **Open a NEW terminal** (a fresh Windows Terminal or PowerShell window started from the Start
+   menu, not one that was already open, and not one inside a program that was already running when
+   the variables were set), so the scanner inherits the three variables from your user
+   environment. Run it from a `leadfuel-core` checkout that has this fix merged.
+6. **Check only that each name is set, without printing its value.** This prints the name and the
+   word `set` or `NOT set`, and nothing else:
+
+   ```powershell
+   foreach ($n in 'RAILWAY_API_TOKEN','HOSTINGER_API_TOKEN','BESTTIME_KEY') {
+     "$n : " + $(if (Test-Path "env:$n") { 'set' } else { 'NOT set' })
+   }
+   ```
+
+   Never `echo`, `Write-Host`, `cat`, `Get-ChildItem env:` or `$env:NAME` any of the three, and
+   never paste one anywhere. If a name says `NOT set`, **do not type its value to make it so**.
+   Leave it: the scanner then reports `unknown` for that name, which is the correct answer for a
+   value it cannot see, not an error. Tell your router which name was missing.
 
 ## 2. Candidate roots (confirm or cut each one)
 
@@ -32,7 +53,7 @@ opened. `<him>` is the owner's Windows profile folder, `%USERPROFILE%`.
 | `F:\Claude Sessions` | session notes and handoff files (`handoff`) | yes |
 | `F:\Leadfuel` | the estate: every checkout and worktree under `repos`, plus `docs`, `home-node`, `health` | yes |
 | `%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine` | holds `ConsoleHost_history.txt`, the PowerShell command history | yes (folder and file) |
-| `F:\novah` | CI notes and reference copies | yes |
+| `F:\novah` (**optional**) | CI notes and reference copies. It is in both commands below as the fifth `--root`; to cut it, delete that one line from each command | yes |
 | `%USERPROFILE%` itself | would take in everything above and all other personal files; do not use it | n/a |
 | `.bash_history`, `.zsh_history`, `.python_history`, `.node_repl_history` under `%USERPROFILE%` | other shell and REPL history files | **no** (none of the four exist; skip) |
 
@@ -58,10 +79,12 @@ python vault/leak_scan.py --canary-only `
   --root "$env:USERPROFILE\.claude" `
   --root "F:\Claude Sessions" `
   --root "F:\Leadfuel" `
-  --root "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine"
+  --root "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine" `
+  --root "F:\novah"
 ```
 
-Exit 0 means every root was seen: the canary was found in every encoded form and each root held
+The five `--root` lines are the first five rows of the table above, in that order, and
+`F:\novah` is the optional one. Exit 0 means every root was seen: the canary was found in every encoded form and each root held
 real content. Exit 2 means at least one root is blind. Do not go on to run 2 until this is 0.
 
 ## 4. Run 2: the full scan (no `--state`, no `--exclude`)
@@ -73,7 +96,8 @@ python vault/leak_scan.py `
   --root "$env:USERPROFILE\.claude" `
   --root "F:\Claude Sessions" `
   --root "F:\Leadfuel" `
-  --root "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine"
+  --root "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine" `
+  --root "F:\novah"
 ```
 
 The default names are the three above. To scan other names, add `--names A,B` (names only).
@@ -96,8 +120,10 @@ call. Do not paste the report into a chat or a public place: it holds paths, whi
 
 **On exit 2.** Read `secrets.<name>.why` and each `roots[].blind`:
 
-- `not in this process's environment`: that name's variable was not set in this shell. Set it and
-  run again.
+- `not in this process's environment`: that name's variable was not in the shell's environment.
+  Open a new terminal (precondition 5) and run again. If it is still not there, leave it
+  `unknown` and tell your router. **Do not type or paste the value at a prompt to fix it**
+  (precondition 4).
 - `canary missing` or `not planted`: the root could not be seen (a pre-existing
   `.leak-scan-canary.txt`, a folder that cannot be written, or a path that does not exist).
   Delete the stale file or fix the path.
@@ -115,5 +141,6 @@ Whatever the exit code, no root should keep a `.leak-scan-canary.txt` afterwards
 Later scheduled runs would use `--state <file>`. Put the state file and its `<state>.key` outside
 every root and outside any synced or backed-up folder (for example under `%LOCALAPPDATA%`). On
 Windows the tool restricts the key file to the current user and, if it cannot, does not use it
-(every run is then a full scan). A scheduled run that is incremental is only as good as its state:
-add `--full` when in doubt.
+(every run is then a full scan). A scheduled run that is incremental is only as good as its state,
+and the state file is not integrity-protected: keep it and its key in a folder that only you can
+write to and no session or tool writes to, and add `--full` when in doubt.
