@@ -26,7 +26,11 @@ NAME = "SYNTH_TOKEN"
 
 def synthetic(n=37):
     """A fresh fake token with characters that make every encoded form differ from the raw one."""
-    return secrets.token_urlsafe(n)[:n - 6] + '+/"\\=x'
+    # The space makes quote_plus differ from quote, so the test proves that form too.
+    return secrets.token_urlsafe(n)[:n - 8] + ' +/"\\=x'
+
+
+KEY = secrets.token_bytes(32)  # the state key; in real runs it lives in <state>.key
 
 
 def write(path, text):
@@ -204,21 +208,21 @@ def test_incremental_offsets_skip_nothing_appended(tmp_path, monkeypatch):
     half = len(value) // 2
     write(str(log), "".join(f"filler line {i}\n" for i in range(20)) + "start " + value[:half])
 
-    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, key=KEY)
     assert report["result"] == "clean" and report["mode"] == "full"
     first_size = log.stat().st_size
-    assert state["files"][os.path.abspath(str(log))]["offset"] == first_size
+    assert sorted(e["offset"] for e in state["files"].values()) == [first_size]
 
     # Append the rest of the value (straddling the old end), more lines, and a second copy.
     with open(log, "a", encoding="utf-8", newline="\n") as fh:
         fh.write(value[half:] + " end\nmore\nagain " + value + "\n")
-    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
     assert report["mode"] == "incremental"
     assert report["roots"][0]["bytes_scanned"] == log.stat().st_size - first_size
     assert [(f["line"], f["new"]) for f in report["findings"]] == [(21, True), (23, True)]
 
     # Nothing appended: nothing new, the old findings still reported, and not blind.
-    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
     assert report["roots"][0]["bytes_scanned"] == 0
     assert report["roots"][0]["bytes_covered"] == log.stat().st_size
     assert [(f["line"], f["new"]) for f in report["findings"]] == [(21, False), (23, False)]
@@ -227,14 +231,14 @@ def test_incremental_offsets_skip_nothing_appended(tmp_path, monkeypatch):
     # A file rewritten in place (its head changed) is scanned again from the start.
     other = root / "other.txt"
     write(str(other), "x" * 100 + "\n")
-    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
     write(str(other), value + "y" * 100 + "\n")
-    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
     assert any(f["path"] == str(other) and f["line"] == 1 for f in report["findings"])
 
     # A new secret name means the offsets do not apply: a full scan.
     report, _ = ls.scan([str(root)], names=[NAME, "SYNTH_OTHER"],
-                        env={NAME: value, "SYNTH_OTHER": synthetic()}, state=state)
+                        env={NAME: value, "SYNTH_OTHER": synthetic()}, state=state, key=KEY)
     assert report["mode"] == "full"
 
 
@@ -346,6 +350,296 @@ def test_root_is_required_and_defaults_are_the_three_names():
     with pytest.raises(SystemExit):
         ls._parse([])
     assert ls.DEFAULT_NAMES == ("RAILWAY_API_TOKEN", "HOSTINGER_API_TOKEN", "BESTTIME_KEY")
+
+
+# --- DOORS review of #45: F1 to F4 and the cheap "reads clean but leaks nothing" gaps -------------
+
+def test_f1_a_value_pasted_mid_file_then_grown_is_found_on_the_next_incremental_run(tmp_path):
+    value = synthetic(45)
+    root = tmp_path / "root"
+    note = root / "handoff.md"
+    lines = [f"note line {i} with some filler text to make it long\n" for i in range(130)]
+    write(str(note), "".join(lines))
+    assert sum(len(x) for x in lines[:100]) > 4096  # the edit below sits past the first 4 KB
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, key=KEY)
+    assert report["result"] == "clean"
+
+    # Rewrite in place: a value pasted into the middle (line 101), and the note grew.
+    lines[100] = "pasted: " + value + "\n"
+    write(str(note), "".join(lines) + "a later line\n")
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
+    assert report["result"] == "found"
+    assert [f["line"] for f in report["findings"]] == [101]
+
+
+def test_f1_without_a_key_every_run_is_a_full_scan(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "nothing\n")
+    _, state = ls.scan([str(root)], names=[NAME], env={NAME: value})  # no key
+    assert state["files"] == {}
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    assert report["mode"] == "full"
+
+
+def test_f2_full_run_after_a_redaction_still_reports_the_find(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    leak = root / "leak.txt"
+    write(str(leak), "x " + value + "\n")
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    code, _ = run_cli(argv, env={NAME: value})
+    assert code == ls.EXIT_FOUND
+
+    write(str(leak), "redacted\n")  # the file is cleaned, the secret has still left the machine
+    code, out = run_cli(argv + ["--full"], env={NAME: value})
+    assert code == ls.EXIT_FOUND and json.loads(out)["result"] == "found"
+    code, out = run_cli(argv, env={NAME: value})  # and a later incremental run
+    assert code == ls.EXIT_FOUND
+    assert [f["new"] for f in json.loads(out)["findings"]] == [False]
+
+
+def test_f2_a_shorter_names_list_keeps_the_other_names_findings(tmp_path):
+    first, second = synthetic(), synthetic()
+    root = tmp_path / "root"
+    write(str(root / "leak.txt"), "x " + first + "\n")
+    state = str(tmp_path / "state.json")
+    env = {NAME: first, "SYNTH_TWO": second}
+    code, _ = run_cli(["--root", str(root), "--names", NAME + ",SYNTH_TWO", "--state", state], env=env)
+    assert code == ls.EXIT_FOUND
+    code, out = run_cli(["--root", str(root), "--names", "SYNTH_TWO", "--state", state], env=env)
+    report = json.loads(out)
+    assert code == ls.EXIT_FOUND and report["secrets"][NAME]["status"] == "found"
+    # Nothing was erased from the state either.
+    code, out = run_cli(["--root", str(root), "--names", NAME + ",SYNTH_TWO", "--state", state], env=env)
+    assert code == ls.EXIT_FOUND and json.loads(out)["secrets"][NAME]["status"] == "found"
+
+
+def test_f2_findings_clear_only_on_request(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    leak = root / "leak.txt"
+    write(str(leak), "x " + value + "\n")
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    run_cli(argv, env={NAME: value})
+    write(str(leak), "redacted\n")
+    code, out = run_cli(argv + ["--full", "--clear-findings"], env={NAME: value})
+    assert code == ls.EXIT_CLEAN and json.loads(out)["findings"] == []
+
+
+def test_f2_an_unusable_state_file_is_unknown_and_is_not_overwritten(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "content\n")
+    state = tmp_path / "state.json"
+    state.write_text("{ this is not json", encoding="utf-8")
+    code, out = run_cli(["--root", str(root), "--names", NAME, "--state", str(state)], env={NAME: value})
+    assert code == ls.EXIT_UNKNOWN and json.loads(out)["result"] == "unknown"
+    assert state.read_text(encoding="utf-8") == "{ this is not json"  # earlier findings may be in it
+
+
+def test_f3_the_state_holds_no_value_no_path_and_no_unkeyed_hash(tmp_path):
+    import hashlib
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / "root"
+    named = root / ("named-" + value + ".txt")
+    write(str(named), "and inside " + value + "\n")
+    token = root / "token.txt"
+    write(str(token), value + "\n")  # a file that is just the token
+    write(str(root / "plain.txt"), "plain content here\n")
+    state = tmp_path / "state.json"
+    code, _ = run_cli(["--root", str(root), "--names", NAME, "--state", str(state)], env={NAME: value})
+    assert code == ls.EXIT_FOUND
+    text = state.read_text(encoding="utf-8")
+    assert_never_printed(value, text, json.dumps(json.loads(text), ensure_ascii=False))
+    for blob in (value + "\n", "plain content here\n"):
+        for n in (len(blob), 4096):
+            assert hashlib.sha256(blob.encode()[:n]).hexdigest() not in text, "an unkeyed hash is stored"
+    assert "plain.txt" not in text and str(named) not in text, "a file path is stored in plain text"
+    key = (tmp_path / "state.json.key").read_bytes()
+    assert key.hex() not in text and len(key) == 32
+    # And the finding for the path survives as a finding, with the path withheld.
+    code, out = run_cli(["--root", str(root), "--names", NAME, "--state", str(state)], env={NAME: value})
+    assert code == ls.EXIT_FOUND
+    assert_never_printed(value, out, state.read_text(encoding="utf-8"))
+
+
+def test_f3_a_bad_state_key_file_means_full_scans_not_a_wrong_skip(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "content\n")
+    state = tmp_path / "state.json"
+    (tmp_path / "state.json.key").write_bytes(b"short")
+    argv = ["--root", str(root), "--names", NAME, "--state", str(state)]
+    run_cli(argv, env={NAME: value})
+    code, out = run_cli(argv, env={NAME: value})
+    assert json.loads(out)["mode"] == "full" and code == ls.EXIT_CLEAN
+
+
+def test_f4_an_existing_canary_named_file_is_never_overwritten_or_deleted(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    precious = root / ls.CANARY_FILE
+    write(str(root / "a.txt"), "other content\n")
+    write(str(precious), "a real note that holds the token " + value + "\n")
+    before = precious.read_bytes()
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    assert precious.read_bytes() == before and precious.exists()
+    assert report["result"] == "found"  # it was scanned like any other file, not skipped
+    assert report["roots"][0]["canary"].startswith("not planted")
+    assert "already exists" in report["roots"][0]["canary"]
+    assert report["canary_removed"] is True  # nothing of ours to remove
+
+    write(str(precious), "a real note, no token\n")
+    before = precious.read_bytes()
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    assert report["result"] == "unknown" and report["secrets"][NAME]["status"] == "unknown"
+    assert precious.read_bytes() == before
+
+
+def test_f4_only_the_canary_this_run_created_is_removed(tmp_path):
+    root_a, root_b = tmp_path / "a", tmp_path / "b"
+    write(str(root_a / "x.txt"), "content\n")
+    write(str(root_b / "y.txt"), "content\n")
+    write(str(root_b / ls.CANARY_FILE), "keep me\n")
+    ls.scan([str(root_a), str(root_b)], names=[NAME], env={NAME: synthetic()})
+    assert not (root_a / ls.CANARY_FILE).exists()
+    assert (root_b / ls.CANARY_FILE).read_text(encoding="utf-8") == "keep me\n"
+
+
+def test_utf16_files_are_found(tmp_path):
+    value = synthetic(33)
+    root = tmp_path / "root"
+    os.makedirs(root)
+    for name, enc in (("le.txt", "utf-16"), ("be.txt", "utf-16-be"), ("le_nobom.txt", "utf-16-le")):
+        with open(root / name, "wb") as fh:
+            fh.write(("first\nsecret=" + value + "\nlast\n").encode(enc))
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    found = {os.path.basename(f["path"]): f for f in report["findings"]}
+    assert set(found) == {"le.txt", "be.txt", "le_nobom.txt"}
+    assert all(f["line"] == 2 for f in found.values())
+
+
+def test_the_canary_proves_the_wrapped_base64_form(tmp_path, monkeypatch):
+    root = tmp_path / "root"
+    write(str(root / "log.txt"), "plenty of real content\n")
+    monkeypatch.setattr(ls._Matcher, "_wrapped", lambda self, buf: iter(()))
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: synthetic()})
+    assert report["roots"][0]["canary"] == "missing" and report["result"] == "unknown"
+
+
+def test_the_canary_proves_the_utf16_forms(tmp_path, monkeypatch):
+    root = tmp_path / "root"
+    write(str(root / "log.txt"), "plenty of real content\n")
+    real = ls._needles
+
+    def blind(secret, value):
+        return [n if not n.form.startswith("utf-16") else ls._Needle(secret, n.form, n.ident, b"\0never\0")
+                for n in real(secret, value)]
+
+    monkeypatch.setattr(ls, "_needles", blind)
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: synthetic()})
+    assert report["roots"][0]["canary"] == "missing" and report["result"] == "unknown"
+
+
+@pytest.mark.parametrize("eol", ["\n", "\r\n"])
+@pytest.mark.parametrize("pad", [b"", b"x", b"xy"])
+def test_base64_wrapped_at_76_columns_is_found(tmp_path, eol, pad):
+    value = synthetic(41)
+    blob = base64.b64encode(pad + b"filler" * 20 + value.encode() + b"tail" * 20).decode()
+    wrapped = eol.join(blob[i:i + 76] for i in range(0, len(blob), 76))
+    assert eol in wrapped
+    root = tmp_path / "root"
+    root.mkdir()
+    with open(root / "mime.txt", "wb") as fh:
+        fh.write(("Content-Transfer-Encoding: base64" + eol + wrapped + eol).encode())
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    assert report["result"] == "found"
+    [hit] = report["findings"]
+    assert hit["path"].endswith("mime.txt") and 2 <= hit["line"] <= 6 and hit["form"] == "base64"
+    assert_never_printed(value, json.dumps(report))
+
+
+def test_base64_wrapped_match_across_a_chunk_boundary_is_found_once(tmp_path, monkeypatch):
+    monkeypatch.setattr(ls, "CHUNK", 32)
+    value = synthetic(41)
+    blob = base64.b64encode(b"pre" + value.encode() + b"post").decode()
+    wrapped = "\n".join(blob[i:i + 20] for i in range(0, len(blob), 20))
+    root = tmp_path / "root"
+    for pad in range(8):
+        write(str(root / f"w{pad}.txt"), "z" * pad + "\n" + wrapped + "\n")
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    assert sorted(os.path.basename(f["path"]) for f in report["findings"]) \
+        == [f"w{pad}.txt" for pad in range(8)]
+
+
+def test_json_escaped_slash_is_found(tmp_path):
+    value = synthetic(40)
+    assert "/" in value
+    root = tmp_path / "root"
+    escaped = json.dumps(value)[1:-1].replace("/", "\\/")
+    write(str(root / "php.json"), '{"k": "' + escaped + '"}\n')
+    write(str(root / "twice.json"), json.dumps({"o": '{"k": "' + escaped + '"}'}) + "\n")
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value})
+    assert {os.path.basename(f["path"]) for f in report["findings"]} == {"php.json", "twice.json"}
+
+
+def test_a_value_with_stray_whitespace_is_found_stripped(tmp_path):
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "token=" + value + "&x=1\n")
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value + "\r\n"})
+    assert report["result"] == "found"
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: "   \n"})  # blank: nothing to search
+    assert report["result"] != "found"
+
+
+def test_a_value_in_a_file_or_folder_name_is_found_and_not_printed(tmp_path):
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / "root"
+    write(str(root / ("dir-" + value) / "inner.txt"), "plain\n")
+    write(str(root / ("file-" + value + ".txt")), "plain\n")
+    state = tmp_path / "state.json"
+    code, out = run_cli(["--root", str(root), "--names", NAME, "--state", str(state)], env={NAME: value})
+    assert code == ls.EXIT_FOUND
+    assert_never_printed(value, out, state.read_text(encoding="utf-8"))
+    report = json.loads(out)
+    assert report["secrets"][NAME]["status"] == "found" and "findings" not in report
+
+
+def test_excludes_and_what_is_not_looked_for_are_in_the_report(tmp_path):
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "content\n")
+    write(str(root / "t.jsonl"), "content\n")
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: synthetic()}, excludes=["*.jsonl"])
+    assert report["excludes"] == ["*.jsonl"] and report["roots"][0]["excludes"] == ["*.jsonl"]
+    assert "*.jsonl" in report["secrets"][NAME]["why"]
+    joined = " ".join(report["not_looked_for"]).lower()
+    for gap in ("compressed", "git", "truncated", "empty folder"):
+        assert gap in joined, gap
+    forms = " ".join(report["forms"])
+    for form in ("raw", "base64", "hex", "url", "json", "utf-16le", "utf-16be", "wrapped", "names"):
+        assert form in forms, form
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: synthetic()})
+    assert report["excludes"] == [] and "no --exclude" in report["secrets"][NAME]["why"]
+
+
+def test_an_unreadable_folder_is_unknown_not_clean(tmp_path, monkeypatch):
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "content\n")
+    real_walk = os.walk
+
+    def walk(top, onerror=None, **kw):
+        if onerror:
+            onerror(PermissionError(13, "denied", os.path.join(top, "locked")))
+        return real_walk(top, onerror=onerror, **kw)
+
+    monkeypatch.setattr(ls.os, "walk", walk)
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: synthetic()})
+    assert report["result"] == "unknown"
+    assert report["roots"][0]["unreadable"] == [os.path.join(str(root), "locked")]
 
 
 def test_no_network_and_no_process_code():
