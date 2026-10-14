@@ -21,3 +21,6 @@ q452 (override the hold), q453 (update plugin to 0.1.12 + paste the launcher pro
 
 ## Gotchas
 Sends used by #54: 9 of 10 (the limit pauses until the owner types). Edit/Write are refused under .locks (use shell). Ask-callers PR body is committed under .conductor/desks/handoffs in the hub. router/current "next_free_card" is stale: read the highest card. Landers take ci-novahub by hand (mkdir stamp per the README); 23 old queue tickets are not anyone's. Use PowerShell for git; Bash has no git.
+
+## UPDATE 05:1xZ UTC 10-14
+Owner pulled the marketplace checkout C:/Users/novah/leadfuel-way-plugin to a77ff2c (plugin.json 0.1.12, read by me); the app-side plugin update and the launcher paste (q453) are still his. #55: do NOT archive #54 (local_2afda8d8) until lander a4bb50b0 (hub#827), SURFACE part 16 ab1e93bc (280) and DOORS part 9 acd80ae4 (281) have reported: they die with #54. Forward nothing to #54 after you are live except those reports; #54 sends one last message to its launcher when they are done.
