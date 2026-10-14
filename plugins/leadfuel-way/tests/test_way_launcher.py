@@ -1,10 +1,12 @@
-"""The launcher (0.1.12, owner pick 264, 2026-10-14): a slot run cannot run or update a scheduled task, so
-every session asks one standing regular session to launch. The hook half is tested against synthetic
-transcripts; the skill and doc half is pinned so they cannot overclaim.
+"""The launcher (0.1.12, owner pick 264, 2026-10-14) and, since 0.1.14, the standing method that came
+before it: a session launches its own successor by setting a one-time `fireAt` on a slot
+(NODE~LAUNCH-BY-FIREAT). A slot run can never `run_scheduled_task`; its `update_scheduled_task` is
+refused by the app only when nobody has typed into the run, so the hook no longer refuses it. The hook half
+is tested against synthetic transcripts; the skill and doc half is pinned so they cannot overclaim.
 
 Measured by conductor 037 and taken on trust here (nothing in these tests re-measures the app): a slot
-run's `update_scheduled_task` is refused, its `run_scheduled_task` is refused in every state, and a slot
-task's title must differ from the session title it sets.
+run's `run_scheduled_task` is refused in every state, and a slot task's title must differ from the
+session title it sets. The 0.1.14 correction of wall 1 was read from transcripts by NODE~LAUNCH-BY-FIREAT.
 """
 from __future__ import annotations
 
@@ -24,6 +26,7 @@ SLOT_FIRST = {"type": "user", "message": {"role": "user", "content": [
 PLAIN_FIRST = {"type": "user", "message": {"role": "user", "content": "do the task"}}
 RUN = "mcp__scheduled-tasks__run_scheduled_task"
 UPDATE = "mcp__scheduled-tasks__update_scheduled_task"
+CREATE = "mcp__scheduled-tasks__create_scheduled_task"
 SEND = "mcp__ccd_session_mgmt__send_message"
 
 
@@ -35,16 +38,24 @@ def denied(out):
     return bool(out) and out["hookSpecificOutput"].get("permissionDecision") == "deny"
 
 
-@pytest.mark.parametrize("tool", [RUN, UPDATE])
-def test_a_slot_run_may_not_run_or_update_a_scheduled_task_and_is_told_to_ask(hook, transcript, tool):
+def test_a_slot_run_may_not_run_a_scheduled_task_and_is_told_to_arm_a_slot_with_fireat(hook, transcript):
     transcript.add(SLOT_FIRST, title_rec("ROUTER #55 · one-interface"), assistant(5000))
-    out = hook.handle(pre(transcript, tool, taskId="way-slot-03"))
+    out = hook.handle(pre(transcript, RUN, taskId="way-slot-03"))
     assert denied(out)
     reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "fireAt" in reason and "Launch your successor yourself" in reason
     assert "LAUNCH-REQUEST" in reason and "Ask the launcher" in reason
 
 
-@pytest.mark.parametrize("tool", [RUN, UPDATE])
+@pytest.mark.parametrize("tool", [UPDATE, CREATE])
+def test_a_slot_run_may_update_or_create_a_scheduled_task_since_0_1_14(hook, transcript, tool):
+    """0.1.12 and 0.1.13 denied the update too, which is what stopped a slot run from launching its
+    successor by fireAt. The app decides (it refuses a run nobody has typed into); the hook must not."""
+    transcript.add(SLOT_FIRST, title_rec("ROUTER #55 · one-interface"), assistant(5000))
+    assert not denied(hook.handle(pre(transcript, tool, taskId="way-slot-03", fireAt="2026-10-14T11:38:00-07:00")))
+
+
+@pytest.mark.parametrize("tool", [RUN, UPDATE, CREATE])
 def test_a_regular_session_is_not_stopped_from_launching(hook, transcript, tool):
     """The hook cannot tell a regular session from a launcher, and a regular session with no launcher
     live still runs the steps itself: only a slot run is refused."""
@@ -64,7 +75,7 @@ def test_the_slot_marker_survives_a_transcript_longer_than_the_tail(hook, transc
     filler = assistant(5000, content=[{"type": "text", "text": "x" * 200_000}])
     for _ in range(5):  # 1 MB, so the first message is outside the 768 KB tail
         transcript.add(filler)
-    assert denied(hook.handle(pre(transcript, UPDATE, taskId="way-slot-03")))
+    assert denied(hook.handle(pre(transcript, RUN, taskId="way-slot-03")))
 
 
 def test_roles_off_switch_disables_the_refusal(hook, transcript, monkeypatch):
@@ -90,6 +101,7 @@ def test_a_slot_run_router_that_hands_off_without_asking_is_sent_back_once(hook,
     out = hook.handle(stop(transcript))
     assert out and out["decision"] == "block"
     assert "LAUNCH-REQUEST" in out["reason"] and "Do not archive" in out["reason"]
+    assert "fireAt" in out["reason"] and "Launch your successor yourself" in out["reason"]
     # the harness marks the retry: never block twice in one stop
     assert hook.handle(stop(transcript, stop_hook_active=True)) is None
 
@@ -98,6 +110,21 @@ def test_asking_the_launcher_satisfies_the_gate(hook, transcript):
     ask = tool_use(SEND, session_id="local_launcher", message="LAUNCH-REQUEST\nrequester: local_y\ntitle: ROUTER #56 · one-interface")
     transcript.add(SLOT_FIRST, title_rec("ROUTER #55 · one-interface"), assistant(5000), handoff_write(), ask)
     assert hook.handle(stop(transcript)) is None
+
+
+@pytest.mark.parametrize("tool", [UPDATE, CREATE])
+def test_arming_a_slot_with_fireat_satisfies_the_gate(hook, transcript, tool):
+    arm = tool_use(tool, taskId="way-slot-03", fireAt="2026-10-14T11:38:00-07:00", prompt="brief")
+    transcript.add(SLOT_FIRST, title_rec("CONDUCTOR · system build"), assistant(5000), handoff_write(), arm)
+    assert hook.handle(stop(transcript)) is None
+
+
+def test_an_update_without_a_fireat_does_not_count_as_launching(hook, transcript):
+    """Swapping a brief into a slot starts nothing. Only a fireAt does."""
+    swap = tool_use(UPDATE, taskId="way-slot-03", prompt="brief", title="slot 03 | X")
+    blank = tool_use(UPDATE, taskId="way-slot-03", fireAt="  ")
+    transcript.add(SLOT_FIRST, title_rec("CONDUCTOR · system build"), assistant(5000), handoff_write(), swap, blank)
+    assert hook.handle(stop(transcript))["decision"] == "block"
 
 
 def test_a_message_that_only_mentions_the_word_does_not_count_as_asking(hook, transcript):
@@ -128,11 +155,11 @@ def test_the_gate_gives_up_after_three_blocks(hook, transcript):
     assert sum(1 for r in results if r) == 3
 
 
-def test_the_hook_registers_the_two_scheduled_task_tools_on_the_session_tool_matcher():
+def test_the_hook_registers_the_run_tool_on_the_session_tool_matcher():
     import json
     cfg = json.loads((PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8"))
     matcher = cfg["hooks"]["PreToolUse"][1]["matcher"]
-    for tool in (RUN, UPDATE, "mcp__ccd_session_mgmt__archive_session"):
+    for tool in (RUN, "mcp__ccd_session_mgmt__archive_session"):
         assert re.search(matcher, tool), tool
     assert not re.search(matcher, "mcp__scheduled-tasks__list_scheduled_tasks")
     assert not re.search(matcher, "mcp__scheduled-tasks__list_task_runs")
@@ -142,7 +169,7 @@ def test_the_hook_registers_the_two_scheduled_task_tools_on_the_session_tool_mat
 
 def test_the_launch_skill_records_the_rule_the_request_and_the_launcher():
     for needle in ("## Ask the launcher", "## If you are the launcher", "LAUNCH-REQUEST", "LAUNCHED", "LAUNCH-FAILED",
-                   "never call `run_scheduled_task` or `update_scheduled_task` themselves", "clear_session",
+                   "do not call `run_scheduled_task` themselves", "clear_session",
                    "slot NN | <TITLE>", "`GO` comes from the launcher", "SLOT-NOT-BYPASS", "no-free-slot"):
         assert needle in LAUNCH, needle
 
@@ -167,7 +194,8 @@ def test_the_slot_block_names_the_go_sender_and_the_report_target_separately():
     assert "<launcher id>" in block and "<requester id>" in block
     assert re.search(r"message from <launcher id> begins with GO", block)
     assert "Report to <requester id>" in block
-    assert "Never call run_scheduled_task or update_scheduled_task" in block
+    assert "Never call run_scheduled_task (the app refuses it from a run)" in block
+    assert "Launch your successor yourself" in block
     # the marker the hook looks for is exactly the block's first sentence
     assert "You were launched into a way slot (<slot id>)" in block
 
@@ -178,7 +206,7 @@ def test_the_marker_the_hook_reads_matches_the_slot_block(hook):
     assert hook.SLOT_RUN.search(filled).group(1) == "way-slot-04"
 
 
-@pytest.mark.parametrize("name", ["handoff", "router", "conductor", "way", "desk"])
+@pytest.mark.parametrize("name", ["handoff", "router", "conductor", "way"])
 def test_every_skill_where_successors_are_launched_says_to_ask_the_launcher(name):
     text = SKILL[name]
     assert "Ask the launcher" in text or "asking the launcher" in text or "ask the launcher" in text, name
@@ -200,10 +228,66 @@ def test_the_launcher_design_answers_model_permission_rotation_and_creation_hone
 
 
 def test_the_version_is_bumped_and_the_hook_says_so(hook):
-    # 0.1.12 introduced the launcher; later bumps (0.1.13, wake) keep it, so this is a floor, not an equality
+    # 0.1.12 introduced the launcher; later bumps (0.1.13 wake, 0.1.14 fireAt) keep it, so this is a floor
     assert tuple(int(x) for x in hook.VERSION.split(".")) >= (0, 1, 12)
     assert "0.1.12" in (PLUGIN / "README.md").read_text(encoding="utf-8")
 
 
 def test_no_email_in_the_new_text():
     assert not re.search(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", LAUNCH + DOC, re.I)
+
+
+# --- launch by fireAt (0.1.14, NODE~LAUNCH-BY-FIREAT) ------------------------------------------
+
+SELF = LAUNCH.split("## Launch your successor yourself")[1].split("## Ask the launcher")[0]
+
+
+def test_the_standing_method_is_first_and_never_uses_run_scheduled_task():
+    assert LAUNCH.index("## Launch your successor yourself") < LAUNCH.index("## Ask the launcher")
+    assert "`run_scheduled_task` is never part of it" in SELF
+    for needle in ("`fireAt`", "two minutes", "create_scheduled_task", "update_scheduled_task",
+                   "slot NN | <TITLE>", "Pin the model", "set_session_effort", "`GO`", "exactly one run"):
+        assert needle in SELF, needle
+
+
+def test_the_method_says_who_can_and_that_the_refusal_is_not_retried():
+    who = SELF.split("**Who can.**")[1].split("1. **Find a free slot.**")[0]
+    assert "Not**: a slot run nobody has typed into" in who and "background desk agent" in who
+    assert "nobody has opened this scheduled run" in who and "Do not retry" in who
+    assert "untested" in who  # whether viewing the run is enough is not claimed
+
+
+def test_a_free_slot_is_not_armed_and_one_start_per_launch():
+    assert "not armed" in SELF and "future" in SELF
+    assert "Do not also call `run_scheduled_task`" in SELF and "idle duplicate" in SELF
+
+
+def test_a_made_slot_is_not_claimed_to_be_in_bypass():
+    made = SELF.split("2. **No free slot: make one.**")[1].split("3. **Write the brief**")[0]
+    assert "not Bypass" in made and "SLOT-NOT-BYPASS" in made and "Bypass" in made
+
+
+def test_the_effort_question_is_answered_with_its_basis_and_its_gap():
+    limits = LAUNCH.split("## Limits")[1]
+    assert "Where effort comes from" in limits and "effortInherited" in limits
+    assert "A slot cannot carry it" in limits and "set_session_effort" in limits
+    assert "Not tested" in limits  # self-set effort in the first turn is not claimed
+    assert "An `effort:` line is ignored" in limits  # the 2026-10-13 measurement stays
+
+
+def test_the_doc_corrects_the_fireat_attribution_and_says_what_this_desk_did_not_run():
+    sec = DOC.split("## Measured 2026-10-14")[1].split("## Three walls")[0]
+    for needle in ("did not start conductor 040", "bc9fbea8", "Wall 1 is conditional",
+                   "not run by this desk", "untested end to end", "effortInherited"):
+        assert needle in sec, needle
+
+
+def test_wall_one_is_marked_corrected_in_the_skill_and_the_doc():
+    block = LAUNCH.split("## Ask the launcher")[1].split("## What a slot is")[0]
+    assert "Corrected 2026-10-14" in block and "not a wall for a run the owner has typed into" in block
+    assert "Superseded for a run a person has typed into" in DOC
+
+
+def test_the_hook_version_is_at_least_0_1_14_and_the_readme_names_it(hook):
+    assert tuple(int(x) for x in hook.VERSION.split(".")) >= (0, 1, 14)
+    assert "0.1.14" in (PLUGIN / "README.md").read_text(encoding="utf-8")
