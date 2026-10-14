@@ -48,6 +48,7 @@ BY = "wake-on-answer"
 SID = re.compile(r"(?<![\w-])local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\w-])")
 DELIVERY = re.compile(r"delivery:\s*([a-z_]+)", re.I)
 MESSAGE_ID = re.compile(r"message_id:\s*([0-9A-Za-z-]+)")
+NO_HITS = "No matching sessions found."
 
 
 # ---- reading what the tools said -----------------------------------------------------------------
@@ -96,6 +97,8 @@ def seen(raw, target: str):
     and the target is not among its hits, None when the search output cannot be read."""
     if not raw:
         return None
+    if str(raw).strip() == NO_HITS:  # measured: what the search prints when nothing matches
+        return False
     rows = _json_array(str(raw))
     if rows is None:
         return None
@@ -374,6 +377,9 @@ def cmd_plan(args) -> int:
         print(f"SEND to={send['to']} token={send['search_token']} cards={','.join(send['cards'])} message={msg}")
     for rc in plan["rechecks"]:
         print(f"RECHECK card={rc['card']} to={rc['to']} token={rc['search_token']}")
+    pins = [c for s in plan["sends"] for c in s["cards"]] + [r["card"] for r in plan["rechecks"]] + plan["no_target"]
+    if pins:
+        print(f"PIN cards={','.join(pins)}")
     if not valid_sid(router_id):
         print(f"WARNING: router/current session_id is not a session id ({router_id!r}); cards with no asker id have no target")
     if not plan["sends"] and not plan["rechecks"] and not plan["no_target"]:
@@ -403,9 +409,16 @@ def cmd_judge(args) -> int:
         versions = {}
     result = judge(plan, sends, seen_raw, now=args.now, versions=versions)
     out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
+    (out / "cards").mkdir(parents=True, exist_ok=True)
     (out / "writes.json").write_text(json.dumps(result["writes"], indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "fallback.json").write_text(json.dumps(result["fallback"], indent=2, ensure_ascii=False), encoding="utf-8")
+    # The same writes with each card's fields in a file of its own, ready for ArtifactData batch `writes`.
+    batch = []
+    for w in result["writes"]:
+        path = (out / "cards" / f"{w['doc_id']}.json").resolve()
+        path.write_text(json.dumps(w["data"], indent=2, ensure_ascii=False), encoding="utf-8")
+        batch.append({k: v for k, v in w.items() if k != "data"} | {"file_path": str(path)})
+    (out / "batch.json").write_text(json.dumps(batch, indent=2), encoding="utf-8")
     for cid, state in sorted(result["states"].items()):
         print(f"{state:<11} {cid}")
     if result["unpinned"]:

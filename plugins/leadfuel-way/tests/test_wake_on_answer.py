@@ -93,6 +93,11 @@ def test_seen_only_when_the_target_itself_holds_the_token(woa):
     assert woa.seen(search_hits(), ROUTER) is False
 
 
+def test_a_search_with_no_hits_is_a_clean_no(woa):
+    """Measured 2026-10-14: search_session_transcripts prints this line, not an empty array."""
+    assert woa.seen("No matching sessions found.", ROUTER) is False
+
+
 @pytest.mark.parametrize("raw", [None, "", "search failed: index unavailable", "[not json"])
 def test_seen_is_unknown_when_the_search_could_not_be_read(woa, raw):
     assert woa.seen(raw, ROUTER) is None
@@ -336,6 +341,7 @@ def test_cli_plan_then_judge(tmp_path):
     plan = tmp_path / "plan.json"
     run = _run("plan", "--cards", d, "--count", 1, "--router-current", cur, "--now", "2026-10-14T02:00:00Z", "--out", plan)
     assert run.returncode == 0, run.stderr
+    assert "PIN cards=q1" in run.stdout  # the session pins exactly these versions
     p = json.loads(plan.read_text(encoding="utf-8"))
     [send] = p["sends"]
     work = tmp_path / "work"
@@ -349,6 +355,9 @@ def test_cli_plan_then_judge(tmp_path):
     assert run.returncode == 0, run.stderr
     assert run.stdout.strip().splitlines()[-1].startswith("WAKE-PASS DELIVERED=1 HELD=0 UNDELIVERED=0 UNKNOWN=0")
     assert json.loads((out / "writes.json").read_text(encoding="utf-8"))[0]["doc_id"] == "q1"
+    [entry] = json.loads((out / "batch.json").read_text(encoding="utf-8"))
+    assert "data" not in entry and entry["if_version"] == 2 and entry["doc_id"] == "q1"
+    assert json.loads(open(entry["file_path"], encoding="utf-8").read())["wake"]["state"] == "DELIVERED"
 
 
 def test_cli_plan_says_unknown_when_the_files_do_not_match_the_count(tmp_path):
