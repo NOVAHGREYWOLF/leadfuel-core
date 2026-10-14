@@ -28,8 +28,9 @@ How it refuses to report a false clean:
   does not find every form of its own canary in that file, the root is `unknown`, never `clean`.
 - A root whose real content was zero bytes, a file or folder that could not be read, and a named
   secret that is not in the environment are each `unknown`, never `clean`.
-- Before anything is printed, the report itself is checked for every scanned value in every form.
-  If one is there (a file named after a secret, say), the paths are withheld and only names and
+- Before anything is printed, every path in the report is checked for every scanned value in every
+  form. A path that holds one (a file named after a secret, say) is printed as `<withheld>`; the
+  other paths still print. If the report would still hold a value after that, only names and
   statuses are printed.
 - Any error prints `unknown` and the error's TYPE only: an error's text can quote what it read.
 
@@ -37,17 +38,31 @@ What it does not do: it sets nothing, sends nothing and starts no process. It ha
 (a test reads its imports). Its only writes are the canary file (created exclusively, so it never
 touches a file that already has that name, and removing only the one it created; removed at the
 end of the run) and, if asked for with --state, three small local files: the state, its `.tmp`,
-and `<state>.key`, a random 32-byte key made once.
+and `<state>.key`, a random 32-byte key made once. Each folder given as a root is scanned once
+(roots are de-duplicated by resolved path).
+
+The key file is made private before the key is written: mode 0600 on POSIX, and on Windows (where
+that mode is ignored) a user-only ACL with nothing inherited, set through the Win32 security API
+by ctypes. That is no process start; a test limits ctypes to that one function and to a fixed list
+of calls. If the ACL cannot be set (or cannot be re-set on a later load), the key is not used and
+removed if this run made it: every run is then a full scan, slower and never wrong. Anyone holding
+both the state and the key could test guesses against whole-file content, so keep both outside
+every root and out of any synced or backed-up folder.
 
 The state holds, per file, an HMAC of the file's path (never the path), the offset and line count,
-and an HMAC (under that key) of the WHOLE prefix before the offset, plus past findings (paths and
-line numbers only). It never holds a value, an unkeyed hash of content, or a path that holds a
+and an HMAC of the WHOLE prefix before the offset, plus past findings (paths and line numbers
+only; a path that holds a value is `<withheld>` with a keyed path id beside it, so two such files
+stay two findings). The prefix HMAC is made under a key derived from the state key AND from
+everything searched for (the values, their forms, the shapes, the form list, the state version),
+which is never stored: if any of those changes (a token rotated, a name newly set, a form added),
+no saved offset matches and every file is read again from the start. It never holds a value, an unkeyed hash of content, or a path that holds a
 scanned value (such a path is stored as `<withheld>`). A resumed file has its whole prefix
 re-read and re-hashed, so an edit anywhere before the old offset makes it rescan from the start;
 what a resumed run saves is the matching, not the reading. Keep the key file out of any place the
 state is copied to. Without a usable key, every run is a full scan.
 
-A finding stays reported on every later run until it is cleared on purpose (`--clear-findings`):
+A finding stays reported on every later run until it is cleared on purpose (`--clear-findings`,
+which also forces a full rescan, so a value still on disk is found again at once):
 `--full` resets only the offsets, a shorter `--names` list keeps the other names' findings, and an
 unusable state file makes the run `unknown` without overwriting it. A found secret has already
 left the machine and must be rotated (owner card q441 A); the push and the rotation draft are
@@ -234,10 +249,36 @@ def _subkey(key: bytes, purpose: bytes) -> bytes:
     return hmac.new(key, purpose, hashlib.sha256).digest()
 
 
-def _prefix_mac(path: str, upto: int, key: bytes):
+def _content_key(key: bytes, needles: list[_Needle], shapes) -> bytes:
+    """The key the per-file content MACs are made under: the state key AND everything searched for.
+
+    A saved offset says "the bytes before here were searched for exactly this". The MAC under this
+    key can only match if the values, their forms, the shapes and the form list are the same as when
+    the offset was saved, so a rotated or added value, or a new form, makes every prefix mismatch
+    and the file is read again from the start. Nothing of the needles is stored: the digest is
+    folded into a key that is never written.
+    """
+    mac = hmac.new(_subkey(key, b"leak_scan needles"), digestmod=hashlib.sha256)
+
+    def add(part):
+        data = part if isinstance(part, bytes) else str(part).encode("utf-8", "surrogatepass")
+        mac.update(len(data).to_bytes(8, "big") + data)
+
+    for part in (STATE_VERSION, *FORMS):
+        add(part)
+    for n in sorted(needles, key=lambda n: (n.secret, n.ident, n.data)):
+        for part in (n.secret, n.ident, n.data):
+            add(part)
+    for s in sorted(shapes, key=lambda s: s.name):
+        for part in (s.name, s.alphabet, s.length, s.fingerprint):
+            add(part)
+    return _subkey(key, b"leak_scan content " + mac.digest())
+
+
+def _prefix_mac(path: str, upto: int, content_key: bytes):
     """A keyed MAC over the first `upto` bytes (all of them: an edit anywhere in the prefix must
     show). Returns (the live MAC object, the bytes actually read)."""
-    mac = hmac.new(_subkey(key, b"leak_scan content"), digestmod=hashlib.sha256)
+    mac = hmac.new(content_key, digestmod=hashlib.sha256)
     done = 0
     with _open_for_read(path) as fh:
         while done < upto:
@@ -419,7 +460,22 @@ def _usable_findings(state: dict) -> list[dict]:
     for f in state.get("findings", []):
         if isinstance(f, dict) and isinstance(f.get("secret"), str) and isinstance(f.get("path"), str) \
                 and isinstance(f.get("line"), int) and isinstance(f.get("form"), str):
-            out.append({k: f[k] for k in ("secret", "path", "line", "form")})
+            item = {k: f[k] for k in ("secret", "path", "line", "form")}
+            if isinstance(f.get("pid"), str):
+                item["pid"] = f["pid"]
+            out.append(item)
+    return out
+
+
+def _unique_roots(roots) -> list:
+    """Each folder once, by resolved path: a root given twice would plant its canary twice, and the
+    second plant would fail and hide the first from the cleanup."""
+    seen, out = set(), []
+    for root in roots:
+        k = os.path.normcase(os.path.realpath(root))
+        if k not in seen:
+            seen.add(k)
+            out.append(root)
     return out
 
 
@@ -455,24 +511,50 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
 
     scanned_names = sorted(names + [s.name for s in shapes])
     prior = state if isinstance(state, dict) and state.get("version") == STATE_VERSION else {}
+    # Clearing the findings is not clearing the doubt: the value may still be on disk, and a run
+    # that dropped the findings and then trusted old offsets would say clean without searching.
+    full = full or clear_findings
     use_offsets = (not full) and key is not None and prior.get("names") == scanned_names
     old_files = prior.get("files", {}) if use_offsets else {}
+    # The content MACs are made under a key that also holds what was searched for (F5): an offset
+    # saved for other values, shapes or forms no longer matches, so those bytes are searched again.
+    ckey = _content_key(key, secret_needles, shapes) if key is not None else None
     # Earlier findings stay (q441 A: a found secret has left the machine, whatever happens to the
     # file), for every name, scanned this run or not. Only clear_findings drops them.
     findings = [] if (clear_findings or canary_only) else \
         [dict(f, new=False) for f in _usable_findings(prior)]
-    seen = {(f["secret"], _state_path(f["path"], secret_needles), f["line"], f["form"])
-            for f in findings}
+    # A path that holds a value is not stored, so two of them look alike. The state keeps a keyed
+    # path id beside each (`pid`) to tell them apart; a run without a key uses a throwaway one.
+    pid_key = key if key is not None else secrets.token_bytes(32)
+    seen = set()
+    unclaimed = []  # earlier withheld findings with no id (a run without a key): matched by count
+    for f in findings:
+        f["path"] = _state_path(f["path"], secret_needles)
+        if f["path"] == WITHHELD and not f.get("pid"):
+            unclaimed.append(f)
+        seen.add((f["secret"], f["path"], f.get("pid") if f["path"] == WITHHELD else None,
+                  f["line"], f["form"]))
 
     def add_finding(secret, path, line, form):
-        k = (secret, _state_path(path, secret_needles), line, form)
-        if k not in seen:
-            seen.add(k)
-            findings.append({"secret": secret, "path": path, "line": line, "form": form, "new": True})
+        shown = _state_path(path, secret_needles)
+        pid = _path_key(pid_key, os.path.abspath(path)) if shown == WITHHELD else None
+        k = (secret, shown, pid, line, form)
+        if k in seen:
+            return
+        seen.add(k)
+        for f in unclaimed:
+            if (f["secret"], f["line"], f["form"]) == (secret, line, form):
+                unclaimed.remove(f)  # the same finding as an earlier run, now with an id
+                f["pid"] = pid
+                return
+        findings.append({"secret": secret, "path": shown, "line": line, "form": form, "new": True,
+                         "pid": pid})
 
     new_files: dict = {}
     roots_out = []
+    resumed = 0
 
+    roots = _unique_roots(roots)
     planted = {}
     try:
         for root in roots:
@@ -495,13 +577,15 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
                 try:
                     size = os.stat(path).st_size
                     offset, lines = 0, 0
-                    mac = hmac.new(_subkey(key, b"leak_scan content"), digestmod=hashlib.sha256) \
-                        if key is not None and not is_canary else None
+                    mac = hmac.new(ckey, digestmod=hashlib.sha256) \
+                        if ckey is not None and not is_canary else None
+                    was_resumed = False
                     if old and isinstance(old.get("offset"), int) and 0 < old["offset"] <= size:
-                        prefix, got = _prefix_mac(path, old["offset"], key)
+                        prefix, got = _prefix_mac(path, old["offset"], ckey)
                         if got == old["offset"] and hmac.compare_digest(prefix.hexdigest(),
                                                                          str(old.get("mac"))):
                             offset, lines, mac = old["offset"], int(old.get("lines", 0)), prefix
+                            was_resumed = True
                     hits, end, end_lines, read = _scan_file(path, matcher, offset, lines, mac)
                 except OSError:
                     unreadable.append(path)
@@ -513,6 +597,7 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
                     continue
                 scanned += read
                 covered += end
+                resumed += was_resumed
                 if key is not None:
                     new_files[_path_key(key, abspath)] = {"offset": end, "lines": end_lines,
                                                           "mac": mac.hexdigest()}
@@ -537,9 +622,11 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
                 blind.append("zero bytes of real content")
             if unreadable:
                 blind.append(f"{len(unreadable)} unreadable path(s)")
-            roots_out.append({"root": root, "canary": canary, "files_scanned": files,
-                              "bytes_scanned": scanned, "bytes_covered": covered,
-                              "unreadable": unreadable, "excludes": excludes, "blind": blind})
+            roots_out.append({"root": _state_path(root, secret_needles), "canary": canary,
+                              "files_scanned": files, "bytes_scanned": scanned,
+                              "bytes_covered": covered,
+                              "unreadable": [_state_path(p, secret_needles) for p in unreadable],
+                              "excludes": excludes, "blind": blind})
     finally:
         removed = all(_remove(p) for p in planted.values() if p)
 
@@ -575,7 +662,9 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
         "mode": "canary-only" if canary_only else ("incremental" if use_offsets else "full"),
         "sent": SENT,
         "secrets": statuses,
-        "findings": findings,
+        "files_resumed": resumed,
+        "findings": [{"secret": f["secret"], "path": _state_path(f["path"], secret_needles),
+                      "line": f["line"], "form": f["form"], "new": f["new"]} for f in findings],
         "forms": list(FORMS),
         "excludes": excludes,
         "not_looked_for": list(NOT_LOOKED_FOR),
@@ -583,8 +672,11 @@ def scan(roots, *, names=DEFAULT_NAMES, env=None, shapes=(), state=None, full=Fa
         "canary_removed": removed,
     }
     new_state = {"version": STATE_VERSION, "names": scanned_names, "files": new_files,
-                 "findings": [{"secret": f["secret"], "path": _state_path(f["path"], secret_needles),
-                               "line": f["line"], "form": f["form"]} for f in findings]}
+                 "findings": [dict({"secret": f["secret"],
+                                    "path": _state_path(f["path"], secret_needles),
+                                    "line": f["line"], "form": f["form"]},
+                                   **({"pid": f["pid"]} if key is not None and f.get("pid") else {}))
+                              for f in findings]}
     return _scrub(report, secret_needles), _state_for_disk(new_state, secret_needles)
 
 
@@ -608,29 +700,115 @@ def _load_state(path):
     return state, True
 
 
+def _restrict_to_user(path: str) -> bool:
+    """Windows: give `path` an ACL that grants full control to the current user only, inherits
+    nothing, and return True only if that was set. No process is started: this calls the Win32
+    security API through ctypes (the only place this module uses ctypes). Any failure is False."""
+    import ctypes
+    from ctypes import wintypes
+    adv = ctypes.WinDLL("advapi32")
+    k32 = ctypes.WinDLL("kernel32")
+    void_p = ctypes.c_void_p
+    k32.GetCurrentProcess.restype = wintypes.HANDLE
+    k32.GetCurrentProcess.argtypes = []
+    k32.CloseHandle.argtypes = [wintypes.HANDLE]
+    k32.LocalFree.argtypes = [void_p]
+    k32.LocalFree.restype = void_p
+    adv.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+    adv.GetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, void_p, wintypes.DWORD,
+                                        ctypes.POINTER(wintypes.DWORD)]
+    adv.ConvertSidToStringSidW.argtypes = [void_p, ctypes.POINTER(void_p)]
+    adv.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(void_p), ctypes.POINTER(wintypes.DWORD)]
+    adv.GetSecurityDescriptorDacl.argtypes = [void_p, ctypes.POINTER(wintypes.BOOL),
+                                              ctypes.POINTER(void_p), ctypes.POINTER(wintypes.BOOL)]
+    adv.SetNamedSecurityInfoW.argtypes = [ctypes.c_wchar_p, ctypes.c_int, wintypes.DWORD, void_p,
+                                          void_p, void_p, void_p]
+    adv.SetNamedSecurityInfoW.restype = wintypes.DWORD
+    token, sid_text, descriptor = wintypes.HANDLE(), void_p(), void_p()
+    try:
+        if not adv.OpenProcessToken(k32.GetCurrentProcess(), 0x0008, ctypes.byref(token)):  # TOKEN_QUERY
+            return False
+        size = wintypes.DWORD(0)
+        adv.GetTokenInformation(token, 1, None, 0, ctypes.byref(size))  # TokenUser: ask the size
+        if not size.value:
+            return False
+        buf = ctypes.create_string_buffer(size.value)
+        if not adv.GetTokenInformation(token, 1, buf, size, ctypes.byref(size)):
+            return False
+        sid = ctypes.cast(buf, ctypes.POINTER(void_p))[0]  # TOKEN_USER begins with the user's SID
+        if not adv.ConvertSidToStringSidW(sid, ctypes.byref(sid_text)):
+            return False
+        sddl = "D:P(A;;FA;;;" + ctypes.wstring_at(sid_text.value) + ")"  # protected: no inheritance
+        if not adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                sddl, 1, ctypes.byref(descriptor), None):
+            return False
+        present, defaulted, dacl = wintypes.BOOL(), wintypes.BOOL(), void_p()
+        if not adv.GetSecurityDescriptorDacl(descriptor, ctypes.byref(present), ctypes.byref(dacl),
+                                             ctypes.byref(defaulted)) or not present.value:
+            return False
+        # SE_FILE_OBJECT, DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION
+        return adv.SetNamedSecurityInfoW(path, 1, 0x00000004 | 0x80000000, None, None, dacl, None) == 0
+    except Exception:  # noqa: BLE001 - any failure means "not shown private"
+        return False
+    finally:
+        if token:
+            k32.CloseHandle(token)
+        if sid_text:
+            k32.LocalFree(sid_text)
+        if descriptor:
+            k32.LocalFree(descriptor)
+
+
+def _protect_key_file(path: str) -> bool:
+    """Make the key file readable by its owner only; True only if that is now so.
+
+    POSIX: mode 0600. Windows: a user-only ACL with nothing inherited (os.open's mode is ignored
+    there, so the file would otherwise carry the folder's ACL). A key that cannot be shown private
+    is not used: the run is a full scan, which is slower and never wrong."""
+    if os.name == "nt":
+        return _restrict_to_user(path)
+    try:
+        os.chmod(path, 0o600)
+        return True
+    except OSError:
+        return False
+
+
 def _load_key(state_path):
-    """The state key, from `<state>.key`; made on first use. None if it cannot be had (then every
-    run is a full scan: slower, never wrong)."""
+    """The state key, from `<state>.key`; made on first use and protected (see _protect_key_file)
+    before the key is written and again on every later load. None if it cannot be had or cannot be
+    shown private (then every run is a full scan: slower, never wrong)."""
     path = state_path + ".key"
     for _ in range(2):
         try:
             with open(path, "rb") as fh:
                 data = fh.read()
-            return data if len(data) == 32 else None
+            return data if len(data) == 32 and _protect_key_file(path) else None
         except FileNotFoundError:
             pass
         except OSError:
             return None
         try:
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
-            with os.fdopen(fd, "wb") as fh:
-                fh.write(secrets.token_bytes(32))
         except FileExistsError:
             continue
         except OSError:
             return None
+        key = secrets.token_bytes(32)
+        done = False
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                if _protect_key_file(path):  # while the file is still empty
+                    fh.write(key)
+                    done = True
+        except OSError:
+            pass
+        if not done:
+            _remove(path)  # we created it just now: an unprotected key does not stay
+            return None
+        return key
     return None
-
 
 def _save_state(path, state):
     tmp = path + ".tmp"
@@ -652,7 +830,8 @@ def _parse(argv):
     p.add_argument("--full", action="store_true",
                    help="ignore the offsets and scan everything (earlier findings are kept)")
     p.add_argument("--clear-findings", action="store_true",
-                   help="drop the earlier findings held in --state (the only way they go)")
+                   help="drop the earlier findings held in --state (the only way they go); forces a "
+                        "full rescan, so a value still on disk is found again")
     p.add_argument("--exclude", action="append", default=[],
                    help="glob on a relative path or name; the report lists every one")
     return p.parse_args(argv)

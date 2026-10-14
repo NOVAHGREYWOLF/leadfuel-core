@@ -293,16 +293,15 @@ def test_unreadable_file_is_unknown_not_clean(tmp_path, monkeypatch):
     assert report["roots"][0]["unreadable"] == [str(root / "locked.txt")]
 
 
-def test_value_in_a_path_withholds_every_path(tmp_path):
+def test_a_path_holding_the_value_is_withheld_and_the_value_is_never_printed(tmp_path):
     value = secrets.token_urlsafe(30)
     root = tmp_path / "root"
     write(str(root / ("named-" + value + ".txt")), "and inside " + value + "\n")
     code, out = run_cli(["--root", str(root), "--names", NAME], env={NAME: value})
     assert_never_printed(value, out)
     report = json.loads(out)
-    assert "withheld" in report and "findings" not in report
     assert report["result"] == "found" and code == ls.EXIT_FOUND
-
+    assert report["findings"] and {f["path"] for f in report["findings"]} == {ls.WITHHELD}
 
 def test_an_error_prints_its_type_only(tmp_path, monkeypatch):
     value = synthetic()
@@ -606,7 +605,8 @@ def test_a_value_in_a_file_or_folder_name_is_found_and_not_printed(tmp_path):
     assert code == ls.EXIT_FOUND
     assert_never_printed(value, out, state.read_text(encoding="utf-8"))
     report = json.loads(out)
-    assert report["secrets"][NAME]["status"] == "found" and "findings" not in report
+    assert report["secrets"][NAME]["status"] == "found"
+    assert {f["path"] for f in report["findings"]} == {ls.WITHHELD}
 
 
 def test_excludes_and_what_is_not_looked_for_are_in_the_report(tmp_path):
@@ -652,8 +652,240 @@ def test_no_network_and_no_process_code():
         elif isinstance(node, ast.ImportFrom):
             imported.add(node.module)
     allowed = {"__future__", "argparse", "base64", "fnmatch", "hashlib", "hmac", "json", "os",
-               "re", "secrets", "sys", "dataclasses", "datetime", "urllib.parse"}
+               "re", "secrets", "sys", "dataclasses", "datetime", "urllib.parse",
+               "ctypes"}  # ctypes: only to set the key file's ACL, see the test below
     assert imported <= allowed, sorted(imported - allowed)
     calls = {n.func.attr for n in ast.walk(tree)
              if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)}
     assert not calls & {"system", "popen", "startfile", "spawnl", "execv", "putenv", "unsetenv"}
+
+
+# --- DOORS re-review of #45 at 7bd51c75: F5, F6 and the follow-ups --------------------------------
+
+def _state_text(path):
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def test_f5_a_rotated_value_written_before_the_env_changed_is_found_on_the_incremental_run(tmp_path):
+    old, new = synthetic(41), synthetic(43)
+    root = tmp_path / "root"
+    note = root / "transcript.jsonl"
+    write(str(note), "".join(f"filler line {i}\n" for i in range(50)))
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    code, out = run_cli(argv, env={NAME: old})
+    assert code == ls.EXIT_CLEAN
+
+    # The new token is pasted into the note BEFORE the environment holds it; a scheduled run goes
+    # past it (honestly clean: the new value is not the one it was given yet).
+    with open(note, "a", encoding="utf-8", newline="\n") as fh:
+        fh.write("rotated: " + new + "\n")
+    code, out = run_cli(argv, env={NAME: old})
+    assert code == ls.EXIT_CLEAN
+
+    # Then the environment is updated. The bytes already passed were never searched for this value.
+    code, out = run_cli(argv, env={NAME: new})
+    report = json.loads(out)
+    assert code == ls.EXIT_FOUND and report["result"] == "found"
+    assert [f["line"] for f in report["findings"]] == [51]
+    assert_never_printed(new, out, _state_text(state))
+    assert_never_printed(old, out, _state_text(state))
+
+
+def test_f5_a_value_that_comes_back_into_the_environment_rescans_from_the_start(tmp_path):
+    first, second = synthetic(41), synthetic(43)
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "x " + second + "\n")
+    _, state = ls.scan([str(root)], names=[NAME, "SYNTH_TWO"], env={NAME: first}, key=KEY)
+    # SYNTH_TWO was absent (unknown). Now it is set: the same names, new values.
+    report, _ = ls.scan([str(root)], names=[NAME, "SYNTH_TWO"], env={NAME: first, "SYNTH_TWO": second},
+                        state=state, key=KEY)
+    assert report["secrets"]["SYNTH_TWO"]["status"] == "found"
+
+
+def test_f5_unchanged_values_still_resume_and_a_changed_form_list_does_not(tmp_path, monkeypatch):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "".join(f"line {i}\n" for i in range(200)))
+    _, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, key=KEY)
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
+    assert report["mode"] == "incremental" and report["files_resumed"] == 1  # the guard is not a no-op
+    assert report["roots"][0]["bytes_scanned"] == 0
+
+    monkeypatch.setattr(ls, "FORMS", ls.FORMS + ("a form added later",))
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state, key=KEY)
+    assert report["files_resumed"] == 0 and report["roots"][0]["bytes_scanned"] > 0
+
+
+def test_f5_the_value_fingerprint_is_not_in_the_state(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "plain\n")
+    state = tmp_path / "state.json"
+    run_cli(["--root", str(root), "--names", NAME, "--state", str(state)], env={NAME: value})
+    text = state.read_text(encoding="utf-8")
+    assert_never_printed(value, text)
+    assert "needle" not in text.lower() and "digest" not in text.lower()
+
+
+def test_f6_clearing_findings_forces_a_full_rescan(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "leak.txt"), "x " + value + "\n")
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    code, _ = run_cli(argv, env={NAME: value})
+    assert code == ls.EXIT_FOUND
+    # The value is still on disk. Clearing the old findings must not make the next run clean.
+    code, out = run_cli(argv + ["--clear-findings"], env={NAME: value})
+    report = json.loads(out)
+    assert code == ls.EXIT_FOUND and report["mode"] == "full"
+    assert [f["new"] for f in report["findings"]] == [True]
+    code, out = run_cli(argv, env={NAME: value})  # and the run after it
+    assert code == ls.EXIT_FOUND
+
+
+def test_f6_clearing_findings_after_a_real_redaction_is_clean(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    leak = root / "leak.txt"
+    write(str(leak), "x " + value + "\n")
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    run_cli(argv, env={NAME: value})
+    write(str(leak), "redacted\n")
+    code, out = run_cli(argv + ["--clear-findings"], env={NAME: value})
+    assert code == ls.EXIT_CLEAN and json.loads(out)["findings"] == []
+
+
+def test_fu1_a_root_given_twice_is_scanned_once_and_leaves_no_canary(tmp_path):
+    value = synthetic()
+    root = tmp_path / "root"
+    write(str(root / "a.txt"), "plain content\n")
+    spellings = [str(root), str(root) + os.sep, str(root / "."), str(root / ".." / "root")]
+    report, _ = ls.scan(spellings, names=[NAME], env={NAME: value})
+    assert not (root / ls.CANARY_FILE).exists(), "the canary was left behind"
+    assert report["canary_removed"] is True
+    assert len(report["roots"]) == 1 and report["result"] == "clean"
+    code, out = run_cli(["--root", str(root), "--root", str(root), "--names", NAME], env={NAME: value})
+    assert code == ls.EXIT_CLEAN and not (root / ls.CANARY_FILE).exists()
+
+
+def test_fu2_a_key_file_that_cannot_be_protected_is_not_used_and_is_removed(tmp_path, monkeypatch):
+    state = str(tmp_path / "state.json")
+    monkeypatch.setattr(ls, "_protect_key_file", lambda path: False)
+    assert ls._load_key(state) is None
+    assert not os.path.exists(state + ".key")  # an unprotected key must not stay on disk
+
+
+def test_fu2_the_key_file_is_protected_before_the_key_is_written(tmp_path, monkeypatch):
+    state = str(tmp_path / "state.json")
+    seen = []
+    real = ls._protect_key_file
+
+    def spy(path):
+        seen.append(os.path.getsize(path))  # empty at this point: the key is not yet exposed
+        return real(path)
+
+    monkeypatch.setattr(ls, "_protect_key_file", spy)
+    key = ls._load_key(state)
+    assert key is not None and len(key) == 32 and seen == [0]
+
+
+def test_fu2_an_existing_key_file_is_protected_again_on_every_load(tmp_path, monkeypatch):
+    state = str(tmp_path / "state.json")
+    assert ls._load_key(state) is not None
+    calls = []
+    monkeypatch.setattr(ls, "_protect_key_file", lambda path: calls.append(path) or False)
+    assert ls._load_key(state) is None and calls  # cannot be shown private: not used
+    assert os.path.exists(state + ".key")  # not ours to delete on a load
+
+
+@pytest.mark.skipif(os.name != "nt", reason="the Windows ACL")
+def test_fu2_on_windows_the_key_file_acl_is_the_current_user_only(tmp_path):
+    import subprocess  # the test may start a process; the module under test must not
+    state = str(tmp_path / "state.json")
+    assert ls._load_key(state) is not None
+    out = subprocess.run(["icacls", state + ".key"], capture_output=True, text=True).stdout
+    assert out.count(":(") == 1, out  # exactly one entry
+    assert "(I)" not in out, out  # nothing inherited from the folder
+    assert "(F)" in out and os.environ["USERNAME"].lower() in out.lower(), out
+
+
+def test_ctypes_is_used_only_to_set_the_key_files_acl():
+    with open(_PATH, encoding="utf-8") as fh:
+        tree = ast.parse(fh.read())
+    owner = {}
+    for fn in ast.walk(tree):
+        if isinstance(fn, ast.FunctionDef):
+            for node in ast.walk(fn):
+                owner[id(node)] = fn.name
+    outside = [n.lineno for n in ast.walk(tree)
+               if isinstance(n, ast.Name) and n.id in ("ctypes", "wintypes")
+               and owner.get(id(n)) != "_restrict_to_user"]
+    assert not outside, outside
+    called = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)
+              and isinstance(n.value, ast.Name) and n.value.id in ("adv", "k32")}
+    assert called <= {"ConvertStringSecurityDescriptorToSecurityDescriptorW", "GetSecurityDescriptorDacl",
+                      "SetNamedSecurityInfoW", "OpenProcessToken", "GetTokenInformation",
+                      "ConvertSidToStringSidW", "GetCurrentProcess", "CloseHandle", "LocalFree"}, called
+
+
+def test_fu3_a_second_file_named_after_the_value_is_its_own_new_finding(tmp_path):
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / "root"
+    write(str(root / ("a-" + value + ".txt")), "plain\n")
+    write(str(root / ("b-" + value + ".txt")), "plain\n")
+    state = str(tmp_path / "state.json")
+    argv = ["--root", str(root), "--names", NAME, "--state", state]
+    code, out = run_cli(argv, env={NAME: value})
+    first = json.loads(out)["findings"]
+    assert code == ls.EXIT_FOUND and [f["new"] for f in first] == [True, True]
+    code, out = run_cli(argv, env={NAME: value})
+    assert [f["new"] for f in json.loads(out)["findings"]] == [False, False]
+    write(str(root / ("c-" + value + ".txt")), "plain\n")
+    code, out = run_cli(argv, env={NAME: value})
+    findings = json.loads(out)["findings"]
+    assert sorted(f["new"] for f in findings) == [False, False, True]
+    assert_never_printed(value, out, _state_text(state))
+
+
+def test_fu3_without_a_key_two_withheld_findings_still_count_two(tmp_path):
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / "root"
+    write(str(root / ("a-" + value + ".txt")), "plain\n")
+    write(str(root / ("b-" + value + ".txt")), "plain\n")
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value})  # no key
+    assert [f["new"] for f in report["findings"]] == [True, True]
+    report, state = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    assert [f["new"] for f in report["findings"]] == [False, False]
+    write(str(root / ("c-" + value + ".txt")), "plain\n")
+    report, _ = ls.scan([str(root)], names=[NAME], env={NAME: value}, state=state)
+    assert sorted(f["new"] for f in report["findings"]) == [False, False, True]
+
+
+def test_fu4_a_value_in_one_path_withholds_only_that_path(tmp_path):
+    named, content = secrets.token_urlsafe(30), secrets.token_urlsafe(31)
+    root = tmp_path / "root"
+    bad = root / ("named-" + named + ".txt")
+    write(str(bad), "plain\n")
+    write(str(root / "other.txt"), "a line " + content + "\n")
+    env = {NAME: named, "SYNTH_TWO": content}
+    code, out = run_cli(["--root", str(root), "--names", NAME + ",SYNTH_TWO"], env=env)
+    report = json.loads(out)
+    assert code == ls.EXIT_FOUND and "withheld" not in report and "roots" in report
+    by_secret = {f["secret"]: f for f in report["findings"]}
+    assert by_secret[NAME]["path"] == ls.WITHHELD
+    assert by_secret["SYNTH_TWO"]["path"].endswith("other.txt")
+    assert_never_printed(named, out)
+    assert_never_printed(content, out)  # the second value is in a path nowhere in the report
+
+
+def test_fu4_a_value_in_the_root_path_itself_prints_nothing_but_still_reports(tmp_path):
+    value = secrets.token_urlsafe(30)
+    root = tmp_path / ("root-" + value)
+    write(str(root / "a.txt"), "x " + value + "\n")
+    code, out = run_cli(["--root", str(root), "--names", NAME], env={NAME: value})
+    assert code == ls.EXIT_FOUND and json.loads(out)["result"] == "found"
+    assert_never_printed(value, out)
