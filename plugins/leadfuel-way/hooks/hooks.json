@@ -1,5 +1,5 @@
 {
-  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor (desks judged by their own project group), no bulk session moves, background agents judged as agents (not as their parent session). One script, five events.",
+  "description": "The way: banner, context guard, handoff gate, coordinator rule, no self-archive before a live successor (desks judged by their own project group), no bulk session moves, background agents judged as agents (not as their parent session). A slot run may not run or update a scheduled task (it asks the launcher). One script, five events.",
   "hooks": {
     "SessionStart": [
       {
@@ -57,7 +57,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*__(archive_session|move_sessions|set_session_title)",
+        "matcher": "mcp__.*__(archive_session|move_sessions|set_session_title|run_scheduled_task|update_scheduled_task)",
         "hooks": [
           {
             "type": "command",
