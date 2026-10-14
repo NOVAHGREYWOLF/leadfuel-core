@@ -93,8 +93,10 @@ def test_seen_only_when_the_target_itself_holds_the_token(woa):
     assert woa.seen(search_hits(), ROUTER) is False
 
 
-def test_a_search_with_no_hits_is_a_clean_no(woa):
-    """Measured 2026-10-14: search_session_transcripts prints this line, not an empty array."""
+def test_a_search_with_no_hits_is_read_but_is_not_evidence_of_absence(woa):
+    """Measured 2026-10-14: search_session_transcripts prints this line, not an empty array. It is read as
+    `False` ("the target is not among the hits"), and verdict() treats False exactly like None (unknown):
+    only a hit in the target is evidence, so an empty search can never pass or fail a card by itself."""
     assert woa.seen("No matching sessions found.", ROUTER) is False
 
 
@@ -399,3 +401,89 @@ def test_cli_judge_exit_codes(tmp_path):
         (work / "versions.json").write_text(json.dumps({"q1": 2}), encoding="utf-8")
         run = _run("judge", "--plan", plan, "--work", work, "--now", "2026-10-14T02:01:00Z", "--out", tmp_path / "o")
         assert run.returncode == code, (text, run.stdout, run.stderr)
+
+
+# ---- gaps found by mutating the script (NODE~WAKE-ON-ANSWER, finishing desk) -------------------
+# Each test below kills a mutant the first 85 tests let survive.
+
+@pytest.mark.parametrize("text", [
+    "Message not delivered: the session is gone.",   # no "delivery:" word at all
+    "Not delivered to Claude Desktop session x",
+])
+def test_a_not_delivered_text_without_the_delivery_word_is_undelivered(woa, text):
+    assert woa.parse_send(text)["delivery"] == "undelivered"
+
+
+def test_an_approval_wording_is_held_even_when_the_tool_also_says_delivered(woa):
+    """Held beats delivered: the session has the text but its Claude has not read it."""
+    text = "Message delivered to the session, awaiting the user's approval. (delivery: delivered; message_id: ab12)"
+    assert woa.parse_send(text)["delivery"] == "held"
+
+
+def test_an_unknown_card_is_rechecked_not_resent(woa):
+    """UNKNOWN is a state the watcher owes a second look, exactly like HELD; resending would send twice."""
+    c = card(wake={"state": "UNKNOWN", "answered_at": "2026-10-14T01:45:40.495Z", "to": ROUTER,
+                   "delivery": "delivered", "first_sent_at": "2026-10-14T01:50:00Z"})
+    assert woa.pending({"q1": c}) == [("q1", "recheck")]
+
+
+def test_a_note_added_after_a_finished_wake_is_sent_again(woa):
+    """The page clears routed on every note and writes note_at; the old wake answered an older note."""
+    old = {"state": "UNDELIVERED", "answered_at": "2026-10-14T01:45:40.495Z", "note_at": None, "to": ROUTER}
+    c = card(note="please also do X", note_at="2026-10-14T03:30:00Z", wake=old)
+    assert woa.pending({"q1": c}) == [("q1", "send")]
+    assert woa.pending({"q1": card(wake=old)}) == []  # same answer, same (absent) note: finished
+
+
+def test_a_token_belongs_to_one_target(woa):
+    c = card()
+    assert woa.card_token("q1", c, ROUTER) != woa.card_token("q1", c, DESK)
+    assert woa.card_token("q1", c, ROUTER) == woa.card_token("q1", c, ROUTER)
+
+
+def test_a_card_with_no_target_is_judged_undelivered_with_a_note_not_unknown(woa):
+    plan = woa.make_plan({"q1": card()}, None, now="2026-10-14T02:00:00Z")
+    out = woa.judge(plan, {}, {}, now="2026-10-14T02:01:00Z", versions={"q1": 2})
+    assert out["states"] == {"q1": woa.UNDELIVERED}
+    assert "q1" in out["fallback"] and out["writes"][0]["data"]["wake"]["state"] == "UNDELIVERED"
+
+
+def test_an_empty_search_after_a_delivered_send_is_unknown_never_a_pass_or_a_clean_no(woa):
+    """The tool says delivered, the search finds nothing: not DELIVERED (no evidence) and not UNDELIVERED
+    either (an empty search cannot show the message is absent). No `routed`, no durable note, and it is rechecked."""
+    plan, out = _judge(woa, {"q1": card()}, SEND_DELIVERED, "No matching sessions found.")
+    assert out["states"] == {"q1": woa.UNKNOWN}
+    [w] = out["writes"]
+    assert w["data"]["wake"]["state"] == "UNKNOWN" and "routed" not in w["data"]
+    assert out["fallback"] == {}
+    assert woa.pending({"q1": card(wake=w["data"]["wake"])}) == [("q1", "recheck")]
+
+
+def test_the_send_count_goes_up_by_one_per_send(woa):
+    c = card(wake={"state": "DELIVERED", "answered_at": "old", "to": ROUTER, "sends": 2})
+    plan = woa.make_plan({"q1": c}, ROUTER, now="2026-10-14T02:00:00Z")
+    out = woa.judge(plan, {s["search_token"]: SEND_QUEUED for s in plan["sends"]}, {}, now="2026-10-14T02:01:00Z",
+                    versions={"q1": 2})
+    assert out["writes"][0]["data"]["wake"]["sends"] == 3
+
+
+def test_cli_plan_says_unknown_when_a_card_file_is_not_json(tmp_path):
+    d = _cards_dir(tmp_path, {"q1": card()})
+    (d / "q2.json").write_text("{not json", encoding="utf-8")
+    cur = tmp_path / "current.json"
+    cur.write_text(json.dumps({"session_id": ROUTER}), encoding="utf-8")
+    run = _run("plan", "--cards", d, "--count", 2, "--router-current", cur, "--out", tmp_path / "plan.json")
+    assert run.returncode == 2 and "UNKNOWN" in run.stdout and not (tmp_path / "plan.json").exists()
+
+
+def test_the_wake_path_has_no_network_and_no_permission_change(woa):
+    """Law 9: the script transmits nothing, and the wake skill never lists a permission-mode tool to use."""
+    import ast
+    tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+    imported = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    imported |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
+    assert not imported & {"socket", "http", "urllib", "requests", "httpx", "smtplib", "ftplib", "subprocess", "os", "webbrowser"}
+    assert "set_session_permission_mode" not in SCRIPT.read_text(encoding="utf-8")
+    skill = (PLUGIN / "skills" / "wake" / "SKILL.md").read_text(encoding="utf-8")
+    assert "set_session_permission_mode" not in skill
+    assert "Never change any session's permission mode" in skill
