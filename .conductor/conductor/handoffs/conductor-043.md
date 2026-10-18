@@ -20,3 +20,6 @@ A pick only from an owner-answered card or his own chat, verbatim. Verify before
 
 ## Gotchas
 Relay of a technical claim is only a claim. A Stop hook once misfired as if a handoff were written; no successor was launched then. Page sorts cards by number only.
+
+## Update 07:4xZ (after the note above)
+Owner chat 'go' recorded as pick SURFACE~COMMAND-CENTER-END-TO-END, rank 421 (next rank 422): the whole command center build, base layer then Layer 2 items 1-15 in the map's order, one desk at a time, no asking him except typed go for production reads, his own flag flips, spend or send (Law 9), and design questions the plan has not settled. This supersedes the base-only limit of pick 413 for the command center program only; other queued work still waits. ROUTER #67 was sent this (queued, not yet read at the time of writing). Successor request sent to launcher local_a6ce3e66; I stay open until it is live.
