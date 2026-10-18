@@ -8,6 +8,8 @@ Session local_c5ce5905-d948-42e8-bace-0377ec47257f (Opus 5.5, bypass mode), chec
 - Fixed by me after the run: section 4's subsections had landed after Sources (an insert with side "end" on a heading runs to the end of the tab); moved them back under the section 4 table at rev 29. Verified by a sinceRev read.
 - Private working set (research, drafts, owner words): F:/Claude Sessions/handoff/spokes-thought-doc/ (README.md there). Not committed; do not commit it. The raw owner-turn dump stays in this session's scratchpad only.
 
+- Owner's follow-up (same chat): saved the doc plus ten other foundational documents to a new folder F:/Leadfuel/Important Documents/ (README.md is the index). Local copies, untracked; do not commit them (F:/Leadfuel is a repo).
+
 ## State (verified by me unless marked)
 - No retired arm spellings in the doc's drafts (grep, all 22 files).
 - The doc's section 8 holds 15 open questions with defaults (spoke as brain-run manager; Odyssey as manager of every pursuit; personal data per pursuit; a one-time production read of RUNNER_REQUIRE_APPROVAL / CAMPAIGN_REQUIRE_APPROVAL; build order; Orbit vs Kin; and more). None posted as Router desk cards.
