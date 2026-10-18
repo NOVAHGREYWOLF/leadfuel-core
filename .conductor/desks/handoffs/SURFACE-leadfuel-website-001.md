@@ -22,6 +22,12 @@ Ask the owner for mockup feedback, then: (1) take a hub worktree and build the h
 - Owner or router: decide two claims on the live site (see private notes).
 - No handoff message was sent to any session; none was owed.
 
+## Update, same day: mockup 2 supersedes mockup 1
+- Owner rejected mockup 1 as too light ("the website needs to be as amazing as the app") and switched this session to Fable 5.1 for a second pass.
+- Mockup 2 is the site as the app: Command's own dark frame, the founder's character, one request run end to end by the staff, honest live/built/planned labels. Artifact id 8kKEcqhuGqJTwQST7oErAu (claude.ai/artifact/8kKEcqhuGqJTwQST7oErAu). Source and notes in the private folder named above.
+- The LeadFuel light skin is no longer the base. Build from mockup 2.
+- Verified by me: desktop and phone render, no overflow, no console errors, the run and the feed buttons work. Not checked: light theme, tablet.
+
 ## Gotchas
 - The Browser pane cannot drive file:// pages; serve the file over localhost from a launch.json entry.
 - Local previews need a charset and a viewport meta; the publish skeleton adds both.
