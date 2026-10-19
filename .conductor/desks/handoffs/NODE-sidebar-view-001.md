@@ -25,3 +25,8 @@ The app's own updater staged package Claude_2.42304.2.0 at 23:03 local on 2026-1
 
 ## Gotchas
 Bottom-left sunburst icon opens "Send feedback" (never click Send). x=411 in the sidebar is its scrollbar. The usage ring popover's icons open Settings → Usage, which shows plan usage by product, not by session. Screen look/click works through PowerShell `CopyFromScreen` and `mouse_event`; the owner may be clicking at the same time, so one click per screenshot.
+
+## RESOLVED (NODE · sidebar view part · 2, 2026-10-19, verified on screen with the owner present)
+- Context card: top-right first icon "Show session rail" opens the rail; the Context card shows per-session tokens (e.g. 33% used, 333.1k / 1M, breakdown by messages, tools, memory, skills).
+- Routines section: hover the built-in **Recents** heading, click the sliders button, **Show > Routines** (also Side chats, Empty groups). `list_sections` then reports `routines` shown:true, and the section appears under Pinned listing the slot runs (conductor, ROUTER #71/#72/#73, DESIGN, Kismet weekly, Way slot 07). No rollback or update needed; the earlier "shown:false, no way to flip it" finding was wrong because the toggle lives on Recents, not on custom sections.
+- Not done, not needed: pending update 2.42304.2, rollback, GitHub comment on #102150.
