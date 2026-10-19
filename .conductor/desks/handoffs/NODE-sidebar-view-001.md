@@ -20,5 +20,8 @@ With the owner at the screen, one step at a time: (1) click "Show session rail" 
 - Background search for old installers (task b87q810pn) may still be running; its result was not read.
 - No messages to other sessions were sent.
 
+## Addendum (after the note was pushed)
+The app's own updater staged package Claude_2.42304.2.0 at 23:03 local on 2026-10-18 (AppX deployment log, event 658/638: registration deferred because 2.42304.0 is still running). It applies when the app is fully closed and reopened, which stops every live session (conductor local_259a7d41, ROUTER #72 local_47411781, desks), so only at a quiet point and with the owner's word. The changelog (read via fetch) has no entry for 2.42304.1 or .2, so whether it restores the Routines section is unknown. The only old installer on disk is WinGet temp Anthropic.Claude.1.30096.1 (far older than the build before the bad update); do not use it.
+
 ## Gotchas
 Bottom-left sunburst icon opens "Send feedback" (never click Send). x=411 in the sidebar is its scrollbar. The usage ring popover's icons open Settings → Usage, which shows plan usage by product, not by session. Screen look/click works through PowerShell `CopyFromScreen` and `mouse_event`; the owner may be clicking at the same time, so one click per screenshot.
