@@ -1,0 +1,5 @@
+# Router handoff #074 addendum (2026-10-19 ~17:2xZ UTC, ~302k): successor already live
+
+Successor ROUTER #75 = local_dd534bdc-784f-4aa1-b1be-cb95dd7ae00b (slot way-slot-04), claimed router/current v612, read back live by me. Main note: router-074.md (same folder, pushed 4fc20342). #74 = local_43b583b9-0460-4728-8d61-e4f163c7c036 stays open ONLY to host LANDER-ATLAS a58f7316aac35a1a5 (#869 then hold #872; #873 merged). Do not archive #74 until it reports; #75 archives it through the gate.
+
+Since router-074.md (all forwarded to #75, gh-verified by me): CC-04 reported (hub #859 8d43cfcf, #867 b4df008f, #902 ae1f95ff, drafts CLEAN; owner gate: migration 0015_admin_grant, #75 to card it); CC-03 reported (#868 52d482a1 and #869 54543567 CI success; #870 30168311, #871 fe1199f1, #872 a16c4109 CI pending); LANDER-922 BLOCKED on hub #922 atlas placement (#75 opened its own fix agent: do not wake the old CC-30 desk a42fa1bad2bd5ed42). #911 owner question is card q578 (q577 = levels switches). Copy finished agents' review files out of F:\Claude Sessions\.claude\worktrees\agent-<id> before any host goes.
