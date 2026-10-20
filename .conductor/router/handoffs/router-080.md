@@ -13,5 +13,8 @@ hub #931 cc06 (952d0e66), #859 cc04 migration 0015 (cd1d788d), #940 cc02 (458d41
 ## Held
 #818 cc40 (head dbc68b65, migration 0016 free now): waits for #944 merged, owner APPROVAL_LINK_SECRET, delta re-check; _sentry_scrub item rides pick q592. #867 for q492. #875/#866 red on purpose. cc01 needs the owner's typed go for a production read. cc86 cc104 are cards. Queue held behind the CI jam: cc21 cc31 cc36 cc39 cc51 cc52 cc53 cc58 cc59 cc66 cc67 cc68 cc69 cc71 cc80 cc85 cc94 cc97 cc102.
 
+## Addendum 09:15Z
+hub #942 cc76 MERGED 3556456b (migration renumbered 0016_item_stop; #818 takes 0017 or next free). My 942 lander is done, nothing of mine runs. ROUTER #87 absorbed all rows and archives #80 through its gate; no successor session needed. #943 and #902 tickets are #87's.
+
 ## Gotchas
 Router desk page doc shape: write card fields flat, not under a data key. Sends to a busy session come back queued. A lander has no inbox. Do not run CI outside an ci-novahub hold. Launcher budget spent: owner must type in local_1c9b1829 for a successor slot.
