@@ -21,7 +21,7 @@ It exits **2 and prints `UNKNOWN`** instead of a zero when it cannot see:
 A genuine zero (transcripts present, `origin` present, nobody human typed) still exits 0 and says
 `owner touches: 0` beside the number of transcripts scanned. Tests: `tests/test_owner_touch_ledger.py`
 (each UNKNOWN case, the counted case, the genuine zero, the one-line form; with the two guards
-removed, six of the ten fail).
+removed, six of the first nine fail).
 
 ## Proposed daily run
 
