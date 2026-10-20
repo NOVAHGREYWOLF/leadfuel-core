@@ -32,7 +32,7 @@ OPTIONS: A) ... B) ...
 DEFAULT: A (why)
 ```
 - **Never put a question to the owner in chat.** `ASK:` goes to the router, which turns it into a card on the Router desk page. Every `ASK` has a default.
-- **A send is not delivered because you sent it.** If it comes back queued or undelivered, re-send or say so. Spend sends on messages that must land; messaging pauses after 10 sends until the owner types.
+- **A send is not delivered because you sent it.** If it comes back queued or undelivered, re-send once if a retry can help (never a queued one) or say so. Spend sends on messages that must land; messaging pauses after 10 sends until the owner types. `leadfuel-way:message` is the helper: send by session id with a token and read the outcome back as DELIVERED, HELD, UNDELIVERED or UNKNOWN.
 - A desk that sends `ASK`, `BLOCKED` or `NEEDS-NOVAH` writes its handoff and **stops**. It does not wait and does not poll.
 
 ## Finish or hand off
