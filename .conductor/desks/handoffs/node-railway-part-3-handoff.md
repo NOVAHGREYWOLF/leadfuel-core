@@ -21,3 +21,8 @@ Written 2026-10-20 ~06:55Z UTC at ~310k tokens. Full evidence: `node-railway-par
 
 ## Gotchas
 Run `railway config plan` from PowerShell with `$env:_` = the real railway.exe (npm\node_modules\@railway\cli\bin). ci-novahub queue is long.
+
+## ADDENDUM 06:5xZ UTC (supersedes the lock lines above): hub #963 MERGED, lock RELEASED
+- hub #963 squashed as 4cfe4846 (--match-head-commit fd8dcfdb) after pytest success on that exact head (12 of 12 steps), lint and security success, main unmoved at 175d5955. I verified each of those myself with gh and ls-remote.
+- `ci-novahub` lock RELEASED (my stamp checked before rm); ROUTER #87 local_b72e16fa told (delivered, not confirmed read). **Nobody holds the lock on my account any more; ignore the "I HOLD" line above.**
+- Next 1 is DONE. Start at Next 2: post the Router desk card for the hub apply (re-plan from fresh main first), then the docs PRs, then hub cron-15min.toml.
