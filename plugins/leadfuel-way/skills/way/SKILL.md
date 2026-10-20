@@ -54,7 +54,7 @@ The owner, 2026-10-07: "The sidebar group becomes the master project (reports, w
 - **Times from `gh` and git are UTC.** Label them UTC, or convert to Pacific and say so.
 
 ## 4. Questions, blockers and reports
-Plain words, five lines or fewer. Lead with what the owner must do, or say nothing needs them. If you are blocked, write your handoff and stop; do not wait and do not poll. Messaging between sessions pauses after 10 sends until the owner types: spend sends on briefs that must land, and say in your reply which handoffs landed and which did not.
+Plain words, five lines or fewer. Lead with what the owner must do, or say nothing needs them. If you are blocked, write your handoff and stop; do not wait and do not poll. Messaging between sessions pauses after 10 sends until the owner types: spend sends on briefs that must land, and say in your reply which handoffs landed and which did not. To message a session directly and know the outcome (and who may message whom), use `leadfuel-way:message`; the owner is not the message bus.
 
 ## 5. Handoff (every session, every tier, automatic)
 The caps follow your model: **Opus and Sonnet hand off at 300k and stop at 450k; Haiku at 120k and 150k** (its window is 200k). Also hand off at about 150 handled messages, or the moment the owner says the session is too large.
