@@ -10,3 +10,6 @@ Verify wave (read-only Sonnet, outputs F:\Claude Sessions\handoff\router-84-veri
 
 ## Gotchas
 Stop hook fires on the word handoff in board writes (false alarm). Agents hosted elsewhere cannot be messaged. Background agents cannot be woken by lock releases. cwd drift: a Bash cd changes the primary dir and breaks worktree isolation; reset with Set-Location to leadfuel-core.
+
+## Addendum (~308k)
+Verify-wave status: SURFACE-2 and MISC-B DONE (files in F:\Claude Sessions\handoff\router-84-verify-*.md); SURFACE-1, INTELLIGENCE, NODE, DOORS, MISC-A still running under #84. MISC-B OPEN-READY (all hub): CWC-T7 (INTELLIGENCE lane file), FLA-law2-law8-paths, FLA-privacy-consent, MAIN-PUSH-RUN-3-FLAKES; GATED: ATLAS-VAULT-RAW, FABLE-6-rights-design, ENVELOPES-LIVENESS-CHECKS; recommend closing SPATIAL-1/-3c/-6a, ATLAS-LAYERS, ATLAS-DATA-REFRESH (superseded). LAUNCH-REQUEST for #85 delivered to launcher local_1c9b1829; no LAUNCHED reply yet at this addendum. Paste fallback: You are ROUTER #85 · one-interface. Invoke leadfuel-way:way and leadfuel-way:router, read .conductor/router/handoffs/router-084.md on origin/claude/router-84, re-read live state, then run the Claim steps.
