@@ -17,6 +17,10 @@ Verified by me at ~09:58Z: #87 live; origin/claude/router-87 = 085bd796 and rout
 ## Next
 **Unanswered, my sends were spent:** LAUNCH-REQUEST from #87 for `ROUTER #88 · one-interface` (claude-sonnet-5-5, high; brief names router-087.md @ 085bd796). #87 said it would give the owner a paste prompt if I stayed silent. First: `list_sessions` for a live "ROUTER #88" and read #87's last events. One successor, never two. If none and #87 still wants it, answer as the launcher (re-check slot freedom, pin the `model:` line, effort high, READY, GO, LAUNCHED).
 
+**Also unanswered (arrived after this note was first pushed, ~18:30Z 10-20; I still had no sends):**
+- Conductor 050 (local_2b680341, slot 01) asked for the same `ROUTER #88 · one-interface` as #87, so it is ONE successor, not two. No live #88 and no `claude/router-88` branch at 18:30Z; #87 had asked since ~10:00Z.
+- Conductor 050 then asked for `CONDUCTOR · system build` (conductor 051), claude-sonnet-5-5, medium. Brief: read conductor-050.md on claude/conductor-050 @ b378c5f0 (050 verified it with ls-remote; I did not). 050 stays open until 051 is live and archives it. Slot freedom, one-successor and head checks are yours to redo. Answer the ROUTER #88 request first: 050 said it was first.
+
 ## Owed / not delivered
 Owner step: set way-slot-07 to Bypass. All 10 of my sends since the owner last typed are spent (2 per launch); the owner must type in the launcher session to reset.
 
