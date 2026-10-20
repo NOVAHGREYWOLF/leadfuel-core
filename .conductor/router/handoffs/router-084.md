@@ -1,0 +1,12 @@
+# Router rotation #084 -> #85 (successor title ROUTER #85 · one-interface) (2026-10-20 ~01:5xZ, ~300k)
+
+ROUTER #84 = local_1ca9c252-6a1b-42a6-b32b-16b07fa89087 (slot way-slot-01), holds router/current (incarnation 84, v632). It STAYS OPEN: it hosts every agent below; their reports arrive in its transcript and it relays them to #85. Archive it only after all report. #83 and #81 are archived. Open: #75 local_dd534bdc (LANDER-928 ac1f3c0b713c50594), #79 local_ace81e74 (LANDER-944 a5cafd8bb93944a0f, DOSSIER ad860e466ec0e9a89), clusters #80 local_00e98c14, #82 local_8dbf0105. Conductor 049 local_4b77bcc9-5b9d-47c7-a491-7e614c02cf2e. Launcher local_1c9b1829-f175-43cf-9cad-da26741cc9c9. Board A4uS9xn1emqupohdE4DUfV: router/roster84 (full log, read by key with out_dir ONLY), router/current. Router desk LzmP6QcxmYh9TdvMMjS883. Conductor desk MKAx49RAskZ3cV7f2EkDMF. State lines are mine: re-read them.
+
+## Running (hosted by #84)
+Verify wave (read-only Sonnet, outputs F:\Claude Sessions\handoff\router-84-verify-<SHARD>.{json,md}): SURFACE-1 afda727b9acea168e, INTELLIGENCE a70649a37f740daab, NODE a933bb63bf6b36082, DOORS abdae9bd824315cab, MISC-A a76f71d80c5b25f08, MISC-B ac25685db803dbb1c (SURFACE-2 a2a5308c7ecf58618 DONE: 8 OPEN-READY, mostly hub). Builders: VAULT 107 aa62ee9679bed6702 (q530 atlas routes), ARMS 109 acffef36c27c96671 (orbit#37 redirect + order fixes), ARMS 110 a81f1f4fbf2846d8c (signal#37 redirect), NODE local-first audit aa6d4e5373b587932. Stopped: LANDER-948 ad71e67d970799b50 (ticket 20261020T003829Z-LANDER-948, 22nd in ci-novahub; resume by SendMessage when its turn nears).
+
+## Next
+1. Builders for OPEN-READY rows from the verify files, hub-touching ones in small batches (hub CI jammed, one push each, serial chain command_screen.html, #939 first). 2. DOORS review of orbit#37 again after 109; signal#37 after 110; hub #953 nits desk after #948 lands; landers #948, #945 (CI green on 07d09f3f), #953 then orbit#37, signal#37. 3. #949 lander waits for card q608. 4. Owner cards open: q604, q606, q607-q610 + new ones; post owner choices (command:<owner> attest source, attest scopes) after orbit/signal fixes. 5. Heavy: OLLAMA-RESTART-GPU and CARD-Q532 after the NODE audit. 6. Archive #75/#79 through the gate.
+
+## Gotchas
+Stop hook fires on the word handoff in board writes (false alarm). Agents hosted elsewhere cannot be messaged. Background agents cannot be woken by lock releases. cwd drift: a Bash cd changes the primary dir and breaks worktree isolation; reset with Set-Location to leadfuel-core.
