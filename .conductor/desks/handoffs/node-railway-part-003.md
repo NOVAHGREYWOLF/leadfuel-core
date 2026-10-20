@@ -34,3 +34,33 @@ ROUTER #48 (one-interface, rotating) replied that it is NOT the router for Railw
 
 ## Gotcha for the next desk (cost me ten minutes)
 `railway config plan` fails with "requires Railway CLI 5.42.1 or newer" even on 5.43.1 when run from Git Bash or via the `railway` npm shim: the SDK runs `$_ --version`. Use PowerShell with `$env:_` set to the real exe, `C:\Users\novah\AppData\Roaming\npm\node_modules\@railway\cli\bin\railway.exe`, and run from a worktree whose repo root has `node_modules/railway`.
+
+## Update 2026-10-20 ~05:50Z UTC: the owner typed "go" in this desk's chat (a session id, not a queue click)
+I took "go" to cover RW-1 and RW-2 (the two my last message said needed a typed word). NOT covered, not started: RW-3 / NODE~RAILWAY-SET-B (needs the owner's migrate-or-retire answer first), APOLLO-LOOK, VARIABLE-NAMES-CHECK. The Conductor desk still shows no picks row for any of my tasks.
+
+### Re-read first (verified by me, 10-20)
+- The six original undeclared variables are FIXED on hub main by #756 (merged 10-14 01:41Z, NODE atlas part 1). Hub main af269a48 plan then read: 2 to destroy (ORACLE_CUSTOMER_TERMS, WORLD_INTELLIGENCE_PAGE: live, undeclared) + SELF_CAPTURE_ENABLED to be set (declared "1", owner q212=B, intended) + novahub-cron-daily schedule "0 12 * * *" -> "50 * * * *" (intended, #789 q298=A) + restartPolicyType default. Third round of the same drift: `RAILWAY-VARIABLE-NAMES-CHECK` (unqueued) is what stops a fourth.
+- odyssey Cron and novahub-cron-15min newest deployments: configFile empty. novahub-cron-daily: still `/deploy/cron-daily.toml` (hold stands).
+
+### Open draft PRs, all mine, none merged, none undrafted
+| PR | What | State |
+|---|---|---|
+| hub #963 (node/railway-preserve-oracle-world, bb1a86b2) | `preserve()` for the two names; plan from the branch = 0 destroy, 3 intended changes | gates 14/16 green (2 skipped by flag), tests/test_daily_due.py 46 passed; CI `tests` queued; **wait ticket filed in `F:/Claude Sessions/.locks/ci-novahub.wait/20261020T052726Z-NODE-railway-part-3--railway-preserve-pr963`** (13 other waiters ahead or alongside; do not poll, the releaser messages by name) |
+| signal #38 | one comment in gunicorn.conf.py | diff read by me |
+| reach #44 | one README line | diff read by me |
+| lucid #129 | one README sentence | diff read by me |
+| orbit #39 | README + docs/DEPLOY.md + docs/DEPLOY_CHECKLIST.md | diff read by me |
+| odyssey #60 (e69920e) | deletes railway.cron.toml; comment/docs edits in 12 files | I re-checked: AST of app.py, db.py, release.py, readiness.py identical with docstrings normalised; read-only `railway config plan` from the branch = same as main (only the restartPolicyType default), so the railway.ts edits are comment-only. Took on trust: its local failure of test_migration_type_expressions_are_resolvable on main too (pgvector missing on this PC); CI decides. |
+
+Agents (Sonnet) wrote the five docs PRs under briefs I gave them; I reviewed every diff. They ran no Railway commands.
+
+### Next, in order
+1. Per PR above, when its CI is green: undraft, merge main in, CI `pytest`/test job `success` on the exact head, `mkdir` the repo's `ci-<repo>` lock (hub's is the long queue; others have their own `.locks/ci-<repo>`), `ls-remote main` unmoved, squash `--match-head-commit`, release. Every merge to main redeploys that service (comment/docs-only, harmless; checkSuites on waits for CI).
+2. After #963 lands: the apply of hub's file is a Router desk CARD (owner clicks): sets SELF_CAPTURE_ENABLED, the cron-daily schedule and the default line, 0 destroy. Re-run `railway config plan` from fresh main immediately before posting the card (the file moves every few days). Then the owner clears novahub-cron-daily's config path (q246). Never before the apply: it would drop the schedule to `0 12 * * *` and the 06:00 owner-local gate would never fire.
+3. After that: remove hub `deploy/cron-15min.toml` (path already cleared), later `deploy/cron-daily.toml`, and fix hub's docs and scripts (RUNBOOK.md, docs/RAILWAY_CRON_SETUP.md, docs/CRON_INVENTORY.md, scripts/cron_tick.py, scripts/gen_cron_inventory.py, app.py strings, tests/test_daily_due.py reads cron-daily.toml). Look at gen_cron_inventory.py first: it may generate the inventory from the toml files.
+4. Stale lines the agents flagged and did not touch: every repo's `.railway/railway.ts` header still says "WHILE railway.toml STILL EXISTS it wins" (comment-only fix; odyssey #60 already did its own); orbit DEPLOY_CHECKLIST says "no root-dir change needed" (Root Directory is /apps/novahawk); orbit DEPLOY.md line ~61 says signal has no /healthz route (signal's railway.ts sets it); orbit DEPLOY.md step 2 and lucid Deploy step 1 are new-service recipes that predate IaC.
+5. RAILWAY-SET-B and the others wait for the owner's queue.
+
+### Gotchas learned
+- `ci-novahub` is held by a LANDER background agent and has a 14-ticket queue (one waiting 370 h): a merge there is hours or days away, not minutes. `python "F:/Claude Sessions/scripts/lockq.py"` shows it read-only.
+- The plan needs PowerShell with `$env:_` set to the real railway.exe (see the gotcha below).
