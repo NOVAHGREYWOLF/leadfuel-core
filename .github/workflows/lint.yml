@@ -1,0 +1,34 @@
+name: lint
+
+# Pyflakes gate, the same one the other spokes carry. leadfuel-core had no CI at all, so an
+# undefined name or a shadowed import here gated nothing.
+#
+# Rules live in ruff.toml (F only, no style rules). ruff is pinned so a new release cannot
+# turn CI red on an unrelated PR.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    name: ruff check (pyflakes)
+    runs-on: [self-hosted, novah]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff==0.15.14
+
+      - name: ruff check
+        run: ruff check --output-format=github .
