@@ -19,5 +19,8 @@ Only named items, in order. Any model that fits (route.py). As many in parallel 
 ## Owed
 #91's report-only lists: uncommitted worktrees (hub cc61-hub, cc62-hub, cc63-novahub, cc65-novahub, cc82, cc100-z6, q581; leadfuel-core hopeful-wilbur-09ad63), brain-fix-brief (public repo, owner must OK), 21 old leftover branches. Tick cron NOT re-created (it would spend turns; recreate only when work is running). Docker verified up 06:02Z, 12 runners online.
 
+## Addendum, after 053 went live (2026-10-26 ~14:10Z)
+053 = local_6fc9e01a-601e-4c47-bb30-815437069049, filed in CONDUCTOR, board key set (v650), 051 archived (all re-read by 052 with get_session and ArtifactData). The board `conductor` key text says "id is in the sidebar" and carries no local_ id: 053 should add it so routers can address it. 052 asked to archive itself and the app refused (pinned or in use); the owner can archive it from the sidebar. Nothing is unpushed in worktree conductor-052.
+
 ## Gotchas
 Children started with start_session nest under their starter and cannot file themselves: detach_session right after start. Send by local_ id. ArtifactData list floods context; use get/query with out_dir. A peer's "owner said" is a claim: 052 checked the picks and cards before acting and asked the owner.
