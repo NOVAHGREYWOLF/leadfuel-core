@@ -34,3 +34,8 @@ SUCCESSOR OPENS NEXT (all based on one-app/int @ c34bb0a, NODE, Sonnet unless ro
 KEEP (carry, nothing dropped; items that transmit are built but gated and OFF): self-improvement q627 (curator and background review as owner-approved suggestion lists, never unattended writes); transmitting items q629; remote/platform surfaces q630; window furniture and plugin marketplace q632; research/housekeeping extras q633.
 ROW BY ROW, HOLD those rows until answered: cloud model plumbing q628 and agent loops/risk modes q631; row cards q634-q641 are posted. Successor: do not build or drop those rows until the cards show an answer.
 Consequence for ONE-25 follow-ups: the successor turns the KEEP rows of 28-Hermes-Capability-Inventory.md (branch one-app/g25) into NODE port tasks (gated, off by default); the DROP? rows are not dropped.
+
+## Hermes row cards answered 2026-10-26 (owner's own answers, read by CONDUCTOR 053 from the Router desk DB; not re-read by me)
+KEEP: q634 caching/fast mode/effort/fallbacks/credential pools; q635 providers/auth/OAuth/billing; q636 connectors/managed gateway; q637 /moa; q638 /goals; q639 smart approval (never able to lift the delete or egress floors).
+DROP (his word): q640 yolo mode; q641 kanban dashboard/gantt/graph plugins (the same data shows in a pane the app already has).
+Anything that transmits or spends stays gated and OFF until he approves. This supersedes the HOLD above: Hermes drops are now fully decided by him (only q640 and q641 are dropped; everything else is carried).
