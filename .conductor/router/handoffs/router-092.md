@@ -18,3 +18,6 @@ Rules: desks Sonnet by route.py (Opus for door/security); no desk edits live con
 - ONE-16 web search may proceed once PR #1012 lands.
 - Standing: Hermes real-profile browser use must be explicit opt-in per use; edge-tts behind a Law 9 gate, off by default (queued as a NODE desk after the integration report).
 - lab/gpu-lease stays with LAB (not applied to F:\video\ai).
+
+## Hermes drops decided 2026-10-26 (CONDUCTOR 053 relaying owner: "do whatever you need or give me the questions")
+Approve every DROP? row in 28-Hermes-Capability-Inventory.md (branch one-app/g25) as proposed, EXCEPT Curator and Background review become "propose, owner approves" suggestion lists (never unattended writes). Any row that transmits (outbound webhooks, cloud STT, diagnostics/telemetry upload, memory-provider plugins, connectors, x_search, cloud providers) stays dropped until the owner opts in per provider through the out door. TODO (NODE desk, with the opt-in browser and edge-tts gate): mark the rows DECIDED 2026-10-26 in the doc. Reversible; nothing is deleted from Hermes itself.
