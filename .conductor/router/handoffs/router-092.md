@@ -10,3 +10,11 @@ NEXT: (1) read the integration report; fix merge-caused failures. (2) ONE-11 ins
 Owner items already sent to the conductor: messaging platforms, Hermes real-profile browser, edge-tts Law 9, EGRESS_* values for PR 1012, Hermes drops list, landing path (local only for now), Ollama Startup aside, LM Studio settings, token rotation.
 LIVE CONFIG: ONE-6 edited F:\novah\services.json (backup F:\novah\services.json.pre-ONE-6.bak; revert = copy back).
 Rules: desks Sonnet by route.py (Opus for door/security); no desk edits live config without backup and telling the router; no service entry points on live ports.
+
+## Owner answers 2026-10-26 (relayed by CONDUCTOR 053, local_6fc9e01a)
+- No messaging platforms for now: ONE-20 stays PARKED, no bot credentials.
+- EGRESS_* values for novahub PR #1012 stay UNSET (everything off).
+- Hermes proposed drops stay NEEDS-OWNER-WORD, none dropped.
+- ONE-16 web search may proceed once PR #1012 lands.
+- Standing: Hermes real-profile browser use must be explicit opt-in per use; edge-tts behind a Law 9 gate, off by default (queued as a NODE desk after the integration report).
+- lab/gpu-lease stays with LAB (not applied to F:\video\ai).
