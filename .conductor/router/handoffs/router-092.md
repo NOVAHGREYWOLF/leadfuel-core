@@ -39,3 +39,6 @@ Consequence for ONE-25 follow-ups: the successor turns the KEEP rows of 28-Herme
 KEEP: q634 caching/fast mode/effort/fallbacks/credential pools; q635 providers/auth/OAuth/billing; q636 connectors/managed gateway; q637 /moa; q638 /goals; q639 smart approval (never able to lift the delete or egress floors).
 DROP (his word): q640 yolo mode; q641 kanban dashboard/gantt/graph plugins (the same data shows in a pane the app already has).
 Anything that transmits or spends stays gated and OFF until he approves. This supersedes the HOLD above: Hermes drops are now fully decided by him (only q640 and q641 are dropped; everything else is carried).
+
+## Loose end
+Branch one-app/f (ONE-14 LM Studio fold-in, d467d63, based on one-app/e) is NOT in one-app/int @ c34bb0a: merge it before ONE-11. It needs owner steps: LM Studio downloadsFolder points into Ollama's blob store; its Run-key login entry; retiring LM Studio or the stray manifest file is his call.
