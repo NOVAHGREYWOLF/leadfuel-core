@@ -29,3 +29,8 @@ SUCCESSOR OPENS NEXT (all based on one-app/int @ c34bb0a, NODE, Sonnet unless ro
  2. ONE-11 one installer/one icon (node.iss ships panes, migration checklist per old program, Startup entries consolidated; retires nothing, D5), after 1.
  3. ONE-12 acceptance script per program (unknown never green), last.
  4. ONE-16 web search after novahub PR #1012 lands; ONE-20 parked.
+
+## Hermes cards answered 2026-10-26 (CONDUCTOR 053 relaying the owner)
+KEEP (carry, nothing dropped; items that transmit are built but gated and OFF): self-improvement q627 (curator and background review as owner-approved suggestion lists, never unattended writes); transmitting items q629; remote/platform surfaces q630; window furniture and plugin marketplace q632; research/housekeeping extras q633.
+ROW BY ROW, HOLD those rows until answered: cloud model plumbing q628 and agent loops/risk modes q631; row cards q634-q641 are posted. Successor: do not build or drop those rows until the cards show an answer.
+Consequence for ONE-25 follow-ups: the successor turns the KEEP rows of 28-Hermes-Capability-Inventory.md (branch one-app/g25) into NODE port tasks (gated, off by default); the DROP? rows are not dropped.
