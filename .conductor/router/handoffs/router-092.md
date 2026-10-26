@@ -58,3 +58,6 @@ Nothing is wired into the running window: panes (Archive, Character Design, cata
 5. After the installer desk: install the rebuilt app; one supervised live check of Hermes ACP and of the GPU yield in a quiet window (hold the gpu mutex).
 6. Rotate the LM Studio local-inference token that one desk printed into its transcript.
 7. Cards: LAB applies lab/gpu-lease to F:\video\ai (back up first); novahub PR #1012 review/merge and EGRESS_* values stay unset; no messaging platforms.
+
+## Standing rule (owner 2026-10-26, via CONDUCTOR 053): no UTC in anything he reads
+Write every time in Pacific (PT), converted, in reports, cards and notes. UTC only in machine fields. Pass this rule in every desk brief (add it to ONE-APP-brief-common.md in the shared notes folder).
