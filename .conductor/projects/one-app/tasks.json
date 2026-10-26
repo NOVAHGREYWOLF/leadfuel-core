@@ -1,0 +1,188 @@
+{
+ "project": "one-app",
+ "source": "home-node/26-One-App.md sections 8-9 (private estate repo)",
+ "tasks": [
+  {
+   "id": "ONE-0",
+   "group": "A",
+   "lane": "NODE",
+   "title": "Truth pass, docs only",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-1",
+   "group": "A",
+   "lane": "NODE",
+   "title": "Supervisor owns the Ollama server",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-2",
+   "group": "A",
+   "lane": "NODE",
+   "title": "One policy module",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-3",
+   "group": "A",
+   "lane": "NODE",
+   "title": "GPU yield with a prompt",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-13",
+   "group": "B",
+   "lane": "DOORS",
+   "title": "All off-PC traffic through the doors",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-4",
+   "group": "C",
+   "lane": "NODE",
+   "title": "One brain path",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-23",
+   "group": "C",
+   "lane": "NODE",
+   "title": "Permission modes",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-24",
+   "group": "D",
+   "lane": "PRIVACY",
+   "title": "Brain access tiers",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-5",
+   "group": "E",
+   "lane": "NODE",
+   "title": "Model catalogue and chat import",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-15",
+   "group": "E",
+   "lane": "NODE",
+   "title": "RAG",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-16",
+   "group": "E",
+   "lane": "NODE",
+   "title": "Web search",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-17",
+   "group": "E",
+   "lane": "NODE",
+   "title": "Functions and pipelines",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-14",
+   "group": "F",
+   "lane": "NODE",
+   "title": "LM Studio fold-in",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-7",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes as Engine C",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-18",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes memory and skills",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-19",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes scheduler and subagents",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-20",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes messaging gateways",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-21",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes terminal and browser",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-22",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes computer use",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-25",
+   "group": "G",
+   "lane": "NODE",
+   "title": "Hermes the rest",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-6",
+   "group": "H",
+   "lane": "NODE",
+   "title": "Prime fold",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-8",
+   "group": "I",
+   "lane": "LAB",
+   "title": "Decompress",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-9",
+   "group": "J",
+   "lane": "NODE",
+   "title": "Character Design pane",
+   "status": "ready"
+  },
+  {
+   "id": "ONE-10",
+   "group": "J",
+   "lane": "LAB",
+   "title": "GPU lease, Character Design side",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-11",
+   "group": "K",
+   "lane": "NODE",
+   "title": "One installer",
+   "status": "waiting"
+  },
+  {
+   "id": "ONE-12",
+   "group": "K",
+   "lane": "NODE",
+   "title": "Acceptance",
+   "status": "waiting"
+  }
+ ]
+}

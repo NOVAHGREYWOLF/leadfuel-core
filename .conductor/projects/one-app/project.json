@@ -1,0 +1,10 @@
+{
+  "slug": "one-app",
+  "goal": "Eight desktop programs become one app on local AI plus the brain; the Home Node window is the shell.",
+  "group": "home node",
+  "router": "ROUTER #92 · one-app",
+  "lanes": ["NODE", "DOORS", "LAB", "PRIVACY"],
+  "max_desks_at_once": 5,
+  "models": "sonnet or haiku; opus-class tasks flagged to the conductor",
+  "budget_tokens": {"soft": 5000000, "hard": 8000000}
+}
