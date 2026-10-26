@@ -14,18 +14,18 @@ Rules: desks Sonnet by route.py (Opus for door/security); no desk edits live con
 ## Owner answers 2026-10-26 (relayed by CONDUCTOR 053, local_6fc9e01a)
 - No messaging platforms for now: ONE-20 stays PARKED, no bot credentials.
 - EGRESS_* values for novahub PR #1012 stay UNSET (everything off).
-- Hermes proposed drops stay NEEDS-OWNER-WORD, none dropped.
+- Hermes DROP? rows stay NEEDS-OWNER-WORD, none dropped (confirmed again after the retraction below).
 - ONE-16 web search may proceed once PR #1012 lands.
 - Standing: Hermes real-profile browser use must be explicit opt-in per use; edge-tts behind a Law 9 gate, off by default (queued as a NODE desk after the integration report).
 - lab/gpu-lease stays with LAB (not applied to F:\video\ai).
 
-## Hermes drops decided 2026-10-26 (CONDUCTOR 053 relaying owner: "do whatever you need or give me the questions")
-Approve every DROP? row in 28-Hermes-Capability-Inventory.md (branch one-app/g25) as proposed, EXCEPT Curator and Background review become "propose, owner approves" suggestion lists (never unattended writes). Any row that transmits (outbound webhooks, cloud STT, diagnostics/telemetry upload, memory-provider plugins, connectors, x_search, cloud providers) stays dropped until the owner opts in per provider through the out door. TODO (NODE desk, with the opt-in browser and edge-tts gate): mark the rows DECIDED 2026-10-26 in the doc. Reversible; nothing is deleted from Hermes itself.
+## Hermes drops: RETRACTED 2026-10-26 (CONDUCTOR 053 relaying the owner: nothing is dropped without asking him)
+An earlier version of this section said every DROP? row was approved. That was RETRACTED. Every DROP? row in 28-Hermes-Capability-Inventory.md (branch one-app/g25) stays NEEDS-OWNER-WORD. Mark nothing DECIDED. Policy: carry everything instead of dropping; the conductor puts the rows to the owner as questions. Anything that transmits stays off until he opts in per provider through the out door.
 
 ## Integration result (agent a9ef3edc769beea88 reported, its word, not re-run by me)
 one-app/int head c34bb0a (worktree F:\Leadfuel\.claude\worktrees\one-app-int): g7 g8 g17 g19 g21 g22 g24 g25 lab10 merged, no conflicts; full offline run 18/18 suites OK, 1847 tests. gates.sh not run (repo has none). NO background agent is running now, so rotation is clean.
 SUCCESSOR OPENS NEXT (all based on one-app/int @ c34bb0a, NODE, Sonnet unless route.py says otherwise):
- 1. follow-up desk: Hermes real-profile browser opt-in per use; edge-tts behind a Law 9 gate (off by default); mark the Hermes DROP? rows DECIDED 2026-10-26 in 28-Hermes-Capability-Inventory.md; register new tools (store tools, browser, computer, todo/clarify) in the live registry and mode table; UI button to clear the untrusted taint; mount the GPU lease route (proposed 127.0.0.1:8766, unconfirmed); wire Archive and Character panes into the window.
+ 1. follow-up desk: Hermes real-profile browser opt-in per use; edge-tts behind a Law 9 gate (off by default); register new tools (store tools, browser, computer, todo/clarify) in the live registry and mode table; UI button to clear the untrusted taint; mount the GPU lease route (proposed 127.0.0.1:8766, unconfirmed); wire Archive and Character panes into the window.
  2. ONE-11 one installer/one icon (node.iss ships panes, migration checklist per old program, Startup entries consolidated; retires nothing, D5), after 1.
  3. ONE-12 acceptance script per program (unknown never green), last.
  4. ONE-16 web search after novahub PR #1012 lands; ONE-20 parked.
