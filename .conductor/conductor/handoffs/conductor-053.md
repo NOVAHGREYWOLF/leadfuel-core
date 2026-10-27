@@ -18,6 +18,8 @@ Session: local_6fc9e01a-601e-4c47-bb30-815437069049, branch claude/conductor-053
 2. When both reports exist, give the owner the recommendation in five lines, post decisions as Router desk cards, let the owner pick the lane.
 3. Check #97 and the one-app work; relay answers by hand.
 
+Update (offer desk, later): interactive bench artifact JriimebzSFrCtdJhiF6uSi (20 offers, owner-movable weights). New: an AI visibility audit for professional firms ties the warm-network pilot at 80/100 and wins on cash this month, but belongs on etg.ai, not leadfuel.cloud. etg.ai storefront has approved prices and a 5 Nov class, only payment links missing (cards 10 and 11 in section 11 of the report addendum). The leadfuel.cloud pick is unchanged. The desk is at its cap and stopped.
+
 ## Owed
 Owner: pick the lane; review hub PR 1012 (draft); trademark check before publishing NovahOS naming on the site; edge-tts is moot (no cloud TTS). Readiness desk found real risks (Reach sends without per-message approval, Scope calls Anthropic without a spend gate, any service token can act as any customer): put as cards before any sales push.
 
