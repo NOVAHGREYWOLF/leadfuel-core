@@ -6,6 +6,11 @@ Predecessor note: router-095.md. Router #96 session: local_c71b620c-37c5-4c58-bb
 - a24b9fa9d0469889b = ONE-G1 voice UX resume (NODE one-app part 3, Sonnet), worktree one-app-g1, own branch, told: voice LOCAL only, no cloud TTS door.
 - aae83352363b38919 = ONE-MANIFEST (NODE one-app part 4, Opus): doc home-node/35-Node-Model-Manifest.md, design only, branch one-app/manifest.
 
+## ALL FOUR AGENTS FINISHED by 22:36 PT, so #96 may be archived by #97 once #97 is live and this note is pushed (no agent left to die).
+- ONE-G1 voice (a24b9fa9d0469889b): branch one-app/g1 head ca5f9ea, clean, local; hit cap CONTINUING. Done: local voice (SAPI) default, 68 new tests, 184 tests OK. NOT done: JS test, browser check on scratch port, full suite. Integration must add the gate line `Gate("voice", "assistant.voicegate", legacy=True, methods=("voice_settings","voice_configure"))` to gate_list.py after merging g1 into int (guard test fails if missing). Owner call: floating HUD off by default (OD9).
+- ONE-MANIFEST (aae83352363b38919): branch one-app/manifest head 7f7633f (base int 3a907a8), doc home-node/35-Node-Model-Manifest.md + handoffs/ONE-MANIFEST.md. Findings: tier ladder typed in 3+ places (NodePlan.ps1:45-53, NodeCapability.ps1:69-143, app fit.py), one NUM_CTX 24576 measured only for TIER-4, installer `ollama pull` bypasses the app's pull.py rule, possibly non-commercial weights (qwen2.5:3b CPU tier, FLUX.1 Kontext dev, InsightFace antelopev2) must stay owner-only. 9 open questions Q1-Q9 in doc section 7 for you to turn into cards (not posted yet).
+- Merge order owed: g1, manifest (doc only) into int after part 3.
+
 ## Owner answers (cards q649 later, q650 resume, q651 leave; q648 superseded). Memory files written.
 Owner rules: connections made once, usable from desktop and online like Claude (offline case open); voice local, never edge-tts; installer preloads everything per tier.
 
