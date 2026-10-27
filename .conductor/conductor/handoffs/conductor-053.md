@@ -14,7 +14,7 @@ Session: local_6fc9e01a-601e-4c47-bb30-815437069049, branch claude/conductor-053
 - Cards q648-q661 on Router desk (LzmP6QcxmYh9TdvMMjS883). Manifest answers q652-q660 were relayed to #97 (delivery unconfirmed). q661 (where is the approved mockup) unanswered; owner said it does not matter.
 
 ## Next
-1. get_session + list_events on the strategy desk. My GO message to it showed undelivered: confirm it started the task; if idle, send GO again with the readiness findings.
+1. Strategy desk: CONFIRMED RUNNING at 11:52 PM PT (get_session isRunning true, max effort). The LEDGER desk delivered its GO; do not send another. Wait for its STATUS and read the report.
 2. When both reports exist, give the owner the recommendation in five lines, post decisions as Router desk cards, let the owner pick the lane.
 3. Check #97 and the one-app work; relay answers by hand.
 
