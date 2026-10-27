@@ -32,3 +32,6 @@ Ask the owner for mockup feedback, then: (1) take a hub worktree and build the h
 - The Browser pane cannot drive file:// pages; serve the file over localhost from a launch.json entry.
 - Local previews need a charset and a viewport meta; the publish skeleton adds both.
 - The Bash tool's cd changes the session working directory; use absolute paths.
+
+## Update 2026-10-26: audit of novahos.com
+Owner asked for an audit only of novahos.com (SEO, AIO, signup, clutter, UI) and a prompt for an audit team. Done by part 1: findings and the team prompt are in the private folder, file AUDIT-novahos-com-2026-10-26.md. Headline: the domain now serves mockup 3 as a public page with a made-up-data banner and no signup path; who deployed it is unknown. Nothing was changed. Owed: owner decides showcase or real page; someone runs the audit team from that prompt on Sonnet.
