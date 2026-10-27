@@ -22,3 +22,5 @@ Reporting: STATUS to the conductor via mcp__ccd_session_mgmt__send_message (loca
 
 ## Added after the note (2026-10-26 evening, owner request)
 ONE-REMOTE (Opus agent, branch one-app/remote): Claude control channel for NovahOS (local MCP server 'novahos-control', off by default, scoped, audited, does not bypass gates). Spec home-node/34-Claude-Control-Spec.md. Also finished+unmerged since note: cn1, cn7, a2, e2, cd2, cn26, code (plus f2 m b2 l k nav12). Still running: c2 (permission UI), d (models), remote. Stopped: g1 (voice).
+
+UPDATE: ALL wave-1 desks reported (c2, d, code, remote, cn1, cn26, cn7 also finished). Only g1 (voice) was stopped. Opened ONE-INT2 (Opus agent) to merge all 16 finished branches into one-app/int in order and do the cross-chunk glue; read home-node/handoffs/ONE-INT2.md on one-app/int when it reports. Then: next wave, voice resume question, S installer last.
