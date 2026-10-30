@@ -19,3 +19,14 @@ Predecessor: router-096.md. #97 session: local_4faaba43-2587-4976-bf91-f01441277
 ## NEXT
 1. Read ONE-INT-7.md when verify 7 reports; if suites green, tell the owner the install is ready to run.
 2. After the install: a desk for the checklist boxes the owner chooses (conductor decides), accessibility pass (UR-14), mic/WebView2 checks.
+
+## UPDATE 2026-10-30 (ids and status only)
+Owner/conductor orders since: CONDUCTOR 054 (local_6751ce61-7c3e-45f1-8470-4d404e395fa2) says: finish the local install; open every independent desk in parallel; stop opening desks at weekly usage >= 88 percent (get_usage); keep 5 percent reserve; no spend, no downloads without the owner's one yes.
+Desks (background agents of #97; they die if #97 is archived; each has a handoff note in its worktree, restart from it):
+- verify 7 ab7b2c9395eb30fc6 : one-app/int4 (c2efd54 at last look): history flake, full suite x2, selftest, no-network install dry run; ONE-INT-7.md when done.
+- docker stack 8 a16bf3ae86a615da9 : branch one-app/dock, ONE-DOCK.md.
+- ollama tiers 9 aff65fccf9f192e54 : branch one-app/oll, why CPU-only, num_ctx measurements, ONE-OLL.md.
+- a11y 10 a317848e2bcd87028 : branch one-app/a11y, ONE-A11Y.md.
+- hub reads 11 aba36eae95a0d2578 : DONE, one-app/hub 670177d, ONE-HUB.md (hub mail/brain tools now ask in chat; review owner needed for modes.py, permissions.py, registry.py, settings.js).
+- local AI worksheet 12 ae62dc336abca05f7 : MOCKUP FIRST per owner card q683 (conductor relay): publish mockup, stop, wait for approval card; then full interactive + worksheet. Nothing downloads/sends/spends.
+Merge order owed when all report: dock, oll, a11y, hub into int4 (or int5), then one full suite on the result under the heavy lock.
