@@ -24,7 +24,10 @@ Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on
   - CONDUCTOR 054 (local_6751ce61): 8 candidate tasks (estate branch, local-only commits, wake-on-answer, slot labels, stale CI tickets, cert question, owed work, undelivered reports). Asked: add to the Conductor desk, start nothing, reply one line per item.
   - ROUTER #98 (local_c996adb0): who holds the open PRs; post the 17 owner asks as Router desk cards.
   - ROUTER #99 (local_e0483a1b): novahos.com still serves mockup 3 publicly (re-read 10:25 am PT, HTTP 200, banner present); tell Novah; no preview desk may publish there.
-- No replies read yet. None is confirmed read by its target. Replies come as cross-session messages to local_e57e246e.
+- **Replies, 10:23 to 10:30 am PT:**
+  - ROUTER #99: carded as q689 on the Router desk. Its desks wrote only to four new hostingersite.com temp sites, not novahos.com (its own word, not checked by me). Who published novahos.com is still unknown.
+  - ROUTER #98 is now a predecessor. The live one-interface router is ROUTER #100 (local_391d64d3), verified live via get_session. #98 says it forwarded my two requests, but I could not find the forward in #100's transcript, so I re-sent both directly to #100 (delivered, its turn started, 10:31 am PT). #98's roster: hub #939, #932, #997, #1005 and orbit #41 are held by its finished agents and queue to lander a55d1ca11ef46a10f; do not merge, close or retarget them. It knows nothing of the other open PRs.
+  - CONDUCTOR 054: no reply yet.
 
 ## Gotchas
 - `list_sessions` truncates; read the saved result file. App PR badge #8 is the shared checkout's branch, not the session's work.
