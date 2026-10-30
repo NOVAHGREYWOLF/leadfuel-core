@@ -13,7 +13,7 @@ Session: local_e57e246e-57a0-4534-90df-ead507425fff, group WATCH. Task: owner as
 
 ## Next (only if the owner says "archive tier 1")
 Re-read each row (get_session, gh, git ls-remote), then archive one at a time through the gate.
-Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on GitHub); 912ec43a and 23dc5738 (commits cf9ebc6, 3c388dc not on GitHub); 178af2ba (two untracked files in worktree).
+Do NOT archive routers #76, #82, #89 to #93 until 054 answers the unheld-PR question. Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on GitHub); 912ec43a and 23dc5738 (commits cf9ebc6, 3c388dc not on GitHub); 178af2ba (two untracked files in worktree).
 
 ## Owed / not delivered
 - Owner: estate-branch decision; back up the local-only commits; fix or delete the disabled wake-on-answer task (permission mode is settable only in the app).
@@ -27,7 +27,8 @@ Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on
 - **Replies, 10:23 to 10:30 am PT:**
   - ROUTER #99: carded as q689 on the Router desk. Its desks wrote only to four new hostingersite.com temp sites, not novahos.com (its own word, not checked by me). Who published novahos.com is still unknown.
   - ROUTER #98 is now a predecessor. The live one-interface router is ROUTER #100 (local_391d64d3), verified live via get_session. #98 says it forwarded my two requests, but I could not find the forward in #100's transcript, so I re-sent both directly to #100 (delivered, its turn started, 10:31 am PT). #98's roster: hub #939, #932, #997, #1005 and orbit #41 are held by its finished agents and queue to lander a55d1ca11ef46a10f; do not merge, close or retarget them. It knows nothing of the other open PRs.
-  - CONDUCTOR 054: no reply yet.
+  - ROUTER #100 answered direct (read from its own transcript): it holds only the one-interface set (lander a55d1ca11ef46a10f) and will not name a holder for the other PRs; it declined to post the 17 cards (mixed projects, credential items, no cards for decidable items) and asked that routers #76, #82 and #89 to #93 not be archived on its account.
+  - CONDUCTOR 054: added all 8 items as unqueued candidate tasks on the Conductor desk (ARCH-NODE-1 to 4 verified by me in desks/node; the sensors, vault, watch, suite, intelligence, arms and router ones not checked). Second message (unheld PRs; which router posts each of the 17 asks) sent 10:38 am PT: queued, not delivered. Its answer comes to local_e57e246e.
 
 ## Gotchas
 - `list_sessions` truncates; read the saved result file. App PR badge #8 is the shared checkout's branch, not the session's work.
