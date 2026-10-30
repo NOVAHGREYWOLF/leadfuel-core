@@ -18,3 +18,8 @@ hub #969 (names ratchet), #970 (wall run recipe), #973 (connector tool map), #98
 
 ## Gotchas
 Stop hook misreads the word handoff as a rotation. gh times out on TLS; use REST. ArtifactData list floods context.
+
+## Update 2026-10-30 ~14:30 PT (supersedes the Landed and Open lines above)
+- cc89 hub #991, cc82 hub #1016, cc100 hub #1020 are on main (git ancestor checked). cc102 slice hub #1003 was REVERTED out of train hub #1031 (a4bfe3fe); ROUTER #102 (local_64327854-f015-49b3-a8c6-7328850d1538) re-landed it, now on main via hub #1039 (6a31ef4c). Build page cc102 stays in progress.
+- docs/ACCOUNT_READERS_TODO.md on main: 16 built, 47 remain; most wait on privacy steps or are platform machinery. Open candidates: sf-slack, st-vectors, sf-book. One desk, one PR, only if the owner queues it.
+- Conductor 055 (local_113a1094-db34-4ab5-b217-b7ea88dd659e): stay open, launch nothing. No agent of mine is running. No successor requested.
