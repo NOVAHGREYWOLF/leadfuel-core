@@ -49,3 +49,7 @@ Merge order owed when all report: dock, oll, a11y, hub into int4 (or int5), then
 
 ## UPDATE 5 (2026-10-30 12:47 PT) SUCCESSOR IS ROUTER #101, SLOT 07
 Slot 06 was taken by another launch (ROUTER #100 one-interface, started 10:04 PT) before my arm; I reset slot 06 to idle (fireAt 2027-01-01) before my 12:48 fire, so no duplicate. Successor armed in way-slot-07 for 12:50 PT as ROUTER #101 · one-app (supersedes #98/#100 above). Owner answered q685=B, q686=A: act via a small desk (unset CUDA_VISIBLE_DEVICES, verify GPU), mark both cards routed. Do not archive #97 until mockup v2 desk 14 (ac87e0e743ae6c543) reports.
+
+## UPDATE 6 (2026-10-30 12:5x PT) SUCCESSOR IS ROUTER #102, SLOT 05
+Slot 07 fired as #101 but was NOT in Bypass (stopped at SLOT-NOT-BYPASS before titling; dead run archived); slot 07 needs Bypass from the owner. Successor armed in way-slot-05 as ROUTER #102 · one-app for 12:56 PT (supersedes #98/#100/#101 above). Read back with get_session, send GO from #97.
+From ROUTER #100 (one-interface, local_391d64d3): the owner's note on card 'where is the approved mockup' says it is the mockup from chat (found: artifact EFT8RRPXxdbPeRrFShpPDL, no System row) AND that 'the big write-up of all the AI chats should be pulled'. Not confirmed which doc that is; candidates: NovahOS Document Set 69Gm6KWw7GXzwmXLPyqqfF, NovahOS: The Operating System FsSdMCtV3d25GbB3nYCNRu (10-11). Ask the owner or the local AI worksheet desk (lai 12 read the mail ideas).
