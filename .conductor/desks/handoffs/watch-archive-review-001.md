@@ -11,6 +11,11 @@ Session: local_e57e246e-57a0-4534-90df-ead507425fff, group WATCH. Task: owner as
 - gh state of ~190 PRs; dirty/pushed state of 31 worktrees; whether each head commit is on GitHub; scheduled tasks; ci-novahub lock folder.
 - Taken on trust: each session's last-message claims; handoff files not opened; router successors inferred from numbering and dates.
 
+## Artifact and build files (the successor keeps these)
+- The review artifact is https://claude.ai/artifact/EaXY2WLYoFYCXv9kqgeFEw (v2, private, owner's). The successor reads it first (Artifact action read), then publishes every update to that same url. It is the live record of which sessions can be archived and why.
+- Private build files, not in git: `F:\Claude Sessions\handoff\watch-archive-review\` (README.txt has the rebuild steps: data.py rows, generate.py, prs.py, sessions2.json).
+- Successor: `WATCH · desk archival analysis part · 2`, started 2026-10-30 by the owner's word. Pending replies (CONDUCTOR 054 on the unheld PRs and the 17 owner asks) should go to it.
+
 ## Next (only if the owner says "archive tier 1")
 Re-read each row (get_session, gh, git ls-remote), then archive one at a time through the gate.
 Do NOT archive routers #76, #82, #89 to #93 until 054 answers the unheld-PR question. Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on GitHub); 912ec43a and 23dc5738 (commits cf9ebc6, 3c388dc not on GitHub); 178af2ba (two untracked files in worktree).
