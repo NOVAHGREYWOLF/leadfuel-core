@@ -30,3 +30,9 @@ Desks (background agents of #97; they die if #97 is archived; each has a handoff
 - hub reads 11 aba36eae95a0d2578 : DONE, one-app/hub 670177d, ONE-HUB.md (hub mail/brain tools now ask in chat; review owner needed for modes.py, permissions.py, registry.py, settings.js).
 - local AI worksheet 12 ae62dc336abca05f7 : MOCKUP FIRST per owner card q683 (conductor relay): publish mockup, stop, wait for approval card; then full interactive + worksheet. Nothing downloads/sends/spends.
 Merge order owed when all report: dock, oll, a11y, hub into int4 (or int5), then one full suite on the result under the heavy lock.
+
+## UPDATE 2 (2026-10-30, at the 300k cap)
+- ollama tiers 9 aff65fccf9f192e54 DONE: one-app/oll 36fb989 (GPU works now; CPU-only cause = GPU discovery once at server start, 5 of 11 starts fell back; TIER-4 qwen2.5:7b fits at 24576, ceiling 31744). Cards q685 (auto-update) and q686 (CUDA_VISIBLE_DEVICES) posted for the owner.
+- supervisor gpu 13 aaad4f6df94e81fdd RUNNING: one-app/sup from oll (restart-once-when-CPU detection, UNKNOWN never restarts), ONE-SUP.md.
+- hub reads 11 DONE (one-app/hub 670177d). Still running: verify 7, docker 8 (a16bf3ae86a615da9), a11y 10 (a317848e2bcd87028), local AI worksheet 12 (ae62dc336abca05f7, mockup first, wait for approval card).
+- This router is at the cap. SUCCESSOR PROMPT: 'You are ROUTER #98 · one-app. Invoke leadfuel-way:way and leadfuel-way:router, read .conductor/router/handoffs/router-097.md on branch claude/router-97, re-read live state (git in F:\Leadfuel one-app-* worktrees, ArtifactData on the Router desk page, get_session on the desk ids), then run the Claim steps. #97 stays open until its agents report.'
