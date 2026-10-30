@@ -46,3 +46,6 @@ Merge order owed when all report: dock, oll, a11y, hub into int4 (or int5), then
 ## UPDATE 4 (2026-10-30 12:4x PT)
 - Owner feedback on the approved window mockup (artifact EFT8RRPXxdbPeRrFShpPDL): right logos; all pages (settings, tools, connections ...); Character Design embedded in chat as a tool, not a separate app; mimic everything Claude has (audit = doc 36 + 37 matrix). Mockup v2 desk 14 (background agent of #97, id in the task list) is building it; it dies if #97 is archived: DO NOT ARCHIVE #97 UNTIL desk 14 reports (override of the slot brief's 'archive #97 as soon as you are live'). Also: the Hermes-base card and the mockup-approval card go AFTER v2 is published.
 - Successor slot: way-slot-06 armed for 12:48 PT (title ROUTER #100 · one-app); read back with get_session and send GO from #97.
+
+## UPDATE 5 (2026-10-30 12:47 PT) SUCCESSOR IS ROUTER #101, SLOT 07
+Slot 06 was taken by another launch (ROUTER #100 one-interface, started 10:04 PT) before my arm; I reset slot 06 to idle (fireAt 2027-01-01) before my 12:48 fire, so no duplicate. Successor armed in way-slot-07 for 12:50 PT as ROUTER #101 · one-app (supersedes #98/#100 above). Owner answered q685=B, q686=A: act via a small desk (unset CUDA_VISIBLE_DEVICES, verify GPU), mark both cards routed. Do not archive #97 until mockup v2 desk 14 (ac87e0e743ae6c543) reports.
