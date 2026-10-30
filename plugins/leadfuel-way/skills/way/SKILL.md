@@ -32,6 +32,7 @@ A conductor or router that finds itself building something stops and hands it to
 The owner does not answer numbered lists in chat. Two pages, one job each:
 - **Router desk**: questions for the owner, one card each with options and a default. The router posts them and acts on the clicks. Desks never ask the owner in chat: they send `ASK:` to their router. Never put a plain merge or deploy on the owner's list; only deploy-configuration PRs, spending, credentials and irreversible steps.
 - **Conductor desk**: the complete task list, grouped by lane, with full documentation per task. Only tasks the owner has queued get started. The router and the conductor never pick work on their own.
+- **Every project has six documents from day one** (owner, 2026-10-30, card q763 A): its own Router desk page, a project ledger page, `project.json`, `tasks.json`, an owner-steps sheet and a roster. `leadfuel-way:new-project` step 3 lists them; the router checks them before it opens the first desk.
 - Where the page URLs are: board doc `router/desks`. If a page does not exist yet, say so; do not invent a substitute list in chat.
 
 ## 2a. Titles and groups: desks are grouped by project

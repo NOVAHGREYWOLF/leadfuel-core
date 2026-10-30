@@ -18,16 +18,21 @@ Nothing is ever ungrouped. The owner, 2026-10-07: "The sidebar group becomes the
 - **No new lane groups.** The existing lane groups stay, holding the sessions that have not migrated. Do not delete them and do not empty them: sessions leave them one at a time, never in bulk, by the owner or by each session itself on its own first turn.
 A group is a shelf, not an address: route to a session by its full name, never to a group.
 
-## 3. The two pages
-- **Router desk**: questions for the owner, one card each, with options and a default.
-- **Conductor desk**: the complete task list, grouped by lane.
-Both are artifact pages whose URLs are in the board doc `router/desks`, built by their own sessions. Check they exist; if either does not, say so to the owner and stop short of inventing a stand-in.
+## 3. The six required documents
+Every project has all six from day one (owner, 2026-10-30, card q763 A):
+1. **Router desk page**: the project's own page of questions for the owner, one card each, with options and a default. Built from the template `.conductor/templates/router-desk.html`; its address goes on the board doc `router/desks`. Until a project has its own page, its cards go on the shared Router desk page, and that is recorded as the page in `project.json`.
+2. **Project ledger page**: the project's running record (what is done, open, owed).
+3. **`project.json`** (step 4).
+4. **`tasks.json`** (step 4).
+5. **Owner-steps sheet**: the steps only the owner can take, each with a done mark.
+6. **Roster**: who holds what (`router/roster` on the Build Board, with the project's sessions and agents).
+The **Conductor desk** (the complete task list, grouped by lane) is estate-wide and is not one of the six. The page URLs are in the board doc `router/desks`, built by their own sessions. **Check all six exist; a missing one is made now, or carded to the owner if only the owner can make it. Do not open the router until the check passes, and never invent a stand-in.**
 
 ## 4. Plan files
 In the project's repo, under `.conductor/` (public repo: ids, titles, status, PR numbers only): `project.json` (slug, goal, `group` (the project's sidebar group name, exactly as created in step 2), lanes, budgets) and `tasks.json` (task id, lane, title, effort, envelope, optional `model_pin`, done-criteria). The Conductor desk page is the owner's view of the same list; the files are what the router reads. If the project already has a plan, read it and add to it.
 
 ## 5. One router
-Open exactly one session for the project, titled `ROUTER #N · <project>`, filed in the ROUTER group, on Sonnet. How a session is opened is in `leadfuel-way:router`, "Opening a desk" (`start_session` if the tool exists, else a launch slot with no click (`leadfuel-way:launch`; a slot session cannot be filed in the ROUTER group, so title it and record it), else a `spawn_task` chip the owner clicks, then title, group and model). Its brief names the project, the queued task ids, the true source of the instruction, and tells it to read `leadfuel-way:way` and `leadfuel-way:router`.
+Run the check in step 3 again first: all six documents exist. Then open exactly one session for the project, titled `ROUTER #N · <project>`, filed in the ROUTER group, on Sonnet. How a session is opened is in `leadfuel-way:router`, "Opening a desk" (`start_session` if the tool exists, else a launch slot with no click (`leadfuel-way:launch`; a slot session cannot be filed in the ROUTER group, so title it and record it), else a `spawn_task` chip the owner clicks, then title, group and model). Its brief names the project, the queued task ids, the true source of the instruction, and tells it to read `leadfuel-way:way` and `leadfuel-way:router`.
 
 ## 6. Confirm
 Re-read the router group: the new router is there, titled, on the model you set. Re-read `list_groups`: the project's group is there. Tell the owner in one line what exists. A step you could not complete goes in the answer as not done.
