@@ -20,7 +20,11 @@ Do NOT archive: 197a5c5c, 36d20e10, bf111dae (estate branch, DO NOT PUSH, not on
 - Router desk cards (q23, q319, q398 and others) were not read.
 - Ask ROUTER #98 who holds open PRs: hub #939, #932, #957, #592, #704, #778, #874, #875, #930, #945, #960; novahub-mcp #39; leadfuel-core #9, #40.
 - Three stale tickets in `.locks/ci-novahub.wait` (not mine to delete). way-slot-06 and 07 still labelled for dead routers #90 and #93.
-- No messages were sent by this session.
+- **Sent 2026-10-30, about 10:21 am PT, on the owner's word ("send these over"):** three messages, each reported delivered with its turn started, and each found in the target's own transcript by search:
+  - CONDUCTOR 054 (local_6751ce61): 8 candidate tasks (estate branch, local-only commits, wake-on-answer, slot labels, stale CI tickets, cert question, owed work, undelivered reports). Asked: add to the Conductor desk, start nothing, reply one line per item.
+  - ROUTER #98 (local_c996adb0): who holds the open PRs; post the 17 owner asks as Router desk cards.
+  - ROUTER #99 (local_e0483a1b): novahos.com still serves mockup 3 publicly (re-read 10:25 am PT, HTTP 200, banner present); tell Novah; no preview desk may publish there.
+- No replies read yet. None is confirmed read by its target. Replies come as cross-session messages to local_e57e246e.
 
 ## Gotchas
 - `list_sessions` truncates; read the saved result file. App PR badge #8 is the shared checkout's branch, not the session's work.
