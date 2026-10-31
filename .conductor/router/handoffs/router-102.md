@@ -10,6 +10,8 @@ ROUTER #102 = local_64327854-f015-49b3-a8c6-7328850d1538 (slot way-slot-04) hold
 ## Running (background agents; report to #102 only)
 Wave 1: CC-91 crews a2c2c5662d13a106a (sonnet); CC-77 replay store a0a53dda4774bb555 (sonnet, migration file only); CC-50 local command center a985b9cad0fef6c17 (opus; owner restarts/opens); CC-102 slice 2 account readers aa202a49146e9bc15 (sonnet, ONE PR for sf-slack st-vectors sf-book); CC-97 echo tts switch (DOORS, opus) ad134b279cd2fb742. Each ends in a DRAFT PR; none merges. Train them with a builder agent as for trains 2/3.
 
+UPDATE after writing: CC-50 agent REPORTED DONE: draft PR NOVAHGREYWOLF/leadfuel-estate #1 (branch node/cc-50-local-door, verified OPEN draft by gh). HAZARD (desk's reading, unverified): uncommitted HUB_COMMIT edit in the shared F:\Leadfuel checkout and a hub running on 127.0.0.1:8080 since 2026-10-30 8:57 am PT, so local authority may already be ON before CC-11. Owner card q816 (default: a desk checks the running hub read-only). Four agents remain: CC-91, CC-77, CC-102b, CC-97. Read the HEAD of origin/claude/router-102, not just 645e537.
+
 ## Next
 1. Collect the 5 reports; verify each draft PR with gh; put green ones in train 4 (one builder; merge main in, hub tests job pytest on exact head, ci-novahub hold, merge commit, then check code on main by file).
 2. Doing rows nobody claims (#89 #91 #92 #93 #104 all answered: none hold them): cc04 cc16 cc23 cc24(rest) cc37 cc38 cc40 cc55 cc57 cc61-65 (hub halves merged: #1026 #1021 #1019 #1006 #1015) cc66 cc67(merged #997) cc68 (#1005 open, held for money privacy rule) cc69 cc70 cc71 cc83 cc95 b07 m12. Check each row's PR with gh first (Build page PR numbers are stale), then reopen as desks.
