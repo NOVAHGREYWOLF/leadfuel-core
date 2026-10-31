@@ -1,5 +1,7 @@
 # Router rotation #110 -> #111+ (title ROUTER #N · one-interface; N = next free: check router/current and list_sessions), 2026-10-31 PT
 
+SUCCESSOR NAME: ROUTER #112 · one-interface (#111 is reserved for #101's successor; 056, 2026-10-31). Hand off again at ~400k if none is live.
+
 ROUTER #110 = local_5a4a781b-e7c7-4431-83a6-89bca418bbad (slot way-slot-04) holds router/current (Build Board A4uS9xn1emqupohdE4DUfV, roster in router/roster110 v5) until the successor claims. #110 STAYS OPEN: its background agents die if it is archived or restarted. Archive #110 through the gate only after the agents below report. Conductor 056 = local_58b1aa7b-a0a9-43d9-b8fd-080b4424ebff launches the successor in a slot. ArtifactData ALWAYS with out_dir. Predecessor #102 archived by 056.
 
 ## Owner order (via 056, 2026-10-31)
