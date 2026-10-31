@@ -36,3 +36,8 @@ Run the check in step 3 again first: all six documents exist. Then open exactly 
 
 ## 6. Confirm
 Re-read the router group: the new router is there, titled, on the model you set. Re-read `list_groups`: the project's group is there. Tell the owner in one line what exists. A step you could not complete goes in the answer as not done.
+
+<!-- WAY-PANES-1 begin -->
+## 7. Panes (WAY-PANES-1)
+The project's Router desk page (document 1 in step 3) is built from the template with its Home | Code switch and its Build and Desk panes (`leadfuel-way:way`, section 8). Step 3's check includes that: a page without the switch and both panes is out of date, so rebuild it from the current template. Fill the project config (`name`, `slug`, `prefix`, `ledgerUrl`, `conductorUrl`, `routerTitle`, `buildUrl`) and seed the `build` collection, or leave it empty and say so.
+<!-- WAY-PANES-1 end -->

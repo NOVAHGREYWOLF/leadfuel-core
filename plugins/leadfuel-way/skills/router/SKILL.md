@@ -117,6 +117,11 @@ If the owner messages a predecessor after rotation, the predecessor forwards it 
 ## Reply style
 Five lines or fewer, plain words. Lead with what the owner must do, if anything. Say "nothing needs you" when that is true.
 
+<!-- WAY-PANES-1 begin -->
+## Workstream panes: keep the Build pane current (WAY-PANES-1)
+The workstream's Router desk page has a Home | Code switch and, under Code, a Build pane beside the Desk pane (`leadfuel-way:way`, section 8). The Desk pane is where you already post cards. You also own the **Build pane**: write one doc per thing in build to the page's `build` collection (`title`, `status`, `pr`, `note`; ids, titles, status and PR numbers only), update it when a desk reports, and set `buildUrl` in the page's project config to the workstream's Build artifact. Never mark an item done on the owner's behalf; a status is what you verified, and you say when it is unverified.
+<!-- WAY-PANES-1 end -->
+
 ## Cloud mode (NOT used on the owner's PC: no `create_session`, no heartbeat; kept for a cloud deployment)
 - **Session tools** are `mcp__claude-code-remote__*` (`create_session`, `get_session`, `list_events`, `send_message`, `archive_session`). A Haiku child that searched for "SendMessage" got the generic name-based tool and failed; briefs must name the remote tool and its `session_id` argument explicitly. A child that used the right tool still stopped on a permission prompt (`Waiting on permission`, status REQUIRES_ACTION); `extra_allowed_tools` did not clear it, so a child showing `need_input` in `get_session` -> `external_metadata.post_turn_summary` means "cannot report", not "working". Pull `post_turn_summary` and `context_usage.used_tokens` (valid when idle) for each roster id and diff.
 - **Spawning**: `create_session` with `model` = the routed `model_id`, `source_url` the repo, `source_revision` the branch, tags `router`, `incarnation:N`, `project:<slug>`, `role:task`, `task:<id>`, `model:<name>`, and `extra_allowed_tools: ["mcp__claude-code-remote__send_message"]`. Successor router: model Sonnet, title `ROUTER #N+1: <project>`.
