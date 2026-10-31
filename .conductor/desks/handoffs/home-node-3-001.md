@@ -33,6 +33,17 @@ shows no onboarding. Then note to NODE: Open WebUI is not in `services.json`, so
   undecided. Not verified: Open WebUI actually listing Ollama's models (needs a login).
 - No handoff messages were sent to other sessions.
 
+## Update 2026-10-31 15:40 PT (supersedes "Next" above)
+- Owner decision, in chat to this session: "all of these things should be running from my NovahOS app. we dont
+  need any of the other apps. they will run in background." Direction: headless services owned by the NovahOS
+  supervisor; no tray or standalone-app windows. Embed-vs-replace for Hermes/Open WebUI panes is still undecided.
+- This session started desk `local_2dc2a18a-14e7-4e5b-9a5f-e6c8e3684a61` (NODE · home node part · 4) for it. It
+  has handed off at its cap; its note is `.conductor/desks/handoffs/home-node-4-001.md` on branch
+  `claude/node-services-persist-345b07` (local only: push is disabled in that repo by design, VAULT sync).
+  Built and tested on a spare port, NOT live: the live manifest is unedited, no reboot test yet.
+- Owner decisions still owed to desk 4's successor: disable the Open WebUI desktop app's HKCU Run value (export
+  to `.reg` first); any always-on Hermes gateway; a reboot test. No successor desk is running.
+
 ## Gotchas
 - `Ollama\server.log` goes stale when the supervisor starts the server; the live log is the supervisor's
   `ollama.log`. A check on the stale file returned 0 and looked like a pass.
