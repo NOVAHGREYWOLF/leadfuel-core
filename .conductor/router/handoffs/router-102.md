@@ -1,0 +1,21 @@
+# Router rotation #102 -> #110+ (title ROUTER #N · one-interface; N = next free, check router/current and list_sessions), 2026-10-30 PT
+
+ROUTER #102 = local_64327854-f015-49b3-a8c6-7328850d1538 (slot way-slot-04) holds router/current (Build Board A4uS9xn1emqupohdE4DUfV, v663+) until the successor claims. #102 STAYS OPEN: its 5 background agents die if it is archived. Archive #102 through the gate only after they report. Conductor 056 = local_58b1aa7b-a0a9-43d9-b8fd-080b4424ebff (launches the successor in a slot). ArtifactData ALWAYS with out_dir. Roster: board router/roster102 (v5).
+
+## Done (gh-read by me)
+- hub trains LANDED: #1031 7cb31fc4, #1039 6a31ef4c (re-landed #1003 #1018 #939 #997 #1025 #1029; code checked on main by file), #1040 d45910fa (#975 #976 #977 #979 #980). #100 archived through the gate.
+- Cards: q741 answered A (routed); q742 digest; q802-q815 posted for the gated Command Center rows (CC-01 q802, 51 q803, 86 q804, 88 q805, 53 q806, 52 q807, 56 q808, 58 q809, 59 q810, 31 q811, 32 q812, 39 q813, 36 q814, 80 q815), unanswered when I wrote this.
+- Way-for-others answers q716-q726 sent to NODE part 3 (queued) and part 2 (delivered).
+
+## Running (background agents; report to #102 only)
+Wave 1: CC-91 crews a2c2c5662d13a106a (sonnet); CC-77 replay store a0a53dda4774bb555 (sonnet, migration file only); CC-50 local command center a985b9cad0fef6c17 (opus; owner restarts/opens); CC-102 slice 2 account readers aa202a49146e9bc15 (sonnet, ONE PR for sf-slack st-vectors sf-book); CC-97 echo tts switch (DOORS, opus) ad134b279cd2fb742. Each ends in a DRAFT PR; none merges. Train them with a builder agent as for trains 2/3.
+
+## Next
+1. Collect the 5 reports; verify each draft PR with gh; put green ones in train 4 (one builder; merge main in, hub tests job pytest on exact head, ci-novahub hold, merge commit, then check code on main by file).
+2. Doing rows nobody claims (#89 #91 #92 #93 #104 all answered: none hold them): cc04 cc16 cc23 cc24(rest) cc37 cc38 cc40 cc55 cc57 cc61-65 (hub halves merged: #1026 #1021 #1019 #1006 #1015) cc66 cc67(merged #997) cc68 (#1005 open, held for money privacy rule) cc69 cc70 cc71 cc83 cc95 b07 m12. Check each row's PR with gh first (Build page PR numbers are stale), then reopen as desks.
+3. Arm repo PRs open (gh, I read checks): orbit #41 (6 pass), odyssey #62 (3 pass), signal #39 (2 FAIL), scope #31 draft, lucid #131 (3 pass); #61 odyssey and #130 lucid are drafts that look like duplicates. Land each with its own repo CI on the exact head, one per repo.
+4. Wave 2 candidates: CC-79 (needs CC-77's store), CC-75, CC-80/36/39 after cards. Held: hub #1028 (reach GET), #1005 (money privacy), #982 (deploy config). #1030/#1023 await ROUTER #101's card O4.
+5. Message to ROUTER #97/#103 about mockup EFT8RRPXxdbPeRrFShpPDL was never sent; #103 now holds one-app, probably moot.
+
+## Gotchas
+Weekly usage: stop at 88% (056 said 31% earlier). PRIVACY items (data_rights.py two LOCAL_EMAIL_TABLES lines; rule for drawing people) have no router. API shows 0 steps on test jobs: read the job log. Never merge on a peer's "green": read the run for the head SHA. Conductor 055 archived/replaced by 056; 056 holds the conductor field.
