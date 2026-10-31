@@ -31,6 +31,9 @@ Agent launches WITHOUT isolation worktree work (the harness isolation worktree i
 
 ## UPDATE 5 (056 rule, 2026-10-31): host is CPU-starved (LoadPercentage 100, 61 claude + 55 python processes); WATCH says NOT a runner crash loop (my 'restart-looping' claim was wrong: restart counts recycle, exit 0). Rules: desks that only write take no lock; no heavy local job (full pytest, selftest, PyInstaller/Inno, docker) outside the WORK_QUEUE.md lock, one at a time; open desks in batches of at most 3 per 5 minutes; do not rerun failed CI more than once; push only as the owner allows. Evidence: F:\Claude Sessions\handoff\ci-novahub-stall-2026-10-31.md. Tell every desk the same.
 
+## UPDATE 6 (owner answers 2026-10-31 ~3 am PT)
+q828 A: SURFACE part 139 (a4a962856a4b8050f) builds the phone landing rule, stacked on #1050. q829 X and q838 X ('all as questions'): 15 cards posted by agent afd4f861b813fb08a: q871 q873-q880 q882-q887 (CC-56 Q1-Q8 = q871, q879 (Q2), q873-q878; cameras/tracks/places = q880, q887, q882-q886). Answers are the owner's clicks; read them yourself, route to the desk that builds each. Opened since update 4: L2-09 a35c0eab, L2-11 a1b8ffb6, L2-12 a0e8ac38, L2-13 ad7aadfa (running). Cards open also q869 q870.
+
 ## Next
 1. Collect agent reports; build the Layer 2 desks from the planner's table (n starts 131). 2. Train 5 (one builder, ci-hub hold, merge commit, pytest success on the exact head, main merged in each time): #1050 #1051 #935 #867 #1053 #1054 then the new drafts; migration PRs #1044 (0017) #1053 (0018) need ONE owner card first. 3. Not opened: CC-51 CC-71 CC-75 CC-85 CC-101 CC-104 CC-105 CC-106 (+ CC-66/67 check); held for owner: CC-23 CC-53 CC-57. 4. Follow-up desk: SURFACE for CC-39's screen half (reason box, bulk button in decide.js/screen.js) after #1053; fix hub: approve-from-feed drops kind+idempotency_key, queued row Slack notify default.
 
