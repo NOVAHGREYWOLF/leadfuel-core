@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import threading
 import urllib.error
@@ -127,8 +128,13 @@ def chat(base: str, model: str, messages: list, post=_post) -> str:
         raise ValueError("no model chosen")
     clean = [{"role": m["role"], "content": str(m["content"])} for m in messages
              if isinstance(m, dict) and m.get("role") in ("user", "assistant", "system")]
-    data = post(base + "/api/chat", {"model": model, "messages": clean, "stream": False}, 600)
-    return (data.get("message") or {}).get("content", "")
+    # think=False: some ladder models reason before answering by default; a plain chat window
+    # wants the answer only. Models without a thinking mode accept the flag and ignore it.
+    data = post(base + "/api/chat",
+                {"model": model, "messages": clean, "stream": False, "think": False}, 600)
+    text = (data.get("message") or {}).get("content", "")
+    # Older Ollama builds put the reasoning inline instead of in a separate field.
+    return re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL).strip()
 
 
 class App:

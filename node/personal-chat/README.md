@@ -83,7 +83,7 @@ the ladder is a decision for `NodeSpec.ps1`, not for this build.
 | Store organisation, product, licence-key benefit with a 3-activation limit | Owner, Polar setup card |
 | Key-entry screen in the app (the `/api/activate` route exists) | Lands with the Polar card |
 | Polar endpoint shapes in `seats.py` | Written from Polar's public docs, not exercised: needs a test-mode key once |
-| The CPU-only row's model licence | Check before sale: it may be a research (non-commercial) licence, and non-commercial items never reach other users |
+| The CPU-only row's model licence | Done 2026-10-31 (owner card q1030 A): the research-licence model was swapped in NodeSpec.ps1 for an Apache-2.0 one. TIER-6 is under the Llama 3.2 Community License (commercial with conditions): owner decision still open |
 | Mac tier mapping | NodeSpec.ps1 (C12) |
 | Clean-machine install on Windows and on a Mac | A spare machine |
 | Upload, release, download page, live sale | Owner handoff approval (preview-only rule) |

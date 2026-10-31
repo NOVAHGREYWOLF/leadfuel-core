@@ -70,7 +70,7 @@ def test_no_verdict_and_no_ladder_has_no_model():
 
 def test_the_ladder_is_not_restated_in_personal_chat():
     """NodeSpec.ps1 holds the only copy. No threshold or ladder model name may appear here."""
-    needles = ["qwen2.5", "mistral-small", "llama3.2", "23.5", "15.5", "11.5", "7.5", "5.5"]
+    needles = ["qwen2.5", "qwen3", "mistral-small", "llama3.2", "23.5", "15.5", "11.5", "7.5", "5.5"]
     hits, scanned = [], 0
     for base, _dirs, files in os.walk(_DIR):
         if {"dist", "dist-mac"} & set(base.split(os.sep)):
@@ -208,3 +208,23 @@ def test_chat_with_model_down_is_503_not_a_fake_answer(tmp_path, monkeypatch):
         assert code == 503 and "reply" not in j
     finally:
         srv.shutdown()
+
+
+# -- thinking models ------------------------------------------------------------------------
+
+def test_chat_asks_for_no_thinking_and_strips_an_inline_trace():
+    sent = {}
+
+    def post(url, body, timeout):
+        sent.update(body)
+        return {"message": {"role": "assistant",
+                            "content": "<think>\nplanning...\n</think>\n\nHello there."}}
+
+    reply = pc.chat("http://127.0.0.1:11434", "any-model", [{"role": "user", "content": "hi"}], post=post)
+    assert sent["think"] is False
+    assert reply == "Hello there."
+
+
+def test_chat_leaves_a_plain_answer_untouched():
+    post = lambda url, body, timeout: {"message": {"role": "assistant", "content": "Hi."}}
+    assert pc.chat("http://127.0.0.1:11434", "m", [{"role": "user", "content": "hi"}], post=post) == "Hi."
