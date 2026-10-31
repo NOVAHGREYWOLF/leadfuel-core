@@ -18,3 +18,6 @@ Open owner cards of mine: q869 q870 q896 q946 q947-q950 q975 q976 q981 q995 and 
 
 ## Gotchas
 Hook "handoff without successor" fires on the word handoff in tool text: ignore unless a real note exists. ROUTER #110 ready for conductor gate (origin/claude/router-110 ac34cf10). Agents die with the router: do not archive or restart while they run.
+
+## UPDATE 1 (c08 reported)
+c08 p155 CONTINUING: hub #1089 (CWC-G7 tests). ATLAS-MCP-MAP covered by #973, H3 by #987. Owed cards: (1) G1/G2/F5 ownership: wall files are INTELLIGENCE-owned, default confirm SURFACE for additive edge+limiter edits; (2) G3 source: declared arm field on egress.Door (DOORS) vs count egress_log.calling_app, default declared field; (3) H2 Connections first screen when no connections, after #1069, default yes; (4) H1 COMMAND_HOME flip, default hold until S9. G5/H1/H2 owner-blocked. Only c09 p156 still running.
