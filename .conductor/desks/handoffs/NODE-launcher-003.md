@@ -17,6 +17,11 @@ UPDATE 12:32 PT: ROUTER #113 started 12:21 in slot 01 as local_aaa2cb23 (read ba
 - Slot 07 is NOT Bypass (SLOT-NOT-BYPASS mode=default, measured twice); owner step still owed. The scheduler also fires 6 to 12 minutes late at times.
 - Weekly all-models 75% at ~12:00 PT (resets 2 pm PT Oct 31). The launcher does not open work, but tell requesters the figure.
 
+## UPDATE 13:22 PT (read this first)
+- ROUTER #114 · app brain link started 12:49 in slot 03 as local_e4aa5fa8 (LAUNCHED queued to 057; it was already working, GO not sent by me). Still UNFIRED at 13:21: ROUTER #119 (slot 05, fireAt 12:40; requester #116), TRUTH · Resonance Effect part · 3 (slot 06, fireAt 12:17, Fable pinned in slot 06 SKILL.md; requester #5 local_5991088c), ROUTER #118 · reports (slot 04, fireAt 12:06; armed by #108, GO sender #108). Cheap poll: list_task_runs with limit 1 and watch totalRuns (05 = 15, 06 = 20, 04 = 21); a new run shows as +1, then list_task_runs limit 3 to find it.
+- Finding: a fire starts only when no session of that slot's routine is mid-turn at a tick; slots shared with live routers that wake every few minutes hold a fire for an hour or more. Fix for the owner: set way-slot-07 to Bypass (its sessions are all archived) and make more Bypass slots; keep new launches out of slots with live routers.
+- I declined ROUTER #6 · resonance (requester #5) and #118's move (LAUNCH-FAILED past cap). The fresh launcher owns them.
+
 ## Slot state at 12:05 PT (re-read, do not trust)
 01 pending #113 (older: #108 local_e4216512 router reports); 02 holds #5 resonance, 057, #107; 03 disabled, holds #109 and #111; 04 holds #117 (#115, #110 archived); 05 holds #116 and the way-for-others part 3 local_0ad9c6de; 06 holds way-for-others part 4 local_175f2ec0; 07 not Bypass, disabled.
 
