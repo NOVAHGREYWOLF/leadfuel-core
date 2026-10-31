@@ -21,3 +21,10 @@ When the head of the queue moves: open ONE landing desk (background agent, no is
 
 ## Gotchas
 Isolated agent worktrees in leadfuel-core fail intermittently with "git identity could not be verified" under load: retry or start without isolation and have the desk use hub worktrees. Card numbers collide with other routers: use set (refuses existing). gh calls time out under load: run in background. Weekly usage 50% at 3 am Pacific.
+
+## Update at 1:10 pm Pacific 2026-10-31 (hard cap reached; ids only)
+- ROUTER #118 never started: all Bypass slots busy, slot 07 not Bypass; slot 04 arm disabled by me. Owner has the paste prompt; brief F:\Claude Sessions\desks\handoffs\ROUTER-118-reports-brief.md (includes REPORTS-ATTACH-ALL).
+- Done since: proof send made once (owner confirmed both files open; INTELLIGENCE reports part 3 local_ced7b0a4, archive when idle); router desk page republished (decisions first, steps last, completed hidden, guide+links rendered); guides desk wrote 29 guides, closed 8, 11 not verified.
+- Owner cards: q872, q881 open; new q9001-q9005 (full attachment send, summary model, token/ledger, raw Fieldy text, N15). q868 answered C, re-asked as q9003.
+- Local branches unchanged: reports-visual-4@a2abdbf1, reports-cmdbook@0944c4e2, reports-schedule@9eb4c0d6, reports-pdf-engine@701555f3 (deploy config), fieldy-quality@202682a8, novahub-mcp arms/mcp-fieldy-day-report@cb1c50c. Nothing merged this wave; #1042 #1045 pytest green, #1046-#1048 #1052 pending, #957 pushed.
+- Weekly usage 86% at 12:55 pm PT; resets 2 pm PT.
