@@ -14,6 +14,8 @@ UPDATE after writing: CC-50 agent REPORTED DONE: draft PR NOVAHGREYWOLF/leadfuel
 
 UPDATE 2: CC-102b DONE: hub #1041 draft (head f595ddf9 when read, test.yml in progress): sf-slack, st-vectors, f-kgate added; sf-book and m-dossier left out. CC-97 DONE: NOVAHGREYWOLF/echo PR #62 (draft, MERGEABLE, head 6e27677d, verified by gh): edge-tts off by default, raises when off, door declared; echo security check red on main already (not this PR). Remaining agents: CC-91 a2c2c5662d13a106a (waiting on its tests), CC-77 a0a53dda4774bb555 (no report yet). Put #1041 in train 4 on green; echo #62 lands on echo CI after the security issue is known.
 
+UPDATE 3: ALL 6 AGENTS REPORTED. CC-77 DONE: hub #1044 draft (fc6c2494; migration 0017_layer_snapshot written, NOT applied). CC-91 DONE: hub #1043 draft (arm report headline + gap quest on Party stations; first part already merged as #1017 via train 1; its wider local sweep timed out so CI decides). Train 4 candidates, each only on green for its exact head: #1041 (CC-102b) #1043 (CC-91) #1044 (CC-77). Echo #62 and estate #1 land on their own repos' CI. #102 may now be archived through the gate (conductor 056 does it).
+
 ## Next
 1. Collect the 5 reports; verify each draft PR with gh; put green ones in train 4 (one builder; merge main in, hub tests job pytest on exact head, ci-novahub hold, merge commit, then check code on main by file).
 2. Doing rows nobody claims (#89 #91 #92 #93 #104 all answered: none hold them): cc04 cc16 cc23 cc24(rest) cc37 cc38 cc40 cc55 cc57 cc61-65 (hub halves merged: #1026 #1021 #1019 #1006 #1015) cc66 cc67(merged #997) cc68 (#1005 open, held for money privacy rule) cc69 cc70 cc71 cc83 cc95 b07 m12. Check each row's PR with gh first (Build page PR numbers are stale), then reopen as desks.
