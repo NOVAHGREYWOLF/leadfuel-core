@@ -19,6 +19,10 @@ Reported since: sf-book hub #1055 (stacked on #1041); CC-80 was ALREADY on main 
 
 Handoff confirmed at ~302k tokens; no successor live yet (056 cannot launch; 057 pending). #110 stays open for its agents; hard stop 450k.
 
+## UPDATE 2 (09:55Z)
+Reported done as drafts: CC-79 hub #1058 (stacked #1044), L2-04 #1061, CC-52 #1059, L2-06 #1060 (stacked #1044), L2-01 #1062 (stacked #1051), CC-31 #1063 (PRIVACY review of one data_rights.py line owed), CC-40 #818 (mig renumbered 0019) + #875 (#866 closes when #875 lands). Still running: TRAIN-4 (a4769b35aa26685f4), L2-03 (a383034baf6ab85d7). Opened none since; L2-09 L2-11 L2-12 L2-13 still not opened.
+PROBLEM: CI is starved. Hub `tests` runs are all pending for hours (runner containers novah-runner-novahub/-2 restart-looping, restarts 48/54), and my draft pushes add to the queue. TRAIN-4 holds ci-novahub (since 06:28Z) with no train/cc-4 branch on remote: I told it to release the hold and report. Do not open more code desks until the runners are healthy (ask NODE/WATCH). Cards open: q828 q829 q838 q869 (and my q826/q827 answered and routed).
+
 ## Next
 1. Collect agent reports; build the Layer 2 desks from the planner's table (n starts 131). 2. Train 5 (one builder, ci-hub hold, merge commit, pytest success on the exact head, main merged in each time): #1050 #1051 #935 #867 #1053 #1054 then the new drafts; migration PRs #1044 (0017) #1053 (0018) need ONE owner card first. 3. Not opened: CC-51 CC-71 CC-75 CC-85 CC-101 CC-104 CC-105 CC-106 (+ CC-66/67 check); held for owner: CC-23 CC-53 CC-57. 4. Follow-up desk: SURFACE for CC-39's screen half (reason box, bulk button in decide.js/screen.js) after #1053; fix hub: approve-from-feed drops kind+idempotency_key, queued row Slack notify default.
 
