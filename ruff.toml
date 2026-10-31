@@ -1,0 +1,12 @@
+# Ruff, the CI lint gate. See .github/workflows/lint.yml.
+#
+# Pyflakes only, by design, the same choice novahub, odyssey and the other spokes made: undefined
+# names and unused imports are bugs, the wider rule set is style churn. A gate nobody can keep
+# green is a gate that gets deleted. Re-enable other families one at a time once their backlog
+# is clear.
+
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["F"]
