@@ -11,3 +11,5 @@ Done (reports): modes1 983f577, modes2 cbbdc5a (42 hub writes ask in every mode)
 3. Stack int10 desks from backlog plan (scratchpad backlog-plan.md of #107; not in repo) after trains settle; new page-callable names go to pagebridge.py allowlist.
 4. Cards waiting for owner: q794-798, q830-837, q840-845. Weekly usage was 44% at 2026-10-31 ~08:30 PT; stop new routing at 88%.
 5. Resend to 056: desks-open list and the question list (undelivered).
+
+Successor title: ROUTER #113 · one-app. Backlog plan copied to router-107-backlog-plan.md in this folder. Added to int9 train after this note: hl6 1ad7f99, hl7 f231e9c, and modes.py HUB_WRITES add_todo/set_todo_state + list_todos read (from #109, HL-8 tools not deployed). Owner cards q840-845 also posted.
