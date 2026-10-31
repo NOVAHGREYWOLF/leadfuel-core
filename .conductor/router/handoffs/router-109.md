@@ -28,6 +28,9 @@ DONE branches: W3-03 hub w3-03-fieldy-health 9fc023f0; W3-05 hub w3-05-forget 24
 ## Update 5
 DONE: W3-04 hub w3-04-feedback-heat a962c251; W3-02 hub w3-02-route-jobs 9f82c022 (merges W3-03/04/05 locally with their app.py hunks; assumes W3-01 shapes). Cards q951-q960 posted (wave-3 owner questions). RUNNING: W3-01 a2773adae0d5b7675 (long pole: worktree has uncommitted models.py + memory_redact.py; when it commits, W3-02/04/05 must reconcile shapes: ask them to rebase), W3-12 a373eadaa12add9f4. After both report: verify commits, relay overlaps to #107 for int10, then launch ROUTER #114. Stray F:\scratch_bm.bak awaits owner.
 
+## Update 6 (last before rotation)
+ALL of W3-01..12 reported. W3-01 hub intel/w3-01-memory-tiering 70f74a60 (GDPR guard red on purpose, card q961); W3-12 one-app/w3-12 b846e4e. #107 told us w3-09/w3-10 DUPLICATE its d3/b6 (its desks win; my w3-11 e2e tests unique; w3-12 carries memjobs). W3-02 hit its cap at bd9bf236 (W3-01 merged, 18 tests failing from shape mismatch); RUNNING: W3-02b (Opus) finishing the reconcile on w3-02-route-jobs. Cards posted q888-q895, q951-q961. Successor ROUTER #114 to launch after W3-02b reports: its job is to verify commits, relay to #107 (int10) and CONDUCTOR 057, answer card clicks, and open the follow-ups: hard delete in pg.py (q951), forgetgate.py for W3-08, PRIVACY data_rights lines (q961), MCP fieldy_digest params (ARMS reports desk), hub landing in the order given earlier once the owner says go.
+
 ## Owed
 1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
 2. Ask 057 to turn questions into Router desk cards.
