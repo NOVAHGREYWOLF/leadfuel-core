@@ -19,6 +19,9 @@ Also opened (agents): W3-06 (aacbd537c5f4bb5f5, Opus), W3-10 (a63f2162fbfacd550,
 ## Update 2 (owner go-wide via 057, ~3:35 am PT 2026-10-31)
 Also opened (agents): W3-02 a6256e9ae2d63b395, W3-04 ae5f1ad3bbabb7e3b, W3-05 a33f5feb9ac1ff78a, W3-07 af2f68f57cfa84b16, W3-08 a5d9f25b7a7aefd18. 11 wave-3 agents running; only W3-12 is unopened (needs W3-07/09/10 branches; owns gate_list, pagebridge, NovahOS.spec, modes.py, wiring.py). Hub desks cut from arms/hub-todo-add and merge the W3-01 branch at the end. Stop opening at weekly 88% (was 52%). Rotation: when agents report, launch ROUTER #114.
 
+## Update 3 (reports so far)
+DONE: W3-06 novahub-mcp arms/mcp-brain-memory 33c24c1 (routed: W3-05/W3-02 agents told shapes, #108 guide.py, #107 classify in int10); W3-11 one-app/w3-11 0bdb5ff; W3-08 one-app/w3-08 ab653c1 (hide-only forget replay; card q951 posted for hard delete in pg.py; names needed by W3-12: forget_status/forget_plan/forget_apply). Still running: W3-01, 02, 03, 04, 05, 07, 09, 10. W3-12 unopened (modes.py is #107's, not W3-12's). Other desks took q896..q932: my card numbers are q888-q895 and q951; use q95x+ for new cards. Stray file F:\scratch_bm.bak (W3-06 mistake) awaits the owner's delete.
+
 ## Owed
 1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
 2. Ask 057 to turn questions into Router desk cards.
