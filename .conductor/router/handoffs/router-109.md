@@ -25,6 +25,9 @@ DONE: W3-06 novahub-mcp arms/mcp-brain-memory 33c24c1 (routed: W3-05/W3-02 agent
 ## Update 4
 DONE branches: W3-03 hub w3-03-fieldy-health 9fc023f0; W3-05 hub w3-05-forget 24690dab; W3-07 one-app/w3-07 093cfe7; W3-09 one-app/w3-09 5bf1b09; W3-10 one-app/w3-10 b8e21be. RUNNING: W3-01 a2773adae0d5b7675 (no commit seen yet: W3-05 found branch intel/w3-01-memory-tiering at base), W3-02 a6256e9ae2d63b395 (owes app.py hunks from W3-03/W3-05/W3-06), W3-04 ae5f1ad3bbabb7e3b, W3-12 a373eadaa12add9f4 (opened, registers W3-07/08/09/10). Owner cards still to post: partition questions (use q95x+).
 
+## Update 5
+DONE: W3-04 hub w3-04-feedback-heat a962c251; W3-02 hub w3-02-route-jobs 9f82c022 (merges W3-03/04/05 locally with their app.py hunks; assumes W3-01 shapes). Cards q951-q960 posted (wave-3 owner questions). RUNNING: W3-01 a2773adae0d5b7675 (long pole: worktree has uncommitted models.py + memory_redact.py; when it commits, W3-02/04/05 must reconcile shapes: ask them to rebase), W3-12 a373eadaa12add9f4. After both report: verify commits, relay overlaps to #107 for int10, then launch ROUTER #114. Stray F:\scratch_bm.bak awaits owner.
+
 ## Owed
 1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
 2. Ask 057 to turn questions into Router desk cards.
