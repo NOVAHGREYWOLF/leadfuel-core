@@ -185,6 +185,23 @@ def test_owner_that_cannot_be_established_is_refused(root, tmp_path):
         wp.rank("sample", root=root, scorer=_fake_scorer(), now=NOW)
 
 
+def test_quoted_header_row_is_found(tmp_path):
+    # LinkedIn's real messages.csv quotes every field, the header row included:
+    #   "CONVERSATION ID","CONVERSATION TITLE","FROM",...
+    # The fixtures above write the header unquoted, which is how the header finder's bug
+    # (matching only an unquoted header) got past them on 2026-10-31. Fictional rows only.
+    path = os.path.join(str(tmp_path), "messages.csv")
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh, quoting=csv.QUOTE_ALL)
+        w.writerow(["CONVERSATION ID", "CONVERSATION TITLE", "FROM", "SENDER PROFILE URL", "TO",
+                    "RECIPIENT PROFILE URLS", "DATE", "SUBJECT", "CONTENT", "FOLDER"])
+        w.writerow(["q1", "", "Ada", A, "", ME, "2026-01-01 00:00:00 UTC", "", "hello there", "INBOX"])
+    with open(path, encoding="utf-8") as fh:
+        assert fh.readline().startswith('"CONVERSATION ID","CONVERSATION TITLE"')   # the fixture is quoted
+    msgs = wp.read_messages(path)
+    assert len(msgs) == 1 and msgs[0]["from"] == wp.norm_url(A) and msgs[0]["to"] == [wp.norm_url(ME)]
+
+
 def test_rank_with_stub_makes_no_network_call(root, tmp_path, monkeypatch):
     _ready(root, str(tmp_path))
 

@@ -334,7 +334,10 @@ def _csv_rows(path, header_starts):
     with open(path, encoding="utf-8-sig", newline="") as fh:
         text = fh.read()
     lines = text.splitlines(keepends=True)
-    start = next((i for i, ln in enumerate(lines) if ln.lstrip().startswith(header_starts)), None)
+    # LinkedIn quotes the whole header row of messages.csv ("CONVERSATION ID",...), so strip a
+    # leading quote before matching; the unquoted Connections.csv header still matches.
+    start = next((i for i, ln in enumerate(lines)
+                  if ln.lstrip().lstrip('"').startswith(header_starts)), None)
     if start is None:
         raise PilotError(f"{os.path.basename(path)}: header starting {header_starts!r} not found")
     return list(csv.DictReader(io.StringIO("".join(lines[start:]))))
