@@ -13,6 +13,9 @@ Opened (background agents, die with this session): W3-01 (a2773adae0d5b7675, Opu
 NOT opened yet, in this order: W3-02, W3-04, W3-05 (stack on W3-01 branch), W3-06 (stack arms/mcp-todo-tool), W3-07, W3-08, W3-10, W3-11 (stack int9), W3-12 last.
 Each agent prompt: brief id + file path + hard limits; copy the pattern from W3-01.
 
+## Update after the first note
+Also opened (agents): W3-06 (aacbd537c5f4bb5f5, Opus), W3-10 (a63f2162fbfacd550, Opus), W3-11 (a5b3a57b8eada0b84, Sonnet). Cards q888-q895 posted on the Router desk (LzmP6QcxmYh9TdvMMjS883) = old Q1-Q8. CONDUCTOR 057 decided: no separate memory router; rotate when the six agents report, successor is ROUTER #114 · app brain link, launched into a free slot by fireAt (leadfuel-way:launch), else LAUNCH-REQUEST to launcher local_6c36b783-75e3-4a0b-842c-f1d6aed118b0; stay open until it is live; 057 archives me.
+
 ## Owed
 1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
 2. Ask 057 to turn questions into Router desk cards.
