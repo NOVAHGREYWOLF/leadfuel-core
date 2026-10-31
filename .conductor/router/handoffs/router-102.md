@@ -17,5 +17,10 @@ Wave 1: CC-91 crews a2c2c5662d13a106a (sonnet); CC-77 replay store a0a53dda4774b
 4. Wave 2 candidates: CC-79 (needs CC-77's store), CC-75, CC-80/36/39 after cards. Held: hub #1028 (reach GET), #1005 (money privacy), #982 (deploy config). #1030/#1023 await ROUTER #101's card O4.
 5. Message to ROUTER #97/#103 about mockup EFT8RRPXxdbPeRrFShpPDL was never sent; #103 now holds one-app, probably moot.
 
+## Lane routers finished (do not archive without conductor 056's word; they said archive through the gate)
+- #93 (ARMS) local_c1d156ab: handoff origin/claude/router-93 f992a1fa (verified ls-remote), router-093.md; lists the 5 arm PRs above plus non-command drafts held on conductor 051's order.
+- #91 (DOORS) local_07a8cdec: handoff origin/claude/router-91, router-091.md (not ls-remote checked by me). Open: hub #1005 (cc68) needs CI-green land (held for the money privacy rule). Non-command DOORS drafts held on 051's order: hub #983 #984 #986 #989 #994 #996, orbit #40 (#986 changes gates.sh: full bare pytest first). Owner variables owed: EGRESS_MAIL_AS_DAILY_MAX (#996), LLM_GATEWAY_URL and LLM_GATEWAY_TOKEN (orbit #40). DOORFIX-02 needs a decision. cc67 = #997, cc78 = #1007, cc92 = #1008 all MERGED (#91's gh read).
+- #89, #92, #104 answered: hold nothing.
+
 ## Gotchas
 Weekly usage: stop at 88% (056 said 31% earlier). PRIVACY items (data_rights.py two LOCAL_EMAIL_TABLES lines; rule for drawing people) have no router. API shows 0 steps on test jobs: read the job log. Never merge on a peer's "green": read the run for the head SHA. Conductor 055 archived/replaced by 056; 056 holds the conductor field.
