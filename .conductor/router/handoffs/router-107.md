@@ -1,0 +1,13 @@
+# ROUTER #107 · one-app handoff (ids and status only, 2026-10-31 Pacific)
+Predecessor note: router-103.md (branch claude/router-103). #107 session: local_70900e3f-0b7b-4e15-8ff5-13159ea0fa64 (slot way-slot-02). Conductor: 056 local_58b1aa7b-a0a9-43d9-b8fd-080b4424ebff (message to it was UNDELIVERED once, resend). Sibling router: #109 local_f3267a6e-89cc-4357-ad6f-6d64199db5bb (hub/brain link, HL-1..8).
+Code is LOCAL ONLY in the private estate F:\Leadfuel (worktrees one-app-<name>, branches one-app/<name>); never push. Owner order: burn code, max parallel, questions only as cards ending X. Re-read live state before acting.
+
+## Background desk agents of #107 (they DIE if #107 is archived: keep #107 open until they report)
+int8 train a3ab0a8701ea1edc2 (one-app/int8 3549d80 has all wave-1 + hl5 + gatefix1; finishing suite x1, selftest x2, ONE-INT-11), int9 train ab9483ec3d3555115 (one-app/int9: bridge1, hl2, hl4, left1, left2, w3a-e, panes1; the OWNER'S BUILD is int9), panes1 a8bd4a51a78f70e54 (11 pane/dock selftest failures), b1 a7c79af7b27f498fe CHROME, b2 a28606fb8b977e5c8 LOOKS, b4 ad34c239800b240fe WORKSTREAMS, b5 a93be52f27a75f22d CHAT-ACTIONS, b6 aada2d2e631fc9f91 ARCHIVE-MAINT, b7 afde8553e4d1dc918 MODEL-MANAGER, b8 a859cace493a354ae LOCAL-STACK, b9 aea03c771b9060b0b AGENT-SAFETY, b10 a61909ab4b4840466 CURATOR, b11 a604c455c96938f85 REPORTS, b12 a529a0cfc688457e8 COMMAND, b13 a629bc16fabb6f172 IMPORTS-BACKUP, b14 afa8ac382a473a073 STUDIO-GIT.
+Done (reports): modes1 983f577, modes2 cbbdc5a (42 hub writes ask in every mode), bridge1 e336ac7 (sealed js_api, 363-name allowlist, assistant/pagebridge.py), left1 65dec3a, left2 54adf41, w3a 26f7674, w3b 01ec17b, w3c 53e6bb3, w3d 971bc18, w3e 9153d26. #109 branches hl1 3763aa0, hl2 2d45b11, hl3 093b2eb, hl4 f7ed021, hl5 4a687c8, hl6, hl7.
+## Next
+1. When int8 train reports: check its two selftest runs and ONE-INT-11. When int9 reports: verify (git, not its words), then update the App Build page WXb79XUAzLZ6GUgKmJEkpw (meta/progress) and change q794 from WAIT to the int9 RUN-INSTALL command (admin PowerShell, owner types yes).
+2. b3 SIDEBAR-V4 (C2.2, C3.6) waits for panes1. HL-8 hub todo tools: add add_todo/set_todo_state to modes.HUB_WRITES when #109 asks.
+3. Stack int10 desks from backlog plan (scratchpad backlog-plan.md of #107; not in repo) after trains settle; new page-callable names go to pagebridge.py allowlist.
+4. Cards waiting for owner: q794-798, q830-837, q840-845. Weekly usage was 44% at 2026-10-31 ~08:30 PT; stop new routing at 88%.
+5. Resend to 056: desks-open list and the question list (undelivered).
