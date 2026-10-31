@@ -17,7 +17,7 @@ SKILLS = sorted(p.parent.name for p in (PLUGIN / "skills").glob("*/SKILL.md"))
 
 
 def test_the_expected_skills_exist():
-    assert set(SKILLS) == {"way", "handoff", "desk", "conductor", "router", "new-project", "launch", "wake"}
+    assert set(SKILLS) == {"way", "handoff", "desk", "conductor", "router", "new-project", "launch", "wake", "autopilot"}
 
 
 def test_plugin_manifest():
@@ -47,7 +47,7 @@ def test_hooks_json_registers_all_five_events_on_the_one_script():
     cfg = json.loads((PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8"))
     assert set(cfg["hooks"]) == EVENTS
     for name, groups in cfg["hooks"].items():
-        assert len(groups) == (2 if name == "PreToolUse" else 1), name
+        assert len(groups) == (3 if name == "PreToolUse" else 1), name
         for group in groups:
             [hook] = group["hooks"]
             assert hook["type"] == "command" and hook["timeout"] == 10

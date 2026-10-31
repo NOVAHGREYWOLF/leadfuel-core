@@ -71,6 +71,14 @@ SESSION_SOFT_TOKENS / SESSION_HARD_TOKENS override both. SESSION_GUARD_OFF=1 dis
 and the Stop gate; WAY_ENFORCE_ROLES=0 disables the coordinator edit rule, the agent rules and the bulk-move rule;
 WAY_ARCHIVE_GUARD=0 disables the self-archive guard.
 
+Autopilot (0.1.16, WAY-AUTOPILOT-1; `leadfuel-way:autopilot`). OFF unless the owner switched it on
+for a project in `<state dir>/autopilot.json`. When on, every PreToolUse event of a session whose title
+names that project (and of its background agents) goes through `hooks/autopilot.py` first: hard gates
+(spend, credentials, sends and posts, deploy configuration, downloads, permission mode, irreversible
+steps, the switch itself) are denied outright, anything else that leaves the machine is denied unless
+the owner allowed that kind, and no desk or session starts before the checkpoint card or at weekly
+usage >= 88% or unknown. No env variable turns these gates off. With no state file this costs one stat.
+
 It never raises: a broken hook must not break the session it guards. What it cannot measure it
 reports as unknown, never as small.
 """
@@ -84,7 +92,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.15"
+VERSION = "0.1.16"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -132,6 +140,39 @@ SCHEDULE_TOOLS = ("__run_scheduled_task",)
 FIRE_TOOLS = ("update_scheduled_task", "create_scheduled_task")
 LAUNCH_REQUEST = "LAUNCH-REQUEST"
 HEAD_BYTES = 256 * 1024
+
+
+def _load_autopilot():
+    """hooks/autopilot.py, loaded by path so no installed package of that name can stand in for it."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("way_autopilot_gate", Path(__file__).resolve().parent / "autopilot.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception:  # noqa: BLE001 - reported by autopilot_refusal, never raised
+        return None
+
+
+AUTOPILOT = _load_autopilot()
+AUTOPILOT_READS = {"Read", "Grep", "Glob", "ToolSearch"}
+
+
+def autopilot_refusal(tool: str, tin: dict, tpath: str, state: dict) -> str | None:
+    """Why autopilot denies this call, or None. No state file: None after one stat (autopilot is off).
+    The gate module missing while a state file exists is not a pass: everything but reading is denied."""
+    if not (state_dir() / "autopilot.json").exists():
+        return None
+    if AUTOPILOT is None:
+        if tool in AUTOPILOT_READS:
+            return None
+        return ("AUTOPILOT: autopilot.json exists but the gate module (hooks/autopilot.py) did not load, so "
+                "this call cannot be checked. Unknown is not a pass: fix the plugin or switch autopilot off.")
+    try:
+        return AUTOPILOT.decide(tool, tin, cached_title(tpath, state))
+    except Exception:  # noqa: BLE001
+        return None if tool in AUTOPILOT_READS else "AUTOPILOT: the gate failed on this call; unknown is not a pass."
+
 
 # --- transcript ---------------------------------------------------------------------------
 
@@ -872,7 +913,19 @@ def handle(event: dict) -> dict | None:
             reason = bulk_move_refusal(tin)
             session_refusal = ("bulk_moves_refused", reason) if reason else None
 
-    if name == "SessionStart":
+    # Autopilot speaks first and is not switched off by WAY_ENFORCE_ROLES: when it is on, nobody is
+    # watching a permission prompt, so its gates are the only thing between a router and the outside.
+    ap_reason = autopilot_refusal(tool, tin, tpath, state) if name == "PreToolUse" else None
+
+    if ap_reason:
+        tally["autopilot_refused"] = int(tally.get("autopilot_refused") or 0) + 1
+        out = {"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": ap_reason,
+        }}
+
+    elif name == "SessionStart":
         if event.get("source") in ("compact", "clear"):
             # The context just shrank: what was crossed before no longer holds.
             for k in ("soft_crossed_at", "hard_crossed_at", "last_warned"):
