@@ -22,6 +22,9 @@ Also opened (agents): W3-02 a6256e9ae2d63b395, W3-04 ae5f1ad3bbabb7e3b, W3-05 a3
 ## Update 3 (reports so far)
 DONE: W3-06 novahub-mcp arms/mcp-brain-memory 33c24c1 (routed: W3-05/W3-02 agents told shapes, #108 guide.py, #107 classify in int10); W3-11 one-app/w3-11 0bdb5ff; W3-08 one-app/w3-08 ab653c1 (hide-only forget replay; card q951 posted for hard delete in pg.py; names needed by W3-12: forget_status/forget_plan/forget_apply). Still running: W3-01, 02, 03, 04, 05, 07, 09, 10. W3-12 unopened (modes.py is #107's, not W3-12's). Other desks took q896..q932: my card numbers are q888-q895 and q951; use q95x+ for new cards. Stray file F:\scratch_bm.bak (W3-06 mistake) awaits the owner's delete.
 
+## Update 4
+DONE branches: W3-03 hub w3-03-fieldy-health 9fc023f0; W3-05 hub w3-05-forget 24690dab; W3-07 one-app/w3-07 093cfe7; W3-09 one-app/w3-09 5bf1b09; W3-10 one-app/w3-10 b8e21be. RUNNING: W3-01 a2773adae0d5b7675 (no commit seen yet: W3-05 found branch intel/w3-01-memory-tiering at base), W3-02 a6256e9ae2d63b395 (owes app.py hunks from W3-03/W3-05/W3-06), W3-04 ae5f1ad3bbabb7e3b, W3-12 a373eadaa12add9f4 (opened, registers W3-07/08/09/10). Owner cards still to post: partition questions (use q95x+).
+
 ## Owed
 1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
 2. Ask 057 to turn questions into Router desk cards.
