@@ -19,3 +19,8 @@ Owner: q997 deploy setting EGRESS_DEDUP_WINDOW_HOURS; q947 scheduled task approv
 
 ## Gotchas
 The hook warns on the word handoff; ignore unless no note exists. Card ids race: set without if_version, bump on error. Worktree isolation sometimes fails transiently: retry once. SKIP_TESTS=1 must be set as $env:SKIP_TESTS in PowerShell.
+
+## UPDATE 1 (all #117 agents have reported; none running)
+Local branches in novahub worktrees, NOT pushed (push one at a time as drafts): surface-p160 (L2-05, last), doors-p166, doors-p166-q996, doors-p166-q997, node-p170 (nixpacks -c constraints.txt, untested on Railway), surface-p168-oracle, surface-p168-h2, surface-p171-boss (gaps.open bar 3), surface-p171-money, surface-p171-core, surface-p175-v19 (dormant until lucid#131), arms-p174-spatial2 (needs novahub-mcp tool desk), doors-p176-deploys, intel-p173-market (needs PRIVACY row, q936). Pushed drafts: hub #1093 #1094 #1095.
+Open cards: q1022/q1023 answered and routed; q1032 worktree removal (nothing removed); q1021 got router_answer. Owner steps: q997 deploy setting, q947 task approval, q943 crypto, PRIVACY entry 3.
+Successor: way-slot-07 is NOT Bypass, arm disabled. Owner pastes F:\Claude Sessions\handoff\ROUTER-120-PASTE-PROMPT.md. #117 archives only after #120 is live; no agents depend on #117 any more. Weekly usage reset 2 pm PT; pace 12-14%/day, 88% stop back.
