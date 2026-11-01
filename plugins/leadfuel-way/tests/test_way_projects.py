@@ -720,6 +720,7 @@ REFUSED_NESTED = [
     pytest.param(nested(by=[ME]), id="opener-a-list"),
     pytest.param({**nested(by=ME), "parentSessionId": OTHER}, id="the-two-opener-fields-disagree"),
     pytest.param({**nested(by=OTHER), "parentSessionId": ME}, id="the-two-opener-fields-disagree-the-other-way"),
+    pytest.param({**nested(by={"x": 1}), "parentSessionId": ME}, id="an-unreadable-opener-beside-a-good-one"),
     # The group: the opener proof never stands in for it.
     pytest.param(nested(group=grp("INTELLIGENCE")), id="filed-in-the-lane-group"),
     pytest.param(nested(group=WI), id="filed-in-a-project-group"),
@@ -732,6 +733,7 @@ REFUSED_NESTED = [
     pytest.param(nested(archived="false"), id="archived-not-a-boolean"),
     # The line: same lane, same project, n advanced, project form on both sides.
     pytest.param(nested("INTELLIGENCE · world intel part · 3"), id="same-n-as-yourself"),
+    pytest.param(nested("INTELLIGENCE · WORLD INTEL part · 3"), id="same-n-another-case"),
     pytest.param(nested("INTELLIGENCE · world intel part · 2"), id="your-predecessor"),
     pytest.param(nested("INTELLIGENCE · globe feeds part · 4"), id="another-project-in-the-same-group"),
     pytest.param(nested("SURFACE · world intel part · 4"), id="another-lane"),
@@ -748,6 +750,32 @@ def test_what_does_not_count_as_a_nested_desks_successor(hook, transcript, seen)
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript)
     saw_list(transcript, seen)
+    assert refused(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("renamed", [
+    {"id": "cg-router", "name": "Routers"},   # the same group id under another name
+    {"id": "cg-router"},                      # the same group id, the name left out
+])
+def test_a_tier_group_renamed_between_two_reads_cannot_turn_the_opener_proof_off(hook, transcript, renamed):
+    """The branch must not hinge on the row's group NAME alone: the id says it is this desk's own tier
+    group, so a stranger there still needs the opener proof, and the opener turns it back on."""
+    transcript.add(title_rec(OWNER_EXAMPLE))
+    saw_me(transcript, group={"id": "cg-router", "name": "ROUTER"})
+    saw_list(transcript, nested(group=renamed, by=None))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(group=renamed, by=OTHER))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(group=renamed, by=ME))
+    assert archive(hook, transcript) is None
+
+
+def test_a_project_desk_does_not_borrow_the_tier_rule_from_a_row_that_carries_its_group_id(hook, transcript):
+    """Its own group is a project group. A row with that group's id but named ROUTER is not a tier group
+    for this desk: the tier branch needs the desk's own group to be one, whatever the opener field says."""
+    transcript.add(title_rec(OWNER_EXAMPLE))
+    saw_me(transcript, group=grp("world intel", "cg-g1"))
+    saw_list(transcript, nested(group=grp("ROUTER", "cg-g1"), by=ME))
     assert refused(archive(hook, transcript))
 
 

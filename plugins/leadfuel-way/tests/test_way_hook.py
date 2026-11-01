@@ -683,7 +683,7 @@ ROLE_TITLES = {"DESK": "NODE · leadfuel-way part · 2", "ROUTER": "ROUTER #5 ·
 ROLES = list(ROLE_TITLES)
 DESK_TOKENS = ("start_session", "user_asked", "STATUS: CONTINUING")
 OLD_PHRASE = "one prompt for a fresh session"
-MAX_CHARS = 650
+MAX_CHARS = 720  # the longest, the DESK message at the real caps, is 679; this bounds growth, not wording
 
 
 def guard_text(hook, tokens, role):
@@ -826,13 +826,29 @@ def test_the_agent_branch_ignores_the_role(hook, role):
                 == hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, True))
 
 
-def test_the_guard_reads_the_role_that_session_start_recorded(hook, transcript, monkeypatch):
+def test_the_guard_reads_the_role_of_a_session_titled_before_it_started(hook, transcript, monkeypatch):
     monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
     transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))
     hook.handle(event("SessionStart", transcript, source="startup"))
     assert hook.load_state("sess-1")["role"] == "DESK"
     text = hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
     assert all(token in text for token in DESK_TOKENS) and OLD_PHRASE not in text
+
+
+@pytest.mark.parametrize("name", ["PostToolUse", "UserPromptSubmit"])
+def test_a_nested_desk_titled_after_session_start_gets_the_desk_rule_from_the_guard(hook, transcript, monkeypatch, name):
+    """A desk its router opened with `start_session` is untitled when SessionStart records its role (the
+    opener titles it afterwards), so the role kept there is UNFILED. The guard must read the title fresh,
+    as the Stop hook does, or the two channels give one session two different rules."""
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(assistant(1_000))  # untitled at the start
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    assert hook.load_state("sess-1")["role"] == "UNFILED"
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))  # the opener titles it afterwards
+    text = hook.handle(event(name, transcript))["hookSpecificOutput"]["additionalContext"]
+    assert all(token in text for token in DESK_TOKENS) and OLD_PHRASE not in text
+    reason = hook.handle(event("Stop", transcript))["reason"]
+    assert all(token in reason for token in DESK_TOKENS)
 
 
 @pytest.mark.parametrize("role", ["ROUTER", "CONDUCTOR"])

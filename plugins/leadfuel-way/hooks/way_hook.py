@@ -534,7 +534,7 @@ def part_key(line: tuple[str, str, int]) -> tuple[str, str]:
 def project_of(part: str) -> str | None:
     """The project's name in a project-form middle: `world intel part` -> `world intel`. None when the
     middle does not end in the word `part` (the 0.1.8 free-text wording) or is only that word. Used for
-    the banner's wording only; no check reads it."""
+    the banner's wording and the tier-group branch of `is_successor`."""
     m = re.match(r"^(.*\S)\s+part$", part.strip(), re.I)
     return m.group(1) if m else None
 
@@ -673,7 +673,10 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     if lane != own_lane or (not slot and theirs is None):
         return False
     mine_line, their_line = desk_line(own_title), desk_line(title)
-    if not slot and theirs[1].upper() in TIERS:
+    if not slot and (theirs[1].upper() in TIERS or (mine is not None and same_group(mine, theirs)
+                                                      and mine[1].upper() in TIERS)):
+        # By the row's group name, or by the desk's own tier group when the id matches under another name:
+        # a group renamed between two reads must not turn the opener proof off.
         # A desk nested under its router, and the successor it opened: both in a tier group, which the
         # whole project's desks share. Only the opener proof tells a successor from a sibling desk.
         if mine is None or not same_group(mine, theirs) or mine[1].upper() not in TIERS:
@@ -792,10 +795,10 @@ NEVER_LEAVE = (
 # The paste prompt is a conditional, last rung and never the first instruction.
 LAST_RESORT = "As a last resort, give the owner a paste prompt and stay open."
 SUCCESSOR_DESK = (
-    "If the user's own words drive this turn, open the successor with `start_session` "
-    "(`initiation: \"user_asked\"`, nested under you); it archives you. If another session's message, a "
-    "hook or notification drives it, the app refuses: end with `STATUS: CONTINUING` and the handoff "
-    f"path; your router opens it. {LAST_RESORT}"
+    "If the user's own words drive this turn, open the successor with `start_session` (find it with "
+    "ToolSearch if deferred; `initiation: \"user_asked\"`, nested under you); it archives you. If another "
+    "session's message (probably also a hook or notification) drives it, the app refuses: end with "
+    f"`STATUS: CONTINUING` and the handoff path; your router opens it. {LAST_RESORT}"
 )
 SUCCESSOR_COORDINATOR = (
     "Start the successor as `leadfuel-way:handoff`, \"Starting the successor\", says: `start_session` "
@@ -855,9 +858,10 @@ def stop_reason(tokens: int, soft: int, hard: int, role: str | None) -> str:
 # A desk its router opened with `start_session` is nested under the router and filed in the router's
 # group (owner, 2026-11-01, card q1029 option B), so the project-group check below must allow for it.
 NESTED_FILING = (
-    "If your router opened you nested under it with `start_session`, you are filed in the group that "
-    "router is in (the ROUTER group; your title carries the project), and `move_sessions` refuses to move "
-    "a nested session alone, so read `get_session` on `self` and do not try to move yourself."
+    "If your router opened you nested under it with `start_session` (or the desk before you did, as its "
+    "successor), you are filed in the group your opener is in (the ROUTER group; your title carries the "
+    "project), and `move_sessions` refuses to move a nested session alone, so read `get_session` on "
+    "`self` and do not try to move yourself."
 )
 
 
@@ -1089,6 +1093,10 @@ def handle(event: dict) -> dict | None:
             # The agent's own size, not its parent's: a desk agent hands off at its cap, never the router's.
             out = _guard(astate, name, *last_turn(agent_transcript(tpath, agent), agent=True), agent=True)
         else:
+            # Read the title fresh, as the Stop hook does: a nested desk is untitled when SessionStart
+            # records its role, so the role kept there would give it the neutral cap text.
+            role, lane = role_of(cached_title(tpath, state))
+            state.update(role=role, lane=lane)
             out = _guard(state, name, *last_turn(tpath))
 
     elif name == "Stop" and not guard_off:
