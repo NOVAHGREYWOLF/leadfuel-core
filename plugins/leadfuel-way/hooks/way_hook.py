@@ -84,7 +84,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.20"
+VERSION = "0.1.21"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -415,6 +415,65 @@ def sessions_seen(transcript_path: str) -> list[dict]:
 
 
 # --- policy (pure, so it can be tested) ---------------------------------------------------
+
+# An ask to the owner that is only words in chat: the Stop gate sends the session back once to post the card
+# (owner, 2026-11-01, card q9124 A). Matches a line that starts with the status or the ask marker, after any
+# markdown emphasis or quote mark.
+OWNER_ASK = re.compile(r"(?mi)^[\s>*_`#-]*(?:STATUS:\s*NEEDS-NOVAH\b|ASK:)")
+# A user record that no person typed: another session's message, a scheduled run's prompt, a task notice.
+MACHINE_PROMPT = re.compile(r"^\s*(?:<cross-session-message|\[SCHEDULED TASK|<task-notification|<system-reminder|<ci-monitor-event)")
+
+
+def _text_of(content) -> str:
+    if isinstance(content, str):
+        return content
+    return "\n".join(str(b.get("text") or "") for b in content or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def turn_asks_owner(transcript_path: str) -> str | None:
+    """'ask' when the session's last turn ends on an owner ask in chat with no card written in that turn,
+    'card' when it asked and wrote a card, 'person' when a person started the turn (the owner is in the chat),
+    None when it did not ask or the turn cannot be read (unknown is not a block).
+
+    The turn is everything after the newest user record that is not a tool result. A turn that began before
+    the transcript tail cannot be seen whole, so it is unknown."""
+    try:
+        text, size = _tail(transcript_path)
+    except OSError:
+        return None
+    recs = [r for r in _records(text) if isinstance(r, dict) and not r.get("isSidechain")]
+    start = None
+    for i in range(len(recs) - 1, -1, -1):
+        if recs[i].get("type") != "user":
+            continue
+        content = (recs[i].get("message") or {}).get("content")
+        if isinstance(content, list) and any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+            continue
+        start = i
+        break
+    if start is None:
+        return None
+    opening = _text_of((recs[start].get("message") or {}).get("content"))
+    if not MACHINE_PROMPT.match(opening):
+        return "person"
+    final = ""
+    wrote_card = False
+    for rec in recs[start + 1:]:
+        if rec.get("type") != "assistant":
+            continue
+        blocks = (rec.get("message") or {}).get("content") or []
+        said = _text_of(blocks)
+        if said.strip():
+            final = said
+        for block in blocks:
+            if isinstance(block, dict) and block.get("type") == "tool_use" and "ArtifactData" in str(block.get("name") or ""):
+                inp = json.dumps(block.get("input") or {})
+                if '"questions"' in inp and re.search(r'"(?:set|update|batch)"', inp):
+                    wrote_card = True
+    if not OWNER_ASK.search(final):
+        return None
+    return "card" if wrote_card else "ask"
+
 
 def role_of(title: str | None) -> tuple[str, str | None]:
     """(CONDUCTOR | ROUTER | DESK | UNFILED, lane or None). A tier is never a lane."""
@@ -929,6 +988,22 @@ def handle(event: dict) -> dict | None:
                     "(\"Ask the launcher\"). If no launcher is live, give the owner the paste prompt and "
                     "stay open. Do not archive yourself until get_session shows the successor live."
                 )}
+
+        card_gate = (out is None and roles_on and not agent and not event.get("stop_hook_active")
+                     and os.environ.get("WAY_CARD_GATE", "1") != "0"
+                     and int(state.get("card_stops_blocked") or 0) < 3)
+        if card_gate and turn_asks_owner(tpath) == "ask":
+            state["card_stops_blocked"] = int(state.get("card_stops_blocked") or 0) + 1
+            out = {"decision": "block", "reason": (
+                "THE WAY: your last message asks the owner something (a `STATUS: NEEDS-NOVAH` or an `ASK:` line) "
+                "and no card was written to the Router desk in this turn. The owner approves through cards, not "
+                "chat (card q9124, 2026-11-01). Post it yourself: read the highest `n` in the `questions` "
+                "collection of the Router desk, run `python \"${CLAUDE_PLUGIN_ROOT}/scripts/post_card.py\" "
+                "--n <highest+1> --asker <your title> --asker-session <your own id> --title ... --say ... --why ... "
+                "--check ... --option A=... --option B=... --default A --default-reason ... --out <file>`, then "
+                "ArtifactData `set` that file as `questions/q<n>`, then end your turn. If nothing needs the owner, "
+                "reword the line instead."
+            )}
 
     elif session_refusal:
         # An agent touching `self` is told why that is never its call; anyone moving several sessions
