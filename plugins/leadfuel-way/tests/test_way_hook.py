@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 
@@ -667,3 +668,225 @@ def test_the_override_reaches_the_guard(hook, transcript):
     write_override(hook, 1_000, 90_000, 600)
     transcript.add(assistant(5_000))
     assert "CONTEXT BUDGET" in hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+
+
+# --- the successor wording of the context guard (owner, 2026-11-01) -------------------------
+#
+# A session at its cap is told how to start its successor. That text is read BEFORE the desk skill, so
+# it must not say, unconditionally, "give the owner the one prompt for a fresh session": a paste prompt
+# is the last resort. How the successor starts depends on the role and on what drives the turn
+# (`leadfuel-way:desk`, "Finish or hand off"; `leadfuel-way:handoff`, "Starting the successor").
+
+SOFT_CAP, HARD_CAP = 300_000, 450_000
+ROLE_TITLES = {"DESK": "NODE · leadfuel-way part · 2", "ROUTER": "ROUTER #5 · leadfuel-way",
+               "CONDUCTOR": "CONDUCTOR · plan", None: None}
+ROLES = list(ROLE_TITLES)
+DESK_TOKENS = ("start_session", "user_asked", "STATUS: CONTINUING")
+OLD_PHRASE = "one prompt for a fresh session"
+MAX_CHARS = 650
+
+
+def guard_text(hook, tokens, role):
+    return hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, role=role)[0]
+
+
+def skill_text(name):
+    from kit import PLUGIN
+
+    return (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+
+
+def skill_section(text, heading):
+    """The body under a `## heading`, up to the next `## `."""
+    marker = f"\n## {heading}\n"
+    assert marker in text, f"section {heading!r} is gone"
+    return text.split(marker, 1)[1].split("\n## ", 1)[0]
+
+
+def stop_reason(hook, transcript, monkeypatch, role, hard=False):
+    """The Stop hook's block reason for a session of this role that crossed its cap with no handoff."""
+    title = ROLE_TITLES[role]
+    assert hook.role_of(title)[0] == (role or "UNFILED"), "fixture title does not read as that role"
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    monkeypatch.setenv("SESSION_HARD_TOKENS", "50000")
+    if title:
+        transcript.add(title_rec(title))
+    transcript.add(assistant(60_000 if hard else 5_000))
+    out = hook.handle(event("Stop", transcript))
+    assert out["decision"] == "block"
+    return out["reason"]
+
+
+def all_three(hook, transcript, monkeypatch, role):
+    """(soft message, hard message, Stop reason) for one role."""
+    return (guard_text(hook, 310_000, role), guard_text(hook, 460_000, role),
+            stop_reason(hook, transcript, monkeypatch, role))
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_no_cap_message_tells_the_session_to_hand_the_owner_a_prompt_first(hook, transcript, monkeypatch, role):
+    for text in all_three(hook, transcript, monkeypatch, role):
+        assert OLD_PHRASE not in text
+        assert "leadfuel-way:handoff" in text
+        assert "successor is live" in text  # never leave before it (owner, 2026-10-02)
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_hard_cap_stop_reason_is_reworded_too(hook, transcript, monkeypatch, role):
+    text = stop_reason(hook, transcript, monkeypatch, role, hard=True)
+    assert "hard cap" in text and "leadfuel-way:handoff" in text and "successor is live" in text
+    assert OLD_PHRASE not in text
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_cap_messages_stay_short_and_generic(hook, transcript, monkeypatch, role):
+    """They are re-sent every few thousand tokens. No session id, model name or em-dash prose in them."""
+    texts = [*all_three(hook, transcript, monkeypatch, role),
+             stop_reason(hook, transcript, monkeypatch, role, hard=True),
+             # the real caps print the longest figures
+             hook.stop_reason(310_000, SOFT_CAP, HARD_CAP, role), hook.stop_reason(460_000, SOFT_CAP, HARD_CAP, role)]
+    for text in texts:
+        assert len(text) <= MAX_CHARS, f"{len(text)} chars: {text}"
+        assert "local_" not in text and "claude-" not in text and "\u2014" not in text
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_giving_the_owner_a_prompt_is_only_ever_the_last_resort(hook, transcript, monkeypatch, role):
+    """tests/test_way_agents.py still pins "give the owner" in the parent's message; the phrase may only
+    survive in the sentence that makes the prompt the last rung."""
+    for text in [*all_three(hook, transcript, monkeypatch, role), stop_reason(hook, transcript, monkeypatch, role, hard=True)]:
+        sentences = [s for s in re.split(r"(?<=[.;:])\s+", text) if "give the owner" in s]
+        assert sentences, "the last-resort sentence is gone"
+        assert all("last resort" in s and "stay open" in s for s in sentences), sentences
+
+
+def test_the_soft_and_hard_messages_keep_what_the_old_ones_asserted(hook):
+    soft, hard = guard_text(hook, 300_000, "DESK"), guard_text(hook, 460_000, "DESK")
+    assert "CONTEXT BUDGET" in soft and "300k" in soft and "handoff" in soft
+    assert "CONTEXT BUDGET" in hard and "HARD CAP" in hard and "Start nothing" in hard and "450k" in hard
+
+
+def test_the_new_keyword_is_optional_and_last(hook):
+    import inspect
+
+    params = list(inspect.signature(hook.guard_message).parameters)
+    assert params[:5] == ["tokens", "last_warned", "soft", "hard", "agent"] and params[-1] == "role"
+    assert hook.guard_message(310_000, 0, SOFT_CAP, HARD_CAP, False)[0] == guard_text(hook, 310_000, None)
+
+
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+def test_a_desk_is_told_to_open_its_own_successor_when_the_user_drives_the_turn(hook, transcript, monkeypatch, which):
+    soft, hard, stop = all_three(hook, transcript, monkeypatch, "DESK")
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    for token in DESK_TOKENS:
+        assert token in text, token
+    assert "last resort" in text and "stay open" in text
+    assert "router" in text  # the router opens it when the app refuses a start_session
+
+
+@pytest.mark.parametrize("role", ["ROUTER", "CONDUCTOR"])
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+def test_a_router_or_conductor_is_not_given_the_desk_rule(hook, transcript, monkeypatch, role, which):
+    soft, hard, stop = all_three(hook, transcript, monkeypatch, role)
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    assert "STATUS: CONTINUING" not in text and "user_asked" not in text
+    assert "start_session" in text and "leadfuel-way:launch" in text  # the handoff skill's order
+    assert "last resort" in text and "stay open" in text
+
+
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+@pytest.mark.parametrize("role", [None, "UNFILED", "SOMETHING-ELSE"])
+def test_an_unknown_role_gets_the_neutral_form(hook, transcript, monkeypatch, role, which):
+    soft = guard_text(hook, 310_000, role)
+    hard = guard_text(hook, 460_000, role)
+    stop = stop_reason(hook, transcript, monkeypatch, None)
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    assert "Starting the successor" in text and "for your role" in text
+    assert "STATUS: CONTINUING" not in text and "start_session" not in text
+
+
+def test_the_agent_branch_is_unchanged(hook):
+    assert hook.AGENT_HANDOFF == (
+        "You are a background agent, not a sidebar session: finish the step, commit and push your branch, "
+        "write your handoff note in the repo (a path containing 'handoff', per the `leadfuel-way:handoff` "
+        "desk row), and end with `STATUS: CONTINUING | <task id> | <PR url or no PR> | handoff <path>`. "
+        "The router starts a fresh agent from the note."
+    )
+    soft = hook.guard_message(310_000, 0, SOFT_CAP, HARD_CAP, True)[0]
+    hard = hook.guard_message(460_000, 0, SOFT_CAP, HARD_CAP, True)[0]
+    assert soft == ("CONTEXT BUDGET: this agent is at ~310k tokens (handoff point 300k, hard cap 450k). "
+                    f"Start nothing new. {hook.AGENT_HANDOFF}")
+    assert hard == f"CONTEXT BUDGET: this agent is at ~460k tokens (HARD CAP 450k). Start nothing new. {hook.AGENT_HANDOFF}"
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_agent_branch_ignores_the_role(hook, role):
+    for tokens in (310_000, 460_000):
+        assert (hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, True, role=role)
+                == hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, True))
+
+
+def test_the_guard_reads_the_role_that_session_start_recorded(hook, transcript, monkeypatch):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    assert hook.load_state("sess-1")["role"] == "DESK"
+    text = hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert all(token in text for token in DESK_TOKENS) and OLD_PHRASE not in text
+
+
+@pytest.mark.parametrize("role", ["ROUTER", "CONDUCTOR"])
+def test_the_guard_does_not_give_a_router_the_desk_rule(hook, transcript, monkeypatch, role):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES[role]), assistant(5_000))
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    text = hook.handle(event("UserPromptSubmit", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert "CONTEXT BUDGET" in text and "STATUS: CONTINUING" not in text and OLD_PHRASE not in text
+
+
+def test_the_guard_with_no_recorded_role_uses_the_neutral_form(hook, transcript, monkeypatch):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(assistant(5_000))  # no SessionStart: no role in state
+    assert "role" not in hook.load_state("sess-1")
+    text = hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert "Starting the successor" in text and "STATUS: CONTINUING" not in text and OLD_PHRASE not in text
+
+
+def test_the_stop_hook_reads_the_role_from_the_title_not_from_state(hook, transcript, monkeypatch):
+    """A session whose state never saw SessionStart still gets the rule for the role its title names."""
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))
+    assert "role" not in hook.load_state("sess-1")
+    reason = hook.handle(event("Stop", transcript))["reason"]
+    assert all(token in reason for token in DESK_TOKENS) and OLD_PHRASE not in reason
+
+
+def test_the_desk_message_and_the_desk_skill_say_the_same_thing(hook):
+    """The hook's text and the skill it points at must not drift apart silently."""
+    section = skill_section(skill_text("desk"), "Finish or hand off")
+    message = guard_text(hook, 310_000, "DESK")
+    for token in DESK_TOKENS:
+        assert token in message and token in section, token
+    assert "paste prompt" in section  # the last resort, both places
+    assert "last resort" in message
+
+
+def test_the_handoff_skill_still_has_what_the_other_roles_and_the_neutral_form_cite(hook):
+    text = skill_text("handoff")
+    section = skill_section(text, "Starting the successor")
+    assert "start_session" in section and "leadfuel-way:launch" in section and "paste" in section
+    assert "Never leave before your successor is live" in text  # step 6, the standing rule
+    for role in ("ROUTER", "CONDUCTOR", None):
+        message = guard_text(hook, 310_000, role)
+        assert "leadfuel-way:handoff" in message
+        if role:
+            assert "start_session" in message and "leadfuel-way:launch" in message
+        else:
+            assert "Starting the successor" in message
+
+def test_the_archive_refusal_does_not_promise_a_desk_that_its_successor_archives_it(hook):
+    """Desk skill: a desk whose successor is a paste prompt is archived by its router, not by that successor."""
+    desk = hook.archive_refusal(ROLE_TITLES["DESK"], [])
+    assert desk and "STAY OPEN" in desk and "router" in desk
+    for role in ("ROUTER", "CONDUCTOR"):
+        assert "STAY OPEN" in hook.archive_refusal(ROLE_TITLES[role], [])
