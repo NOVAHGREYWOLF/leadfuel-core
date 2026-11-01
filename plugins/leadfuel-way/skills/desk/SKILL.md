@@ -5,7 +5,7 @@ description: The DESK session. Does one task in one worktree and opens one draft
 
 # desk (one task)
 
-You do one task. A router opened you, picked your model, and titled and filed you: `LANE · <project> part · n`, in your project's sidebar group (`leadfuel-way:way`, section 2a). Read `leadfuel-way:way` first; this is your part of it.
+You do one task. A router opened you, picked your model, and titled and filed you: `LANE · <project> part · n`, in your project's sidebar group (`leadfuel-way:way`, section 2a). Read `leadfuel-way:way` first; this is your part of it. **If your router opened you with `start_session` you are nested under it** (owner, 2026-10-31): you show under its row, it is told when you end a turn, and you sit in its group; `move_sessions` refuses to move you alone, so do not try (`leadfuel-way:way`, section 2b). Your report still goes by `SendMessage`.
 
 **Your lane is one of the owner's desk lanes, never ROUTER or CONDUCTOR** (those are tiers; a title starting with either is treated by the hooks as a coordinator and loses its edit tools in a git checkout). **Your sidebar group is your project, not your lane** (owner, 2026-10-07). If your title carries a tier word as its lane, or the lane does not match the files your task touches, say so to your router with `ASK:` and stop; do not retitle yourself to make the problem go away.
 
@@ -17,6 +17,7 @@ You do one task. A router opened you, picked your model, and titled and filed yo
 
 ## Work
 - One task, one session, one PR. Open a **draft PR** early; say in the body what you verified yourself and what you took on trust.
+- **Use sub-agents for the sub-work** (owner, 2026-10-31; `leadfuel-way:way`, section 2b): a read wider than a handful of files, independent parts of one change that touch different files, and the check or review of what you built, from an agent that did not write it. Brief each one like a peer, with the claim to check and where to read the evidence, not your conclusion. You keep the deliverable, the integration and the report. A sub-agent's report is a claim: say "a sub-agent reported" unless you re-checked. It ends with your turn, so do not hand off while one runs. A sub-agent is never a desk: never titled, filed or archived, and you open no desk.
 - **Testing (owner, 2026-10-11, card q354 A).** Locally, run the repo's static gates (`SKIP_TESTS=1 sh scripts/gates.sh` where there is one; it prints its own gate count) and pytest on the test files for what you changed. **No local full `pytest`.** The full suite runs once, in CI, on the exact head you merge, after current main is merged in: in the hub that is workflow `tests`, job `pytest` (`tests/` on xdist workers, then the root-level suite, which together are what a bare `pytest` collects). **Exception:** a change to the test setup itself (`conftest.py`, the pytest config in `pytest.ini` or `pyproject.toml`, `scripts/gates.sh`, the test workflow) still gets a full local bare `pytest`, as does a repo with no CI job that runs its full suite. Say in the PR which gates and which test files you ran, and that the full suite is CI's.
 - Never confirm with `pytest tests/` or a `-k` sweep: an explicit path overrides `testpaths` and silently deselects suites. Never repair a test whose job is to refuse a colour (it asserts something is NOT green) to make it pass: find out what changed first.
 - Heavy jobs (a full local test run under the exception above, `gates.sh` without `SKIP_TESTS=1`, a CI run you trigger) take the lock in the owner's work queue first.
@@ -36,7 +37,7 @@ DEFAULT: A (why)
 - A desk that sends `ASK`, `BLOCKED` or `NEEDS-NOVAH` writes its handoff and **stops**. It does not wait and does not poll.
 
 ## Finish or hand off
-- Done: `STATUS: DONE` with the PR, and the final report as the last message. On DONE the router archives you through its gate (PR really merged, a final report, nothing unpushed). Do not archive yourself.
+- Done means the **whole task** (owner, 2026-10-31): the work landed (the PR merged), a final report, nothing unpushed, no decision of the owner's pending, no sub-agent running. Then `STATUS: DONE` with the PR, and the final report as the last message. A PR opened is not DONE, and neither is the first of several PRs the task needs: that is `CONTINUING`. On DONE the router archives you through its gate (the work really landed, a final report, nothing unpushed). Do not archive yourself.
 - At the cap with work left, or blocked: `leadfuel-way:handoff` (desk row), then **stay open** (owner, 2026-10-02). You never leave before your successor is live: the router opens a fresh desk for your task, titled `LANE · <project> part · n` with the same lane and project and n advanced, in your project's group, and archives you only once that desk is live in that group and nothing of yours is unpushed.
 
 ## If you were launched into a slot
