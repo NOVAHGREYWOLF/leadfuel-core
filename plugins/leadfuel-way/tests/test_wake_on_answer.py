@@ -526,9 +526,11 @@ def test_an_archived_router_is_never_a_target(woa):
 
 def test_a_bare_router_number_matches_that_router_only(woa):
     assert woa.resolve_target(card(asker="ROUTER #110"), ROUTER, STORE)[0] == R110
-    # the number is the key: no live router #99 means the live router (router/current), as before
+    # 0.1.18 (measured 2026-10-31): no live router #99 is no target, not router/current, which named an unrelated
+    # retired router and sent ten answers to the wrong project. Without a readable store it still falls back.
     target, why = woa.resolve_target(card(asker="ROUTER #99"), ROUTER, STORE)
-    assert target == ROUTER and "live router" in why
+    assert target is None and "ROUTER #99" in why and "no live router" in why
+    assert woa.resolve_target(card(asker="ROUTER #99"), ROUTER, None)[0] == ROUTER
 
 
 def test_a_renamed_project_still_finds_the_router_by_its_number(woa):
@@ -638,3 +640,41 @@ def test_cli_plan_warns_when_there_is_no_session_store(tmp_path):
                         str(tmp_path / "cur.json"), "--now", "2026-10-14T02:00:00Z", "--out", str(tmp_path / "p.json")],
                        capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0 and "no readable session store" in r.stdout
+
+
+# ---- 0.1.18: a router that is gone is no target; a desk named by its exact title is found ------------------
+
+def test_a_card_whose_router_is_gone_is_no_target_and_is_judged_undelivered_with_a_note(woa):
+    cards = {"q1": card(asker="ROUTER #99 · gone project", answered_at="2026-10-14T01:45:40.495Z")}
+    plan = woa.make_plan(cards, ROUTER, sessions=STORE, now="2026-10-14T02:00:00Z")
+    assert plan["no_target"] == ["q1"] and not plan["sends"]
+    result = woa.judge(plan, {}, {}, now="2026-10-14T02:01:00Z", versions={"q1": 3})
+    assert result["states"]["q1"] == woa.UNDELIVERED and "q1" in result["fallback"]
+
+
+def test_relayed_by_one_router_posted_by_another_goes_to_the_poster_when_only_it_is_live(woa):
+    asker = "SURFACE part 17 (Fable spec desk), relayed by ROUTER #63, posted by ROUTER #110"
+    assert woa.resolve_target(card(asker=asker), ROUTER, STORE)[0] == R110
+
+
+def test_an_asker_that_is_a_live_sessions_exact_title_reaches_that_session(woa):
+    store = STORE + [sess(DESK, "WATCH · desk archival analysis part 2")]
+    target, why = woa.resolve_target(card(asker="WATCH Â· desk archival analysis part 2"), ROUTER, store)
+    assert target == DESK and why.startswith("session title")
+
+
+def test_a_title_that_only_starts_the_asker_is_not_a_match(woa):
+    store = STORE + [sess(DESK, "NODE · full system automation part · 1")]
+    assert woa.session_by_title("NODE · full system automation part · 12", store) == (None, "")
+
+
+def test_two_live_sessions_with_one_title_is_no_title_match(woa):
+    store = [sess(DESK, "WATCH · desk archival analysis part 2"), sess(R121, "WATCH · desk archival analysis part 2")]
+    assert woa.session_by_title("WATCH · desk archival analysis part 2", store) == (None, "")
+
+
+def test_an_archived_or_watcher_session_is_never_found_by_title(woa):
+    store = [sess(DESK, "WATCH · desk archival analysis part 2", archived=True),
+             dict(sess(R121, "Wake on answer, long enough title"), task="wake-on-answer")]
+    assert woa.session_by_title("WATCH · desk archival analysis part 2", store) == (None, "")
+    assert woa.session_by_title("Wake on answer, long enough title", store) == (None, "")

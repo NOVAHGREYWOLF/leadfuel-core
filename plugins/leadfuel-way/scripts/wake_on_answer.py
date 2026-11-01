@@ -146,6 +146,14 @@ def resolve_target(card: dict, router_id, sessions=None) -> tuple:
     by_title, why = router_by_title(card.get("asker"), sessions)
     if by_title:
         return by_title, why
+    by_title, why = session_by_title(card.get("asker"), sessions)
+    if by_title:
+        return by_title, why
+    named = router_numbers(card.get("asker"))
+    if named and sessions:
+        # Measured 2026-10-31: a card posted by a router that has since retired went to router/current, which named
+        # an unrelated retired router. The asker names a router and none is live: say so, do not guess another.
+        return None, f"the asker names ROUTER #{named[-1]} and no live router has that number or project"
     if valid_sid(router_id):
         return str(router_id).strip(), "the asker names no session, so the live router (router/current)"
     return None, "the asker names no session and router/current has no session id"
@@ -196,6 +204,34 @@ def router_by_title(asker, sessions):
     exact = [x for x in live if x[0] == n]
     if exact:
         return exact[0][2], f"router title: ROUTER #{n}"
+    # `relayed by ROUTER #63, posted by ROUTER #64`: the first number is not always the poster. Try the others, last first.
+    for other in reversed(router_numbers(asker)):
+        hit = [x for x in live if x[0] == other]
+        if hit:
+            return hit[0][2], f"router title: ROUTER #{other}"
+    return None, ""
+
+
+def router_numbers(asker) -> list:
+    """Every router number an asker text mentions, in the order written."""
+    return [int(n) for n in re.findall(r"ROUTER\s*#(\d+)", str(asker or ""), re.I)]
+
+
+def _alnum(text) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(text or "").lower())
+
+
+def session_by_title(asker, sessions):
+    """(session id or None, why) for an asker that is exactly the title of one live session, e.g.
+    `WATCH · desk archival analysis part 2`. The page mangles the dot between lane and project, so only
+    letters and digits are compared. Two live sessions with that title is no answer: the card falls through."""
+    asked = _alnum(asker)
+    if not sessions or not asked:
+        return None, ""
+    hits = [s for s in sessions if not s["archived"] and s.get("task") != BY and len(_alnum(s["title"])) >= 12
+            and not ROUTER_TITLE.match(s["title"]) and _alnum(s["title"]) == asked]
+    if len(hits) == 1:
+        return hits[0]["id"], "session title: " + hits[0]["title"]
     return None, ""
 
 
