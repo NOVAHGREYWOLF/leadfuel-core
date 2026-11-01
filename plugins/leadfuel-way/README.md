@@ -33,6 +33,7 @@ python scripts/way_pilot.py           # one small Haiku run with a low cap; need
 python scripts/way_caps.py set 40000 90000 --minutes 90   # force a low cap on every session, for a desktop pilot
 python scripts/way_caps.py clear
 ```
+- **The wake pass no longer guesses a router** (NODE~WAKE-NO-TARGET; 0.1.18). A card whose asker names a `ROUTER #N` that no live router has is no target (UNDELIVERED, with a Build Board note), not a send to `router/current`; an asker that is exactly one live session's title reaches that session. Measured 2026-11-01: 4 of 5 sends to idle routers were not picked up and none appeared in a target transcript.
 
 **Switches (environment).** `SESSION_SOFT_TOKENS` / `SESSION_HARD_TOKENS` override the caps; `SESSION_GUARD_OFF=1` disables the guard and the Stop gate; `WAY_ENFORCE_ROLES=0` disables the coordinator edit rule, the background-agent rules and the bulk-move rule; `WAY_ARCHIVE_GUARD=0` disables the self-archive guard; `WAY_STATE_DIR` moves the per-session state (default: a `leadfuel-way` folder under the temp directory).
 
