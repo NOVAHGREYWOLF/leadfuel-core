@@ -112,3 +112,12 @@ def test_the_desk_and_router_skills_teach_the_asker_posts_its_own_card():
     assert "Post the card yourself" in desk
     assert "posts its own card" in router
     assert (PLUGIN / "scripts" / "post_card.py").is_file()
+
+
+def test_the_router_and_handoff_skills_teach_the_pinned_router_current_rewrite():
+    """Owner, 2026-11-01, card q9126 A: router/current is rewritten on every rotation, pinned with if_version."""
+    router = (PLUGIN / "skills" / "router" / "SKILL.md").read_text(encoding="utf-8")
+    handoff = (PLUGIN / "skills" / "handoff" / "SKILL.md").read_text(encoding="utf-8")
+    for text in (router, handoff):
+        assert "router/current" in text and "if_version" in text and "session_id" in text and "q9126" in text
+    assert "Rewrite `router/current`" in router and "rewrites the Build Board `router/current` on every rotation" in handoff
