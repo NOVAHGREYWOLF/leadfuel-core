@@ -487,3 +487,154 @@ def test_the_wake_path_has_no_network_and_no_permission_change(woa):
     skill = (PLUGIN / "skills" / "wake" / "SKILL.md").read_text(encoding="utf-8")
     assert "set_session_permission_mode" not in skill
     assert "Never change any session's permission mode" in skill
+
+
+# ---- 0.1.15: routing by router title, stale answers, bounded messages ---------------------------------
+# Measured 2026-10-31: no card carries asker_session, and the asker text is `ROUTER #114 <sep> app brain link
+# (W3-17 report)`, the separator mangled to U+FFFD on the page. The Build Board's router/current was a retired
+# router, so every such answer would have gone to the wrong project's router.
+
+R114 = "local_11400000-0000-4000-8000-000000000114"
+R121 = "local_12100000-0000-4000-8000-000000000121"
+R110 = "local_11000000-0000-4000-8000-000000000110"
+
+
+def sess(sid, title, archived=False):
+    return {"id": sid, "title": title, "archived": archived, "mode": "bypassPermissions", "task": None}
+
+
+STORE = [sess(R114, "ROUTER #114 · app brain link"), sess(R110, "ROUTER #110 · command center"),
+         sess(NOBODY, "NODE · something part · 1")]
+
+
+@pytest.mark.parametrize("sep", ["·", "�", "-", "—"])
+def test_a_router_named_by_title_gets_its_own_answer(woa, sep):
+    asker = f"ROUTER #114 {sep} app brain link (W3-17 report)"
+    assert woa.resolve_target(card(asker=asker), ROUTER, STORE) == (R114, "router title: ROUTER #114")
+
+
+def test_a_rotated_router_answer_goes_to_its_live_successor_in_the_same_project(woa):
+    store = STORE + [sess(R121, "ROUTER #121 · app brain link")]
+    target, why = woa.resolve_target(card(asker="ROUTER #114 � app brain link (from W3-19 report)"), ROUTER, store)
+    assert target == R121 and "ROUTER #121" in why and "ROUTER #114" in why
+
+
+def test_an_archived_router_is_never_a_target(woa):
+    store = [sess(R114, "ROUTER #114 · app brain link", archived=True)]
+    assert woa.router_by_title("ROUTER #114 · app brain link", store) == (None, "")
+
+
+def test_a_bare_router_number_matches_that_router_only(woa):
+    assert woa.resolve_target(card(asker="ROUTER #110"), ROUTER, STORE)[0] == R110
+    # the number is the key: no live router #99 means the live router (router/current), as before
+    target, why = woa.resolve_target(card(asker="ROUTER #99"), ROUTER, STORE)
+    assert target == ROUTER and "live router" in why
+
+
+def test_a_renamed_project_still_finds_the_router_by_its_number(woa):
+    assert woa.resolve_target(card(asker="ROUTER #110 · the old project name"), ROUTER, STORE)[0] == R110
+
+
+def test_asker_session_and_an_embedded_id_still_beat_a_title(woa):
+    assert woa.resolve_target(card(asker="ROUTER #114 · app brain link", asker_session=DESK), ROUTER, STORE)[0] == DESK
+    assert woa.resolve_target(card(asker=f"ROUTER #114 · app brain link {DESK}"), ROUTER, STORE)[0] == DESK
+
+
+def test_without_a_session_store_a_title_is_not_looked_up(woa):
+    """None is unknown, not 'no such router': the card goes where it always went."""
+    assert woa.resolve_target(card(asker="ROUTER #114 · app brain link"), ROUTER, None)[0] == ROUTER
+
+
+def test_load_sessions_reads_the_app_store_and_says_none_when_it_cannot(woa, tmp_path):
+    assert woa.load_sessions(tmp_path / "missing") is None
+    assert woa.load_sessions(tmp_path) is None  # a folder with no session files is unknown, not empty
+    d = tmp_path / "acct" / "env"
+    d.mkdir(parents=True)
+    (d / f"{R114}.json").write_text(json.dumps({"sessionId": R114, "title": "ROUTER #114 · x", "isArchived": False,
+                                                "permissionMode": "auto", "scheduledTaskId": "t"}), encoding="utf-8")
+    (d / "local_bad.json").write_text("{not json", encoding="utf-8")
+    assert woa.load_sessions(tmp_path) == [{"id": R114, "title": "ROUTER #114 · x", "archived": False,
+                                            "mode": "auto", "task": "t"}]
+
+
+def test_a_title_routed_message_says_who_the_reader_is(woa):
+    plan = woa.make_plan({"q1": card(asker="ROUTER #114 · app brain link")}, ROUTER, sessions=STORE,
+                         now="2026-10-14T02:00:00Z")
+    assert plan["sends"][0]["to"] == R114
+    assert "posted by, or its live successor" in plan["sends"][0]["text"]
+    assert "live router: the asker text names no session" not in plan["sends"][0]["text"]
+
+
+def test_an_answer_older_than_the_age_limit_is_stale_and_never_sent(woa):
+    old = card(answered_at="2026-10-10T00:00:00Z")
+    fresh = card(answered_at="2026-10-14T01:00:00Z")
+    plan = woa.make_plan({"q1": old, "q2": fresh}, ROUTER, now="2026-10-14T02:00:00Z")
+    assert plan["stale"] == ["q1"] and plan["sends"][0]["cards"] == ["q2"]
+
+
+def test_a_recent_note_makes_an_old_answer_fresh_again(woa):
+    c = card(answered_at="2026-10-10T00:00:00Z", note_at="2026-10-14T01:30:00Z", note="we want more")
+    assert woa.make_plan({"q1": c}, ROUTER, now="2026-10-14T02:00:00Z")["stale"] == []
+
+
+def test_only_reaches_a_stale_card_and_age_zero_turns_the_limit_off(woa):
+    old = {"q1": card(answered_at="2026-10-01T00:00:00Z")}
+    assert woa.make_plan(old, ROUTER, only={"q1"}, now="2026-10-14T02:00:00Z")["stale"] == []
+    assert woa.make_plan(old, ROUTER, max_age_hours=0, now="2026-10-14T02:00:00Z")["stale"] == []
+
+
+def test_a_card_with_no_readable_time_is_sent_not_hidden(woa):
+    plan = woa.make_plan({"q1": card(answered_at="yesterday-ish")}, ROUTER, now="2026-10-14T02:00:00Z")
+    assert plan["stale"] == [] and len(plan["sends"]) == 1
+
+
+def test_one_message_carries_at_most_the_card_cap_and_the_rest_wait(woa):
+    cards = {f"q{i:03d}": card() for i in range(25)}
+    plan = woa.make_plan(cards, ROUTER, now="2026-10-14T02:00:00Z")
+    assert len(plan["sends"]) == 1 and len(plan["sends"][0]["cards"]) == woa.MAX_CARDS_PER_SEND
+    assert len(plan["deferred"]) == 25 - woa.MAX_CARDS_PER_SEND
+
+
+def test_one_message_stays_under_the_character_cap_whatever_the_cards_say(woa):
+    cards = {f"q{i}": card(note="x" * 600, title="t" * 300, asker="a" * 300) for i in range(10)}
+    plan = woa.make_plan(cards, ROUTER, now="2026-10-14T02:00:00Z")
+    assert len(plan["sends"][0]["text"]) <= woa.MAX_MESSAGE_CHARS
+    assert plan["sends"][0]["cards"] and plan["deferred"]
+
+
+def test_a_single_card_bigger_than_the_cap_is_still_sent(woa):
+    plan = woa.make_plan({"q1": card(note="x" * 5000)}, ROUTER, now="2026-10-14T02:00:00Z", max_chars=100)
+    assert plan["sends"][0]["cards"] == ["q1"]
+
+
+def test_cli_plan_routes_by_title_and_lists_stale(tmp_path):
+    cards = tmp_path / "cards"
+    cards.mkdir()
+    fresh = card(asker="ROUTER #114 · app brain link", answered_at="2026-10-14T01:00:00Z")
+    old = card(asker="ROUTER #114 · app brain link", answered_at="2026-10-01T01:00:00Z")
+    (cards / "q1.json").write_text(json.dumps(fresh), encoding="utf-8")
+    (cards / "q2.json").write_text(json.dumps(old), encoding="utf-8")
+    (tmp_path / "cur.json").write_text(json.dumps({"session_id": ROUTER}), encoding="utf-8")
+    store = tmp_path / "store" / "acct" / "env"
+    store.mkdir(parents=True)
+    (store / f"{R114}.json").write_text(json.dumps({"sessionId": R114, "title": "ROUTER #114 · app brain link",
+                                                    "isArchived": False}), encoding="utf-8")
+    r = subprocess.run([sys.executable, str(SCRIPT), "plan", "--cards", str(cards), "--count", "2", "--router-current",
+                        str(tmp_path / "cur.json"), "--sessions-dir", str(tmp_path / "store"), "--now",
+                        "2026-10-14T02:00:00Z", "--out", str(tmp_path / "plan.json")],
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+    assert f"SEND to={R114}" in r.stdout and "cards=q1 " in r.stdout and "stale" in r.stdout
+    plan = json.loads((tmp_path / "plan.json").read_text(encoding="utf-8"))
+    assert plan["stale"] == ["q2"]
+
+
+def test_cli_plan_warns_when_there_is_no_session_store(tmp_path):
+    cards = tmp_path / "cards"
+    cards.mkdir()
+    (cards / "q1.json").write_text(json.dumps(card()), encoding="utf-8")
+    (tmp_path / "cur.json").write_text(json.dumps({"session_id": ROUTER}), encoding="utf-8")
+    r = subprocess.run([sys.executable, str(SCRIPT), "plan", "--cards", str(cards), "--count", "1", "--router-current",
+                        str(tmp_path / "cur.json"), "--now", "2026-10-14T02:00:00Z", "--out", str(tmp_path / "p.json")],
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0 and "no readable session store" in r.stdout
