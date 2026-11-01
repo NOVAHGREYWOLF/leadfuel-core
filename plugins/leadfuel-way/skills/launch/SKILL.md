@@ -1,6 +1,6 @@
 ---
 name: launch
-description: Start a real session with no click and no paste, by arming a scheduled-task launch slot with a one-time fireAt. Use for a successor (router, conductor or desk) or any task that must be a session of its own, when start_session is not in your tool list and a background agent cannot do it. A session launches its own successor (section "Launch your successor yourself"); only when the app refuses that does it ask the standing launcher (section "Ask the launcher"; the launcher follows "If you are the launcher"). Not for the desks a router runs as background agents.
+description: Start a real session with no click and no paste, by arming a scheduled-task launch slot with a one-time fireAt. Use for a successor (router, conductor or desk) or any task that must be a session of its own, when start_session is absent or the app refuses it and a background agent cannot do it. A session launches its own successor (section "Launch your successor yourself"); only when the app refuses that does it ask the standing launcher (section "Ask the launcher"; the launcher follows "If you are the launcher"). Not for the desks a router runs as background agents.
 ---
 
 # launch (start a session with no click)
@@ -9,7 +9,7 @@ Owner, 2026-10-13: "when a session needs to create a new session this should be 
 
 ## Which way to start a session
 Take the first that applies:
-1. **`start_session`**, if it is in your tool list (ToolSearch for it first). It is switched off for the owner's account as of 2026-10-13, so expect it absent.
+1. **`start_session`**, if it is in your tool list (ToolSearch for it first). It was switched off for the owner's account on 2026-10-13 and is available again as of 2026-10-31 (`list_sessions` showed 17 sessions started with it; README, 0.1.17), so look for it, do not assume it absent. **The app refuses it while you are working on a message that came from another session, and `user_asked` needs the user's own words in the turn** ([read] in the app's own rules for the tool, 2026-11-01 UTC; `leadfuel-way:way`, section 2b), so a session whose turn a router's or peer's message drives falls to the next way. A session you start this way is nested under you, which a launch slot never is. A desk at its cap opens its own successor this way when its turn allows (`leadfuel-way:handoff`); that is the one session a desk opens, and a desk never launches a slot.
 2. **A background agent**, for a desk a router runs (`leadfuel-way:router`, "Background desk agents"). No click, no sidebar row. It cannot be a successor: it dies with its router.
 3. **A launch slot (this skill)**, for anything that must be a session of its own: a router, conductor or desk successor, or a task the owner will talk to. You arm the slot yourself with a one-time `fireAt` ("Launch your successor yourself"); if the app refuses that, you ask the launcher.
 4. **A `spawn_task` chip**, only when no slot is free or a slot is not in Bypass. Say in the same message that it is a chip and why, before the owner finds it.
@@ -97,7 +97,7 @@ You are the one standing regular session that runs the steps above for everyone 
 
 **You never:** call `archive_session`, `move_sessions` or `set_session_title` on any session but yourself; archive a run (the requester does); change a permission mode or a settings file; write anywhere but a slot's `model:` line; launch into a slot you did not check was free; launch the same title twice; answer a request twice (an earlier `LAUNCHED` for that title is the answer: resend it). You do no task work.
 
-**Start and replace the launcher.** No tool in the router's, a desk agent's or a slot run's toolset starts a regular session (`start_session` is not present as of 2026-10-14), and the launcher cannot start its own successor through a slot, since a slot session is a scheduled run (wall 3). The owner pastes one prompt into a fresh Sonnet session, in Bypass, once (`docs/SLOT-LAUNCH.md`, "The launcher session"). With `clear_session` it never needs a second paste unless the session is closed; a replacement overlaps the old one only until it has written `launcher/current`, and the old one then forwards and stops.
+**Start and replace the launcher.** No tool in the router's, a desk agent's or a slot run's toolset starts a regular session (`start_session` was not present as of 2026-10-14 and is again as of 2026-10-31, and a turn that another session's message began cannot use it), and the launcher cannot start its own successor through a slot, since a slot session is a scheduled run (wall 3). The owner pastes one prompt into a fresh Sonnet session, in Bypass, once (`docs/SLOT-LAUNCH.md`, "The launcher session"). With `clear_session` it never needs a second paste unless the session is closed; a replacement overlaps the old one only until it has written `launcher/current`, and the old one then forwards and stops.
 
 ## After the launch
 - **Reports** come as messages from the session to the launcher's id. A send may come back queued; say so and do not treat queued as read.
@@ -117,6 +117,6 @@ Measured 2026-10-13 unless marked. Details and the on-trust items are in `docs/S
 - **A run's prompt is stored in plain text** in `~/.claude/scheduled-tasks/<slot>/SKILL.md` and stays there after a delete. Ids, titles and status only; no secrets.
 
 ## Never
-- Never launch from inside a desk, and never call `run_scheduled_task` from a slot run (wall 3). A router, the conductor or any session handing itself off arms a slot itself; only when the app refuses that does it ask the launcher.
+- Never launch a slot from inside a desk (its own successor is `start_session`, or its router's), and never call `run_scheduled_task` from a slot run (wall 3). A router, the conductor or any session handing itself off arms a slot itself; only when the app refuses that does it ask the launcher.
 - Never arm a slot you did not check was free (no running run, no future `fireAt`), and never both arm a slot and run it: one start per launch.
 - Never move or retitle another session to "fix" a slot session's missing group. It cannot have one.
