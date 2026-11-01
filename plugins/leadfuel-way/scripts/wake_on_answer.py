@@ -13,7 +13,12 @@ results back. Nothing here touches the network.
 A card is pending when the owner has answered it (`answer` set; a step card's `not_yet` is not an
 answer) and `routed` is empty (the page writes `routed: null` on every click and every note). Its
 target is `asker_session` when that is a full `local_` id, else a full `local_` id inside the `asker`
-text, else the live router from the Build Board's `router/current`.
+text, else the router the asker names (`ROUTER #114 · app brain link`, found by title in the session
+store the desktop app keeps on disk, and the highest-numbered live router of that project when it has
+rotated), else the live router from the Build Board's `router/current`. A card answered more than
+MAX_AGE_HOURS ago is stale: the owner relayed it by hand long ago, so it is listed and never sent. One
+message carries at most MAX_CARDS_PER_SEND cards and MAX_MESSAGE_CHARS characters, because the session
+that relays it must be able to send the text unchanged (a 53.7 KB batch of 212 cards could not be).
 
 Four states, and only one of them is a pass:
     DELIVERED    the TARGET's own transcript holds the card's token. Nothing else counts: a send is
@@ -43,12 +48,19 @@ DELIVERED, HELD, UNDELIVERED, UNKNOWN = "DELIVERED", "HELD", "UNDELIVERED", "UNK
 STATES = (DELIVERED, HELD, UNDELIVERED, UNKNOWN)
 HOLD_LIMIT_MIN = 120   # a HELD or UNKNOWN card becomes UNDELIVERED (with a durable note) after this long
 MAX_SENDS = 5          # messaging pauses after 10 sends until the owner types: spend few per pass
+MAX_CARDS_PER_SEND = 10    # the rest wait for the next pass; one huge message cannot be relayed unchanged
+MAX_MESSAGE_CHARS = 7000
+MAX_AGE_HOURS = 48     # an answer older than this was relayed by hand long ago: list it, never send it
 BY = "wake-on-answer"
 
 SID = re.compile(r"(?<![\w-])local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\w-])")
 DELIVERY = re.compile(r"delivery:\s*([a-z_]+)", re.I)
 MESSAGE_ID = re.compile(r"message_id:\s*([0-9A-Za-z-]+)")
 NO_HITS = "No matching sessions found."
+# A router's title is `ROUTER #N · project`; the separator is one punctuation character, and the cards
+# carry it mangled (U+FFFD) as often as not, so any single non-word character counts.
+ROUTER_TITLE = re.compile(r"^\s*ROUTER\s*#(\d+)\s*[^\w\s(#]\s*(.+?)\s*$", re.I)
+ROUTER_ASKER = re.compile(r"ROUTER\s*#(\d+)(?:\s*[^\w\s(#]\s*([^()\[\]\n]+?))?\s*(?:[(\[]|$)", re.I)
 
 
 # ---- reading what the tools said -----------------------------------------------------------------
@@ -123,7 +135,7 @@ def valid_sid(value) -> bool:
     return bool(value) and bool(SID.fullmatch(str(value).strip()))
 
 
-def resolve_target(card: dict, router_id) -> tuple:
+def resolve_target(card: dict, router_id, sessions=None) -> tuple:
     """(session id or None, why). A row id like `intelligence/local_8e471cfd-1` is not a session."""
     own = card.get("asker_session")
     if valid_sid(own):
@@ -131,9 +143,60 @@ def resolve_target(card: dict, router_id) -> tuple:
     m = SID.search(str(card.get("asker") or ""))
     if m:
         return m.group(0), "the asker text names this session"
+    by_title, why = router_by_title(card.get("asker"), sessions)
+    if by_title:
+        return by_title, why
     if valid_sid(router_id):
         return str(router_id).strip(), "the asker names no session, so the live router (router/current)"
     return None, "the asker names no session and router/current has no session id"
+
+
+def load_sessions(root):
+    """[{id, title, archived, mode, task}] read from the app's session store, or None when it cannot be read.
+
+    None is not an empty list: with no store a title cannot be resolved, and the caller says so instead
+    of reporting that no router exists."""
+    if not root or not Path(root).is_dir():
+        return None
+    out = []
+    for f in Path(root).glob("*/*/local_*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(d, dict) and valid_sid(d.get("sessionId")):
+            out.append({"id": d["sessionId"], "title": str(d.get("title") or ""), "archived": bool(d.get("isArchived")),
+                        "mode": d.get("permissionMode"), "task": d.get("scheduledTaskId")})
+    return out or None
+
+
+def _norm(text) -> str:
+    return " ".join(str(text or "").lower().split())
+
+
+def router_by_title(asker, sessions):
+    """(session id or None, why) for the router an asker names, e.g. `ROUTER #114 · app brain link (W3-17 report)`.
+
+    The highest-numbered live router of the same project wins, so a router that rotated since it posted
+    still gets its answer through its successor; otherwise the live router with that number."""
+    m = ROUTER_ASKER.search(str(asker or ""))
+    if not m or not sessions:
+        return None, ""
+    n, project = int(m.group(1)), _norm(m.group(2))
+    live = []
+    for s in sessions:
+        t = None if s["archived"] else ROUTER_TITLE.match(s["title"])
+        if t:
+            live.append((int(t.group(1)), _norm(t.group(2)), s["id"]))
+    same = sorted(x for x in live if project and x[1] == project)
+    if same:
+        num, _, sid = same[-1]
+        return sid, (f"router title: ROUTER #{num}" if num == n else f"router title: ROUTER #{num}, the live router of "
+                     f"ROUTER #{n}'s project")
+    exact = [x for x in live if x[0] == n]
+    if exact:
+        return exact[0][2], f"router title: ROUTER #{n}"
+    return None, ""
 
 
 def answered(card: dict) -> bool:
@@ -189,11 +252,15 @@ def _short(text, n: int) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-def compose(items: list, to_router: bool) -> str:
+def compose(items: list, to_router: bool, named_router: bool = False) -> str:
     """One message for one target. items: [(card id, card, token)]."""
     pairs = ", ".join(f"{cid} = {card.get('answer')}" for cid, card, _ in items)
-    who = ("You get these as the live router: the asker text names no session." if to_router
-           else "You are the session that asked.")
+    if named_router:
+        who = "You are the router these cards were posted by, or its live successor in the same project."
+    elif to_router:
+        who = "You get these as the live router: the asker text names no session."
+    else:
+        who = "You are the session that asked."
     lines = [f"WAKE-ON-ANSWER: the owner answered {len(items)} card(s) on the Router desk page: {pairs}. {who}"]
     for cid, card, token in items:
         label = _label(card)
@@ -218,10 +285,24 @@ def _card_view(card: dict) -> dict:
     return view
 
 
-def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = MAX_SENDS, now=None) -> dict:
+def age_hours(card: dict, now):
+    """Hours since the owner last touched the card (the later of answered_at and note_at); None if unreadable."""
+    stamps = [parse_time(card.get(k)) for k in ("answered_at", "note_at") if card.get(k)]
+    stamps = [t if t.tzinfo else t.replace(tzinfo=timezone.utc) for t in stamps if t is not None]
+    ref = parse_time(now)
+    if not stamps or ref is None:
+        return None
+    if ref.tzinfo is None:
+        ref = ref.replace(tzinfo=timezone.utc)
+    return (ref - max(stamps)).total_seconds() / 3600
+
+
+def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = MAX_SENDS, now=None,
+              sessions=None, max_age_hours=MAX_AGE_HOURS, max_cards=MAX_CARDS_PER_SEND,
+              max_chars=MAX_MESSAGE_CHARS) -> dict:
     now = now or iso_now()
     plan = {"at": now, "router_id": router_id, "self_id": self_id, "sends": [], "rechecks": [],
-            "deferred": [], "self": [], "no_target": [], "cards": {}, "why": {}}
+            "deferred": [], "stale": [], "self": [], "no_target": [], "cards": {}, "why": {}}
     groups: dict = {}
     for cid, action in pending(cards, only=only):
         card = cards[cid]
@@ -234,7 +315,12 @@ def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = 
                                      "sends": wake.get("sends", 1), "why": wake.get("why"),
                                      "message_id": wake.get("message_id")})
             continue
-        target, why = resolve_target(card, router_id)
+        if not only and max_age_hours:
+            age = age_hours(card, now)
+            if age is not None and age > max_age_hours:
+                plan["stale"].append(cid)
+                continue
+        target, why = resolve_target(card, router_id, sessions)
         plan["why"][cid] = why
         if target is None:
             plan["no_target"].append(cid)
@@ -246,11 +332,20 @@ def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = 
         if n >= max_sends:
             plan["deferred"].extend(cids)
             continue
-        items = [(cid, cards[cid], card_token(cid, cards[cid], target)) for cid in cids]
-        as_router = all(plan["why"][c].startswith("the asker names no session") for c in cids)
-        plan["sends"].append({"to": target, "why": plan["why"][cids[0]], "cards": cids,
+        chosen: list = []
+        for cid in cids:
+            trial = [(c, cards[c], "WAKE-0000000000") for c in chosen + [cid]]
+            if chosen and (len(chosen) >= max_cards or len(compose(trial, False)) > max_chars):
+                plan["deferred"].append(cid)
+            else:
+                chosen.append(cid)
+        items = [(cid, cards[cid], card_token(cid, cards[cid], target)) for cid in chosen]
+        whys = [plan["why"][c] for c in chosen]
+        as_router = all(w.startswith("the asker names no session") for w in whys)
+        named = all(w.startswith("router title") for w in whys)
+        plan["sends"].append({"to": target, "why": whys[0], "cards": chosen,
                               "search_token": items[0][2], "tokens": {cid: tok for cid, _, tok in items},
-                              "text": compose(items, to_router=as_router)})
+                              "text": compose(items, to_router=as_router, named_router=named)})
     return plan
 
 
@@ -367,7 +462,9 @@ def cmd_plan(args) -> int:
             print(f"WAKE-PASS UNKNOWN: card file {f.name} is not JSON")
             return 2
     only = {c.strip() for c in args.only.split(",") if c.strip()} if args.only else None
-    plan = make_plan(cards, router_id, self_id=args.self_id, only=only, max_sends=args.max_sends, now=args.now)
+    sessions = load_sessions(args.sessions_dir)
+    plan = make_plan(cards, router_id, self_id=args.self_id, only=only, max_sends=args.max_sends, now=args.now,
+                     sessions=sessions, max_age_hours=args.max_age_hours)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -380,14 +477,19 @@ def cmd_plan(args) -> int:
     pins = [c for s in plan["sends"] for c in s["cards"]] + [r["card"] for r in plan["rechecks"]] + plan["no_target"]
     if pins:
         print(f"PIN cards={','.join(pins)}")
+    if sessions is None:
+        print("WARNING: no readable session store (pass --sessions-dir), so a router named by title was not looked "
+              "up; those cards went to the live router")
     if not valid_sid(router_id):
         print(f"WARNING: router/current session_id is not a session id ({router_id!r}); cards with no asker id have no target")
     if not plan["sends"] and not plan["rechecks"] and not plan["no_target"]:
         print(f"WAKE-PASS nothing to deliver: {len(cards)} unrouted cards read, none answered and pending"
+              + (f" ({len(plan['stale'])} stale, answered over {args.max_age_hours}h ago)" if plan["stale"] else "")
               + (f"; for the runner itself: {','.join(plan['self'])}" if plan["self"] else ""))
         return 0
     print(f"plan: {len(plan['sends'])} send(s), {len(plan['rechecks'])} recheck(s), self {plan['self'] or 'none'}, "
-          f"no target {plan['no_target'] or 'none'}, deferred {plan['deferred'] or 'none'}")
+          f"no target {plan['no_target'] or 'none'}, deferred {len(plan['deferred'])}, "
+          f"stale (answered over {args.max_age_hours}h ago, not sent) {len(plan['stale'])}")
     return 0
 
 
@@ -447,6 +549,11 @@ def main(argv=None) -> int:
     p.add_argument("--self", dest="self_id", default=None, help="the session running this pass; never sent to")
     p.add_argument("--only", default=None, help="comma list of card ids; reaches a withdrawn card (the proof card)")
     p.add_argument("--max-sends", type=int, default=MAX_SENDS)
+    p.add_argument("--max-age-hours", type=float, default=MAX_AGE_HOURS,
+                   help="an answer older than this is listed as stale and not sent; 0 turns the limit off")
+    p.add_argument("--sessions-dir", default=None,
+                   help="the desktop app's session store, %%APPDATA%%/Claude/claude-code-sessions (passed in, "
+                        "not read from the environment: this script imports no os)")
     p.add_argument("--now", default=None)
     p.add_argument("--out", required=True)
     j = sub.add_parser("judge", help="turn the send results and searches into states and writes")
