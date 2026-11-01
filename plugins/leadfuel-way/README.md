@@ -34,6 +34,7 @@ python scripts/way_caps.py set 40000 90000 --minutes 90   # force a low cap on e
 python scripts/way_caps.py clear
 ```
 - **The wake pass no longer guesses a router** (NODE~WAKE-NO-TARGET; 0.1.18). A card whose asker names a `ROUTER #N` that no live router has is no target (UNDELIVERED, with a Build Board note), not a send to `router/current`; an asker that is exactly one live session's title reaches that session. Measured 2026-11-01: 4 of 5 sends to idle routers were not picked up and none appeared in a target transcript.
+- **A session that needs the owner posts its own card** (owner, 2026-10-31; NODE~POST-CARD; 0.1.19). `scripts/post_card.py` builds a valid Router desk `questions` document (the fields of the live cards, the asker's own session id as `asker_session`, option X always present, the default never X); the session writes it with ArtifactData `set`, and the wake pass carries the owner's click back to it. `desk` and `router` now say: a `NEEDS-NOVAH`, an `ASK` or an approval request is a card, never chat, never `AskUserQuestion`, never a chip that needs a click.
 
 **Switches (environment).** `SESSION_SOFT_TOKENS` / `SESSION_HARD_TOKENS` override the caps; `SESSION_GUARD_OFF=1` disables the guard and the Stop gate; `WAY_ENFORCE_ROLES=0` disables the coordinator edit rule, the background-agent rules and the bulk-move rule; `WAY_ARCHIVE_GUARD=0` disables the self-archive guard; `WAY_STATE_DIR` moves the per-session state (default: a `leadfuel-way` folder under the temp directory).
 
