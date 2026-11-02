@@ -4,10 +4,10 @@ Checked from a cloud session in env_01Vkn9CZfpoTrsp5mrW69qFx (the only environme
 
 | Program | Reachable from a cloud session? | How | Notes |
 |---|---|---|---|
-| GitHub (leadfuel-core) | YES | github MCP + git | other repos need add_repo (novahub, signal, scope, reach, lucid, orbit, novahos work) |
+| GitHub (leadfuel-core) | YES | github MCP + git | other repos need add_repo (hub = literal repo `novahub`, signal, scope, reach, lucid, orbit, novahos work) |
 | Claude Code Remote (sessions, routines) | YES | claude-code-remote MCP | child -> router send_message is blocked by a permission prompt; use pull |
 | Artifact board (A4uS9xn1emqupohdE4DUfV) | YES | ArtifactData | |
-| novahub brain | YES | connector | no Railway actions in its catalog (61 actions: odyssey, reach, signal, scope, orbit, echo, lucid, self, prospect, qbo) |
+| hub brain | YES | connector | no Railway actions in its catalog (61 actions: odyssey, reach, signal, scope, orbit, echo, lucid, self, prospect, qbo) |
 | Gmail, Microsoft 365 | YES | connectors | |
 | Apollo.io | NO | connector needs authorization | |
 | Railway | NO | no connector, no token | CLI installs fine but `railway whoami` = Unauthorized. Needs RAILWAY_API_TOKEN in the environment settings. Project LeadfuelBusinessSuites, production |

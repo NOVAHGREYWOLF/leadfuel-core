@@ -13,7 +13,7 @@ Router #2 = session_01WyQR1ksA1rh7D5XYZhsMmW. Guard fired at ~105k (old 90k/120k
 - Model rule unchanged: Sonnet/Haiku only until 2026-10-03 21:00 UTC.
 
 ## Open NEEDS YOU (from #1 sweep, de-duplicated, ids only)
-1 merge/review: novahub#692, #697 (out of draft), #694/#696 await CI, novahos#25 commit check, orbit#28 + Windows script.
+1 merge/review: `novahub#692` (literal: hub's GitHub repo is still named `novahub`), #697 (out of draft), #694/#696 await CI, novahos#25 commit check, orbit#28 + Windows script.
 2 irreversible: bulk mark-done of 238 sessions; CND-1 choices; stray #683 session.
 3 six coordinator questions (text not retrieved); archive OKs; leadfuel-core PR #2.
 4 Railway gateway cutover (signal#13 then #28, token, vars).
