@@ -33,7 +33,23 @@ shows no onboarding. Then note to NODE: Open WebUI is not in `services.json`, so
   undecided. Not verified: Open WebUI actually listing Ollama's models (needs a login).
 - No handoff messages were sent to other sessions.
 
-## Update 2026-10-31 15:40 PT (supersedes "Next" above)
+## FINAL STATE 2026-11-02 (supersedes everything below; nothing is owed to this desk, no successor needed)
+- Owner reversed Open WebUI the same evening ("We don't want it. Everything is going to be Navahos"). It is OUT:
+  the `open-webui` entry is gone from the live manifest (backup kept by part 7), its launcher is stopped, port 8081
+  refuses (I checked with Ollama on 11434 as the positive control), the HKCU Run value is gone, one supervisor
+  runs. Its data folder (one account, three chats) was left untouched. Supervisor support code is merged in
+  `main` of the estate checkout (`55c9aba`), local only: push is disabled there by design (VAULT sync).
+- Ollama stays the model server (0.40.11, supervisor-owned). Hermes default is `qwen3-64k:4b` (verified: ctx 65536,
+  no truncation). Hermes always-on gateway: part 7 recommends leaving it OFF (it would poll catalogs and the Gamma
+  and Hugging Face MCP servers outward, a Law 9 question). Owner has not said whether Hermes itself stays.
+- Child sessions: part 4 `local_2dc2a18a-14e7-4e5b-9a5f-e6c8e3684a61` (done), part 7
+  `local_42bcb22f-be9a-4ad2-8540-b5a9144d8ab4` (done). Part 7 then started an installer chain not ordered by me:
+  parts 9 `local_31634206-5531-4e98-b21d-895d0d411a1d`, 10 `local_d14ab79f-2a7a-48c2-beb4-345143be8d74`,
+  11 `local_5273a556-88ed-423b-95dd-0e343b1d8ab9`. That work belongs to `ROUTER #113 · one-app`. Part 11's
+  branch `claude/node-ship-installer-11-1bc1e7` is NOT in `main`; nothing of mine merges it.
+- Remaining NovahOS work (chat front end on Ollama in the Home Node window) is a new task for the one-app router.
+
+## Update 2026-10-31 15:40 PT (older; superseded by the final state above)
 - Owner decision, in chat to this session: "all of these things should be running from my NovahOS app. we dont
   need any of the other apps. they will run in background." Direction: headless services owned by the NovahOS
   supervisor; no tray or standalone-app windows. Embed-vs-replace for Hermes/Open WebUI panes is still undecided.
