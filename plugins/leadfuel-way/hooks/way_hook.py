@@ -25,6 +25,12 @@ Events (one entry point, dispatched on `hook_event_name`):
                       A successor launched into a slot (`leadfuel-way:launch`, 0.1.11) counts
                       without a group: a scheduled run cannot be filed in one, so its
                       `scheduledTaskId` (`way-slot-NN`) stands in for the group test.
+                      Since 0.1.24 a DESK is also refused while its recognised successor is provably
+                      NESTED under it (the row names this session as its opener and does not show
+                      `detached: true`): the app archives a parent's idle nested sessions with the
+                      parent, so the successor archives the desk from inside its own first turn.
+                      Each session is judged by its newest read. Routers and conductors are not
+                      refused for this (the skills advise, the guard does not enforce).
                       Also (0.1.12, reworded 0.1.14): a session the hook can tell was launched into a
                       slot (its first message carries the slot block) may not call
                       `run_scheduled_task`, which the app refuses every scheduled run in every state
@@ -58,7 +64,10 @@ nested desk's own nested successor in a tier group only when the successor row p
 opened it (`startedBy`, from list_sessions, or `parentSessionId`, from get_session, equals this
 session's own `sessionId`, read from its `get_session` on `self`): the tier group is shared by every
 desk of every project, so the group and the title alone cannot tell a successor from a stranger. A
-router's or conductor's successor is still proven only in the ROUTER or CONDUCTOR group.
+router's or conductor's successor in the ROUTER or CONDUCTOR group is still proven by that group alone;
+in a tier group other than its role's own (a router the conductor opened with `start_session` is nested
+under it, so it is inferred to sit in the CONDUCTOR group, and so does the successor it opens) it
+counts only with the same opener proof, whichever tier group the router ends up in.
 
 Background agents (AUTO-DESKS). A router may run a desk as a background agent (the Agent tool with
 isolation: worktree) instead of a chip the owner must click. Claude Code fires a subagent's hooks
@@ -623,9 +632,17 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     live, the same role, and the next of the same line.
 
     ROUTER #N: another ROUTER, numbered above N when both carry a number, in the ROUTER group.
-    CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one). (A router the
-    conductor opened with `start_session` is nested under it and lands in the CONDUCTOR group, so it is
-    not proven here: an open item, not changed in 0.1.24.)
+    CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one). Both are judged by the
+    row's group NAME, with no opener proof, exactly as in 0.1.7.
+    A router the conductor opened with `start_session` is nested under it and lands in the CONDUCTOR group
+    (inferred from the measured filing of nested sessions, never run), and the successor it opens the same
+    way lands there too. So a ROUTER's or CONDUCTOR's successor row is also accepted in a TIER group other
+    than the one its role names, whichever tier group that is (the owner does not have to decide where
+    routers live), when ALL hold: `mine` is known, is that same group (`same_group`, by id when both carry
+    one) and is itself a tier group, so this session is nested in it; and the row proves this session
+    opened it (`opened_by(row, own_id)`). The row's group NAME is not asked for, so a tier group renamed
+    between two reads cannot skip the opener proof. Same role, live, a different title and, for a router, a
+    number above N still apply. An unknown own id, own group or opener refuses.
     DESK: the same lane (it stays in the title), in the same sidebar group as this session (`mine`,
     read from a `get_session` on `self`), and the next of the same line:
       `LANE · <project> part · n`      the same project, n advanced (the title cannot tell two tasks of
@@ -649,7 +666,8 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     its `startedBy` or `parentSessionId` equals this session's own `sessionId` (`own_id`, from
     `own_session_id`). A missing own id, a missing, unreadable or conflicting opener field, or a different
     opener is unknown and refuses. `own_id` is keyword-only and optional, so callers that pass
-    `(own_title, row, mine)` still work; without it a tier-group desk row never counts, as before.
+    `(own_title, row, mine)` still work; without it a tier-group desk row never counts, as before, and a
+    ROUTER's or CONDUCTOR's successor counts only in the group its role names.
     """
     own_role, own_lane = role_of(own_title)
     title = str(row.get("title") or "")
@@ -664,7 +682,14 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
         return False
     if own_role in TIERS:
         if not slot and (theirs is None or theirs[1].upper() != own_role):
-            return False
+            # Not in the group the role names. The one other way in: this session is itself nested in a tier
+            # group (a router the conductor opened sits in the CONDUCTOR group: inferred, never run) and the
+            # row is in that same group AND proves this session opened it. The group alone proves nothing
+            # there: it holds every router the conductor opened, for every project. The row's group NAME is
+            # not asked for (a group renamed between two reads still matches by id): this session's own is.
+            if (theirs is None or mine is None or not same_group(mine, theirs)
+                    or mine[1].upper() not in TIERS or not opened_by(row, own_id)):
+                return False
         if own_role == "ROUTER":
             m, t = _router_number(own_title or ""), _router_number(title)
             if m is not None and (t is None or t <= m):
@@ -740,9 +765,11 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
     plugin 0.1.24, the guard floor): `opened_by(row, own_id)` is true, so the row names this session as its
     opener, and the row does not positively show `detached is True`. A row with no `detached` field, which a
     `list_sessions` row is, counts as still nested: unknown is not a pass. Each session is judged by its
-    NEWEST read (`latest_reads`): a nested read that a later read of the same session replaced is dropped,
-    so a successor a later `get_session` shows archived is no longer recognised (the usual refusal below),
-    and one it shows detached no longer blocks. Everything not proven nested is judged exactly as before:
+    NEWEST read (`latest_reads`), for every tier and every successor, whoever opened it: a read that a later
+    read of the same session replaced is dropped, so a successor a later `get_session` shows archived is no
+    longer recognised (the usual refusal below), and one it shows detached no longer blocks. (Before 0.1.24
+    any row ever seen live counted. A later read of a session that cannot be read as live, for instance one
+    with no `group`, now drops the older live read too: unknown is not a pass.) Everything not proven nested is judged exactly as before:
     a launch-slot successor, one the router opened beside the desk, one whose row names no opener or another
     session, and any successor of a router or conductor (for a tier the rule is a preference in the skills)."""
     mine = own_group(rows)
@@ -750,9 +777,11 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
     role, lane = role_of(own_title)
     seen = [r for r in rows if not r.get("_self")]
     recognised = [r for r in seen if is_successor(own_title, r, mine, own_id=own_id)]
+    # Each session is judged by its NEWEST read, whoever opened it: a row a later read of the same session
+    # replaced (archived since, say) is no longer a live successor, nested under this session or not.
+    current = {id(r) for r in latest_reads(seen)}
+    recognised = [r for r in recognised if id(r) in current]
     if role == "DESK":
-        current = {id(r) for r in latest_reads(seen)}
-        recognised = [r for r in recognised if id(r) in current or not opened_by(r, own_id)]
         if any(opened_by(r, own_id) and r.get("detached") is not True for r in recognised):
             return NESTED_SUCCESSOR_REFUSAL
     if recognised:
@@ -765,6 +794,13 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
                  "so the guard can see it")
     elif role == "DESK":
         where = f"{lane}, or your own group once `get_session` with `self` has shown it"
+    elif role in TIERS and mine is not None and mine[1].upper() in TIERS and mine[1].upper() != role:
+        # Nested in another tier's group (a router the conductor opened sits in the CONDUCTOR group: inferred).
+        where = (f"the {role} group, or your own group, {mine[1]}, if you were opened nested under "
+                 "another session")
+    elif role == "ROUTER" and mine is None:
+        where = (f"{role}, or the group you were opened nested in, which this session has not read: if the "
+                 "conductor opened you, run `get_session` with `self` so the guard can see it")
     else:
         where = role if role in TIERS else "unfiled: title and file yourself first"
     return (
@@ -912,6 +948,16 @@ NESTED_FILING = (
     "`self` and do not try to move yourself."
 )
 
+# The same for a router the conductor opened with `start_session` (the guard's recognition of its successor is
+# `is_successor`, the tier branch). Nested under the conductor, it is filed in the conductor's group, the
+# CONDUCTOR group: INFERRED from the measured filing of nested sessions, never run with a conductor as opener.
+NESTED_TIER_FILING = (
+    "If the conductor opened you nested under it with `start_session` (or the router before you did, as its "
+    "successor), you are filed in the group your opener is in, which is the CONDUCTOR group (inferred, not "
+    "run), and that is not misfiled: `move_sessions` refuses to move a nested session alone, so read "
+    "`get_session` on `self` and do not try to move yourself; your title carries the project."
+)
+
 
 def banner(source: str, title: str | None, role: str, lane: str | None, model: str | None,
            tokens: int | None, soft: int, hard: int) -> str:
@@ -959,6 +1005,8 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
             "and its group exists; otherwise keep your title and group. Never move or retitle other "
             "sessions to migrate them: one at a time, never in bulk."
         )
+    elif role == "ROUTER":
+        lines.append(f"2. Your title files you. Check you are in the {role} sidebar group. {NESTED_TIER_FILING}")
     else:
         lines.append(f"2. Your title files you. Check you are in the {role} sidebar group.")
     lines.append(

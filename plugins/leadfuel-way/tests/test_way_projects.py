@@ -878,9 +878,11 @@ def test_a_sibling_desk_of_the_same_project_is_not_your_successor(hook, transcri
     assert archive(hook, transcript) is None
 
 
-# The tiers are untouched: a router's or conductor's successor is still proven only in the ROUTER or
-# CONDUCTOR group, and the opener field adds nothing there. A router the conductor opens nests under the
-# conductor and lands in the CONDUCTOR group, so it is still not proven: an open item, not changed in 0.1.24.
+# The tiers' own groups are untouched: a router's or conductor's successor in the ROUTER or CONDUCTOR group
+# is proven by that group alone, and the opener field adds nothing there. (A router the conductor opens nests
+# under the conductor and lands in the CONDUCTOR group: the last section of this file, which adds the opener
+# proof for a tier group other than the role's own. The router below sits in the ROUTER group, its successor
+# in the CONDUCTOR group, and stays unproven.)
 
 @pytest.mark.parametrize("own, successor, group", [
     ("ROUTER #9", "ROUTER #10", "ROUTER"),
@@ -893,7 +895,7 @@ def test_a_tier_successor_is_still_proven_by_its_tier_group_alone(hook, transcri
     assert archive(hook, transcript) is None
 
 
-def test_a_router_in_the_conductor_group_is_still_not_proven_open_item(hook, transcript):
+def test_a_router_in_the_router_group_does_not_accept_a_successor_in_the_conductor_group(hook, transcript):
     transcript.add(title_rec("ROUTER #9"))
     saw_me(transcript, title="ROUTER #9", group=RG)
     saw_list(transcript, nested("ROUTER #10", CG, by=ME))
@@ -1081,8 +1083,8 @@ def test_the_way_skill_states_what_the_hook_does_for_a_nested_desk():
     assert "never proves a desk" not in where and "it never proves a desk in a tier group" not in where
     assert "0.1.24" in where and "startedBy" in where and "parentSessionId" in where
     assert "inferred" in where.lower()
-    assert "CONDUCTOR group" in where   # the router the conductor opened: stated as an open item
-    assert "open item" in where
+    assert "CONDUCTOR group" in where   # the router the conductor opened: stated, and since when
+    assert "Conductor-opened routers" in where
     # the claim that the guard never looks at the opener is no longer unqualified
     assert "with one exception since 0.1.24" in text
 
@@ -1260,6 +1262,39 @@ def test_a_later_read_showing_the_nested_successor_archived_no_longer_recognises
     assert_no_successor_refusal(archive(hook, transcript))     # not the floor's text: nothing is live any more
 
 
+@pytest.mark.parametrize("by", [OTHER, None], ids=["opened-by-someone-else", "no-opener-field"])
+def test_a_later_read_showing_any_successor_archived_no_longer_recognises_it(hook, transcript, by):
+    """The newest read wins for every row, not only the rows that name this desk as opener: a successor the
+    router opened beside the desk (or a row with no opener field), seen live and then read archived, is gone."""
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI, by=by))
+    assert archive(hook, transcript) is None      # live, not nested under this desk: the usual path lets it go
+    read(transcript, GET, {"session_id": THEM}, nested(group=WI, by=by, field="parentSessionId", archived=True))
+    assert_no_successor_refusal(archive(hook, transcript))
+
+
+def test_a_later_read_without_a_group_drops_an_older_live_read_of_the_same_session(hook, transcript):
+    """Unknown is not a pass: a later read that cannot be read as live (no `group`) replaces the live one."""
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI, by=OTHER))
+    assert archive(hook, transcript) is None
+    read(transcript, GET, {"session_id": THEM}, nested(group=WI, by=OTHER, drop=("group",)))
+    assert_no_successor_refusal(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("own, successor, group", [
+    ("ROUTER #9", "ROUTER #10", "ROUTER"),
+    ("CONDUCTOR · system build", "CONDUCTOR · system build 2", "CONDUCTOR"),
+])
+def test_a_tier_successor_read_archived_later_is_no_longer_recognised(hook, transcript, own, successor, group):
+    transcript.add(title_rec(own))
+    saw_self(transcript, own, grp(group))
+    saw_list(transcript, nested(successor, grp(group), by=None))
+    assert archive(hook, transcript) is None
+    read(transcript, GET, {"session_id": THEM}, nested(successor, grp(group), by=None, archived=True))
+    assert refused(archive(hook, transcript))
+
+
 def test_a_later_read_showing_the_nested_successor_detached_lets_the_desk_go(hook, transcript):
     desk_in(transcript, RG)
     saw_list(transcript, nested())
@@ -1330,3 +1365,431 @@ def test_positive_control_a_detached_flag_alone_does_not_make_a_stranger_a_succe
     desk_in(transcript, RG)
     saw_list(transcript, nested(by=OTHER, detached=True))
     assert_no_successor_refusal(archive(hook, transcript))
+
+
+# --- a router the conductor opened lives in the CONDUCTOR group (0.1.24, the PR's last open item) ----------
+# Owner, 2026-11-01 ("finish this"): "Conductor-opened routers. A router the conductor opens still isn't
+# recognised by the hook. That depends on where routers should live, which your q1029 B answer didn't cover
+# for conductors." The hook has to work WITHOUT that decision, whichever tier group such a router ends up in.
+# The conductor opens a router with `start_session`, so the router is nested under the conductor and the app
+# files it in its OPENER's group, the CONDUCTOR group (INFERRED from the 17-of-17 measurement in `way`
+# section 2b, never run). When that router rotates and opens its own successor with `start_session`, the
+# successor is nested under the router and lands in the router's group: the CONDUCTOR group again.
+#
+# What stays exactly as it was: a ROUTER's successor in the ROUTER group and a CONDUCTOR's in the CONDUCTOR
+# group are recognised by the group's NAME with no opener proof (and a router's number must advance).
+#
+# What is added, and only this: a ROUTER's or CONDUCTOR's successor row in a TIER group other than the one its
+# role names counts when `mine` (this session's own group, from its newest get_session on `self`) is known,
+# is that same group (`same_group`) and is itself a tier group, AND the row proves this session opened it
+# (`opened_by`: `startedBy` or `parentSessionId` equals this session's own `sessionId`). The role, liveness,
+# a different title and, for a router, a number above N still apply. The group alone proves nothing: the
+# CONDUCTOR group holds every router the conductor opened, for every project. An unknown own id, own group or
+# opener is unknown, and unknown refuses.
+
+RTITLE = "ROUTER #9 · world intel"
+RNEXT = "ROUTER #10 · world intel"
+CTITLE = "CONDUCTOR · system build"
+CNEXT = "CONDUCTOR · system build 2"
+
+
+def router_in(transcript, group=CG, title=RTITLE, **mine):
+    """A router (or conductor) reading itself: its title is recorded and its get_session on `self` names its
+    group and its own id, which is what the opener proof compares against."""
+    transcript.add(title_rec(title))
+    saw_me(transcript, group=group, title=title, **mine)
+
+
+@pytest.mark.parametrize("field", ["startedBy", "parentSessionId"])
+@pytest.mark.parametrize("successor", [
+    pytest.param(RNEXT, id="next"),
+    pytest.param("ROUTER #11 · world intel", id="later-number"),
+    pytest.param("ROUTER #10", id="no-project-in-the-title"),
+    pytest.param("router #10 · world intel", id="numbered-form-in-any-case"),
+    pytest.param("ROUTER #10 · globe feeds", id="the-number-not-the-project-is-the-line"),
+])
+def test_a_router_in_the_conductor_group_may_archive_once_the_successor_it_opened_is_live(hook, transcript, field, successor):
+    router_in(transcript)
+    saw_list(transcript, nested(successor, CG, field=field))
+    assert archive(hook, transcript) is None
+
+
+def test_the_routers_successor_may_be_read_with_get_session_on_its_own_id(hook, transcript):
+    router_in(transcript)
+    read(transcript, GET, {"session_id": THEM}, nested(RNEXT, CG, field="parentSessionId"))
+    assert archive(hook, transcript) is None
+
+
+def test_both_opener_fields_may_be_present_for_a_router_when_they_agree(hook, transcript):
+    router_in(transcript)
+    saw_list(transcript, nested(RNEXT, CG, parentSessionId=ME))
+    assert archive(hook, transcript) is None
+
+
+def test_a_router_matches_the_conductor_group_by_name_when_no_ids_are_given(hook, transcript):
+    router_in(transcript, group={"name": "CONDUCTOR"})
+    saw_list(transcript, nested(RNEXT, {"name": "conductor"}, by=OTHER))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(RNEXT, {"name": "conductor"}))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("renamed", [
+    pytest.param({"id": "cg-conductor", "name": "Conductors"}, id="same-id-another-name"),
+    pytest.param({"id": "cg-conductor"}, id="same-id-no-name"),
+])
+def test_a_conductor_group_renamed_between_two_reads_cannot_turn_the_opener_proof_off(hook, transcript, renamed):
+    """The test must not hinge on the row's group NAME alone: the id says it is this router's own tier group,
+    so a stranger there still needs the opener proof, and the opener turns it back on."""
+    router_in(transcript, group={"id": "cg-conductor", "name": "CONDUCTOR"})
+    saw_list(transcript, nested(RNEXT, renamed, by=None))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(RNEXT, renamed, by=OTHER))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(RNEXT, renamed, by=ME))
+    assert archive(hook, transcript) is None
+
+
+# What does not change.
+
+@pytest.mark.parametrize("by", [ME, None, OTHER], ids=["opened-by-me", "no-opener", "opened-by-another"])
+def test_a_router_in_the_conductor_group_still_has_a_router_group_successor_proven_by_name(hook, transcript, by):
+    """The pre-existing by-name acceptance, untouched: the opener plays no part in it."""
+    router_in(transcript)
+    saw_list(transcript, nested(RNEXT, RG, by=by))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("by", [ME, None, OTHER], ids=["opened-by-me", "no-opener", "opened-by-another"])
+@pytest.mark.parametrize("title, successor, group", [
+    pytest.param(RTITLE, RNEXT, RG, id="router-in-the-router-group"),
+    pytest.param(CTITLE, CNEXT, CG, id="conductor-in-the-conductor-group"),
+])
+def test_a_router_in_the_router_group_and_a_conductor_in_the_conductor_group_are_unchanged(hook, transcript, by, title, successor, group):
+    router_in(transcript, group=group, title=title)
+    saw_list(transcript, nested(successor, group, by=by))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("mine", [
+    pytest.param(RG, id="router-in-the-router-group"),
+    pytest.param(WI, id="router-in-a-project-group"),
+    pytest.param(None, id="router-that-never-read-itself"),
+])
+def test_a_successor_in_the_conductor_group_is_not_proven_unless_the_router_is_nested_there(hook, transcript, mine):
+    """The mirror of the case above: opened by this router and filed in the CONDUCTOR group, but the router's
+    own group is not that one (or unknown), so the row is a stranger's as far as the group can tell."""
+    if mine is None:
+        transcript.add(title_rec(RTITLE))
+    else:
+        router_in(transcript, group=mine)
+    saw_list(transcript, nested(RNEXT, CG, by=ME))
+    assert refused(archive(hook, transcript))
+
+
+def test_a_conductors_successor_in_the_router_group_is_not_proven_for_a_conductor_in_the_conductor_group(hook, transcript):
+    router_in(transcript, group=CG, title=CTITLE)
+    saw_list(transcript, nested(CNEXT, RG, by=ME))
+    assert refused(archive(hook, transcript))
+
+
+def test_the_same_rule_holds_for_a_conductor_nested_in_another_tier_group(hook, transcript):
+    """The tier branch is one rule for both tiers: a conductor sitting in the ROUTER group (nothing in the skills
+    puts it there; the code does not special-case the role) needs the same group and opener proof."""
+    router_in(transcript, group=RG, title=CTITLE)
+    saw_list(transcript, nested(CNEXT, RG, by=None))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(CNEXT, RG, by=OTHER))
+    assert refused(archive(hook, transcript))
+    saw_list(transcript, nested(CNEXT, RG, by=ME))
+    assert archive(hook, transcript) is None
+
+
+def test_a_stranger_router_in_the_conductor_group_is_not_your_successor(hook, transcript):
+    """The CONDUCTOR group holds every router the conductor opened, for every project. Another project's router
+    with a higher number matches the group, the role and the numbering rule, and was not opened by you."""
+    router_in(transcript)
+    saw_list(transcript, nested("ROUTER #12 · globe feeds", CG, by=None),
+             nested("ROUTER #13 · lucid", CG, by="local_conductor"))
+    assert_no_successor_refusal(archive(hook, transcript))
+    saw_list(transcript, nested(RNEXT, CG, by=ME))
+    assert archive(hook, transcript) is None
+
+
+REFUSED_ROUTER = [
+    # The opener proof: a stranger in the CONDUCTOR group is exactly what the group alone cannot tell apart.
+    pytest.param(nested(RNEXT, CG, by=None), id="no-opener-field"),
+    pytest.param(nested(RNEXT, CG, by=OTHER), id="another-session-started-it"),
+    pytest.param(nested(RNEXT, CG, by=OTHER, field="parentSessionId"), id="another-session-is-its-parent"),
+    pytest.param(nested(RNEXT, CG, by="local_conductor"), id="the-conductor-opened-it-beside-me"),
+    pytest.param(nested(RNEXT, CG, by=""), id="empty-opener"),
+    pytest.param(nested(RNEXT, CG, by="   "), id="blank-opener"),
+    pytest.param(nested(RNEXT, CG, by={"sessionId": ME}), id="opener-not-a-string"),
+    pytest.param(nested(RNEXT, CG, by=[ME]), id="opener-a-list"),
+    pytest.param({**nested(RNEXT, CG, by=ME), "parentSessionId": OTHER}, id="the-two-opener-fields-disagree"),
+    pytest.param({**nested(RNEXT, CG, by=OTHER), "parentSessionId": ME}, id="the-two-opener-fields-disagree-the-other-way"),
+    pytest.param({**nested(RNEXT, CG, by={"x": 1}), "parentSessionId": ME}, id="an-unreadable-opener-beside-a-good-one"),
+    pytest.param(nested("ROUTER #12 · globe feeds", CG, by=None), id="another-projects-router-no-opener"),
+    pytest.param(nested("ROUTER #12 · globe feeds", CG, by="local_conductor"), id="another-projects-router-the-conductors"),
+    # The router numbering rule: strictly above N, and a number.
+    pytest.param(nested("ROUTER #9 · world intel", CG), id="same-n-as-yourself"),
+    pytest.param(nested("ROUTER #9 · globe feeds", CG), id="same-n-another-project"),
+    pytest.param(nested("ROUTER #09 · world intel", CG), id="same-n-written-with-a-zero"),
+    pytest.param(nested("router #9 · world intel", CG), id="same-n-another-case"),
+    pytest.param(nested("ROUTER #8 · world intel", CG), id="your-predecessor"),
+    pytest.param(nested("ROUTER · world intel", CG), id="no-number"),
+    pytest.param(nested("ROUTER", CG), id="no-number-no-project"),
+    # The role: the opener proof and the group never stand in for it.
+    pytest.param(nested("INTELLIGENCE · world intel part · 4", CG), id="a-desk-in-the-conductor-group"),
+    pytest.param(nested("NODE · world intel part · 4", CG), id="another-lane-desk"),
+    pytest.param(nested("INTELLIGENCE · WI-3 4/4 · world intel", CG), id="older-task-form-desk"),
+    pytest.param(nested("CONDUCTOR · system build", CG), id="the-conductor"),
+    pytest.param(nested("Fix the tests", CG), id="not-a-session-title-of-ours"),
+    pytest.param(nested("", CG), id="no-title"),
+    pytest.param(nested(RNEXT, CG, drop=("title",)), id="title-missing"),
+    # The group: the opener proof never stands in for it.
+    pytest.param(nested(RNEXT, WI), id="filed-in-a-project-group"),
+    pytest.param(nested(RNEXT, grp("INTELLIGENCE")), id="filed-in-a-lane-group"),
+    pytest.param(nested(RNEXT, grp("CONDUCTOR", "cg-another-conductor")), id="same-name-another-group"),
+    pytest.param(nested(RNEXT, None), id="group-unknown"),
+    pytest.param(nested(RNEXT, CG, drop=("group",)), id="group-missing"),
+    pytest.param(nested(RNEXT, {}), id="group-empty"),
+    # Liveness.
+    pytest.param(nested(RNEXT, CG, archived=True), id="already-archived"),
+    pytest.param(nested(RNEXT, CG, drop=("isArchived",)), id="archived-unknown"),
+    pytest.param(nested(RNEXT, CG, archived="false"), id="archived-not-a-boolean"),
+    pytest.param(nested(RNEXT, CG, archived=None), id="archived-null"),
+]
+
+
+@pytest.mark.parametrize("seen", REFUSED_ROUTER)
+def test_what_does_not_count_as_the_successor_of_a_router_in_the_conductor_group(hook, transcript, seen):
+    router_in(transcript)
+    saw_list(transcript, seen)
+    assert refused(archive(hook, transcript))
+
+
+def test_a_router_in_a_project_group_does_not_borrow_the_tier_rule(hook, transcript):
+    router_in(transcript, group=WI)
+    saw_list(transcript, nested(RNEXT, WI))
+    assert refused(archive(hook, transcript))
+
+
+# What the guard does not know about itself is unknown, and unknown refuses.
+
+@pytest.mark.parametrize("mine", [
+    pytest.param(dict(drop=("sessionId",)), id="self-read-has-no-sessionId"),
+    pytest.param(dict(sid=""), id="self-read-has-an-empty-sessionId"),
+    pytest.param(dict(sid="  "), id="self-read-has-a-blank-sessionId"),
+    pytest.param(dict(sid=None), id="self-read-sessionId-is-null"),
+    pytest.param(dict(sid=["local_desk_me"]), id="self-read-sessionId-is-not-a-string"),
+    pytest.param(dict(drop=("group",)), id="self-read-has-no-group"),
+    pytest.param(dict(group=None), id="self-read-group-is-null"),
+    pytest.param(dict(group=WI), id="self-is-in-a-project-group"),
+    pytest.param(dict(group=grp("INTELLIGENCE")), id="self-is-in-a-lane-group"),
+    pytest.param(dict(group=RG), id="self-is-in-the-router-group-the-successor-in-the-conductor-group"),
+    pytest.param(dict(group=grp("CONDUCTOR", "cg-another-conductor")), id="self-is-in-another-group-named-conductor"),
+    pytest.param(dict(group={"id": "cg-conductor", "name": "Conductors"}), id="self-group-renamed-away-from-a-tier-name"),
+])
+def test_unknown_about_yourself_refuses_for_a_router_even_with_the_opener_proof(hook, transcript, mine):
+    router_in(transcript, **mine)
+    saw_list(transcript, nested(RNEXT, CG))
+    assert refused(archive(hook, transcript))
+
+
+def test_a_router_that_never_read_itself_is_refused_when_its_successor_is_in_the_conductor_group(hook, transcript):
+    transcript.add(title_rec(RTITLE))
+    saw_list(transcript, nested(RNEXT, CG))
+    assert refused(archive(hook, transcript))
+
+
+def test_an_errored_self_read_names_neither_group_nor_id_for_a_router(hook, transcript):
+    transcript.add(title_rec(RTITLE))
+    read(transcript, GET, {"session_id": "self"},
+         {"sessionId": ME, "title": RTITLE, "isArchived": False, "group": CG}, is_error=True)
+    saw_list(transcript, nested(RNEXT, CG))
+    assert refused(archive(hook, transcript))
+
+
+def test_only_the_self_read_names_the_routers_id_and_group(hook, transcript):
+    """A get_session on some other id is another session's row, even when it carries your title and group."""
+    transcript.add(title_rec(RTITLE))
+    read(transcript, GET, {"session_id": OTHER},
+         {"sessionId": ME, "title": RTITLE, "isArchived": False, "group": CG})
+    saw_list(transcript, nested(RNEXT, CG))
+    assert refused(archive(hook, transcript))
+
+
+def test_the_newest_self_read_names_the_routers_id_and_group(hook, transcript):
+    router_in(transcript)
+    saw_me(transcript, group=CG, title=RTITLE, drop=("sessionId",))   # the newest read lost the id
+    saw_list(transcript, nested(RNEXT, CG))
+    assert refused(archive(hook, transcript))
+    saw_me(transcript, group=CG, title=RTITLE)
+    assert archive(hook, transcript) is None
+    saw_me(transcript, group=WI, title=RTITLE)                       # the newest read moved it to a project group
+    assert refused(archive(hook, transcript))
+
+
+def test_the_router_floor_stays_a_preference_a_nested_router_successor_still_lets_it_go(hook, transcript):
+    """Unchanged: the nested-successor floor is for desks (`test_routers_and_conductors_are_not_touched_by_the_floor`)."""
+    router_in(transcript)
+    saw_list(transcript, nested(RNEXT, CG, by=ME))             # no `detached` field: nested as far as anyone can tell
+    assert archive(hook, transcript) is None
+
+
+def test_is_successor_for_a_router_in_the_conductor_group_needs_the_new_keyword(hook):
+    successor, cg = nested(RNEXT, CG), mine_of(hook, CG)
+    assert hook.is_successor(RTITLE, successor, cg, own_id=ME)
+    assert not hook.is_successor(RTITLE, successor, cg)                              # no id: unknown
+    assert not hook.is_successor(RTITLE, successor, cg, own_id=OTHER)
+    assert not hook.is_successor(RTITLE, successor, None, own_id=ME)                 # no group: unknown
+    assert not hook.is_successor(RTITLE, successor, mine_of(hook, WI), own_id=ME)
+    assert not hook.is_successor(RTITLE, successor, mine_of(hook, RG), own_id=ME)
+    assert hook.is_successor(RTITLE, nested(RNEXT, RG, by=None), cg)                 # by name: the old rule, no id needed
+
+
+# Positive controls: these tests only mean something if removing the check would flip them. A hook that tested
+# one thing less must accept the row below, so each refusal above rests on the check it names.
+
+@pytest.mark.parametrize("stranger", [
+    pytest.param(nested(RNEXT, CG, by=None), id="no-opener-field"),
+    pytest.param(nested(RNEXT, CG, by=OTHER), id="another-opener"),
+    pytest.param(nested("ROUTER #12 · globe feeds", CG, by="local_conductor"), id="another-projects-router"),
+])
+def test_positive_control_a_group_only_check_would_accept_the_stranger_router(hook, transcript, monkeypatch, stranger):
+    router_in(transcript)
+    saw_list(transcript, stranger)
+    assert refused(archive(hook, transcript))
+    monkeypatch.setattr(hook, "opened_by", lambda row_, own_id: True)    # the group-only guard
+    assert archive(hook, transcript) is None
+
+
+def test_positive_control_the_opener_proof_alone_in_the_wrong_group_still_refuses(hook, transcript, monkeypatch):
+    router_in(transcript)
+    saw_list(transcript, nested(RNEXT, WI))                              # opened by me, filed in a project group
+    monkeypatch.setattr(hook, "opened_by", lambda row_, own_id: True)
+    assert refused(archive(hook, transcript))
+    monkeypatch.setattr(hook, "same_group", lambda a, b: True)           # and without the same-group test it would count
+    assert archive(hook, transcript) is None
+
+
+def test_positive_control_the_tier_group_test_is_what_keeps_a_project_group_out(hook, transcript, monkeypatch):
+    router_in(transcript, group=WI)
+    saw_list(transcript, nested(RNEXT, WI))
+    assert refused(archive(hook, transcript))
+    monkeypatch.setattr(hook, "TIERS", ("ROUTER", "CONDUCTOR", "WORLD INTEL"))   # as if that project group were a tier group
+    assert archive(hook, transcript) is None
+
+
+def test_positive_control_the_router_numbering_rule_is_what_refuses_an_equal_number(hook, transcript, monkeypatch):
+    router_in(transcript)
+    saw_list(transcript, nested("ROUTER #9 · globe feeds", CG))
+    assert refused(archive(hook, transcript))
+    monkeypatch.setattr(hook, "_router_number", lambda title: None)      # no numbering rule
+    assert archive(hook, transcript) is None
+
+
+# --- the refusal text names the router's own group too -------------------------------------------------
+
+def where_in(text: str) -> str:
+    """The parenthesised group the refusal says the successor must be visible in."""
+    return re.search(r"sidebar group \((.*?)\)\. Owner", text).group(1)
+
+
+@pytest.mark.parametrize("title, group, expected", [
+    pytest.param(RTITLE, CG, "the ROUTER group, or your own group, CONDUCTOR, if you were opened nested under another session",
+                 id="router-in-the-conductor-group"),
+    pytest.param(CTITLE, RG, "the CONDUCTOR group, or your own group, ROUTER, if you were opened nested under another session",
+                 id="conductor-in-the-router-group"),
+    pytest.param(RTITLE, RG, "ROUTER", id="router-in-its-own-group-unchanged"),
+    pytest.param(CTITLE, CG, "CONDUCTOR", id="conductor-in-its-own-group-unchanged"),
+    pytest.param(RTITLE, WI, "ROUTER", id="router-in-a-project-group-unchanged"),
+    pytest.param(RTITLE, grp("Conductors", "cg-conductor"), "ROUTER", id="router-in-a-renamed-group-unchanged"),
+    pytest.param(RTITLE, None,
+                 "ROUTER, or the group you were opened nested in, which this session has not read: if the conductor "
+                 "opened you, run `get_session` with `self` so the guard can see it",
+                 id="router-that-never-read-itself-is-told-to-read-itself"),
+])
+def test_the_refusal_for_a_router_or_conductor_names_its_own_tier_group_when_it_is_nested_in_another(hook, transcript, title, group, expected):
+    if group is None:
+        transcript.add(title_rec(title))
+    else:
+        router_in(transcript, group=group, title=title)
+    out = archive(hook, transcript)
+    assert refused(out)
+    assert where_in(why(out)) == expected
+    assert NO_SUCCESSOR_SEEN in why(out) and "\n" not in why(out)
+
+
+def test_the_desk_refusal_wording_is_untouched_by_the_tier_wording(hook, transcript):
+    desk_in(transcript, RG)
+    assert where_in(why(archive(hook, transcript))) == "your own group, ROUTER"
+
+
+# --- the banner: a router the conductor opened is not told it is misfiled -----------------------------
+
+def test_the_router_banner_allows_for_a_router_the_conductor_opened(hook):
+    text = hook.banner("startup", RTITLE, "ROUTER", None, None, None, 300_000, 450_000)
+    line = banner_line_2(text)
+    assert "in the ROUTER sidebar group" in line                       # the older asserted wording stays
+    assert "CONDUCTOR group" in line and "start_session" in line and "nested" in line
+    assert "`move_sessions` refuses to move a nested session alone" in line
+    assert "`get_session` on `self`" in line and "do not try" in line
+    assert "title carries the project" in line
+    lines = banner_lines(text)
+    assert lines[lines.index(line) + 1].startswith("3. ")             # still one line
+    assert "\n" not in hook.NESTED_TIER_FILING
+
+
+def test_the_conductor_banner_line_is_unchanged(hook):
+    """A conductor can only be nested under its predecessor, in the CONDUCTOR group it is filed in anyway: the
+    clause is for the one tier whose opener may sit in another tier's group."""
+    text = hook.banner("startup", CTITLE, "CONDUCTOR", None, None, None, 300_000, 450_000)
+    assert banner_line_2(text) == "2. Your title files you. Check you are in the CONDUCTOR sidebar group."
+
+
+def test_the_tier_clause_does_not_touch_the_desk_wording(hook):
+    assert hook.NESTED_TIER_FILING != hook.NESTED_FILING
+    assert "CONDUCTOR" not in hook.NESTED_FILING and "your router opened you" in hook.NESTED_FILING
+    desk = banner_line_2(hook.banner("startup", OWNER_EXAMPLE, "DESK", "INTELLIGENCE", None, None, 300_000, 450_000))
+    assert desk.endswith(hook.NESTED_FILING) and hook.NESTED_TIER_FILING not in desk
+
+
+def test_session_start_for_a_router_carries_the_clause(hook, transcript):
+    transcript.add(title_rec(RTITLE), assistant(4_000))
+    text = hook.handle(event("SessionStart", transcript, source="startup"))["hookSpecificOutput"]["additionalContext"]
+    assert "Role: ROUTER" in text and hook.NESTED_TIER_FILING in banner_line_2(text)
+
+
+# --- the docs say what the hook now does --------------------------------------------------------------
+
+def test_the_way_skill_says_the_hook_now_proves_a_router_the_conductor_opened():
+    text = SKILL["way"]
+    where = text[text.index("**Where a nested desk is filed"):]
+    where = where[:where.index("\n\n")]
+    assert "is not proven by the hook: an open item, not changed here" not in where
+    assert "A router's or conductor's successor is still proven only in the ROUTER or CONDUCTOR group" not in text
+    assert "CONDUCTOR group" in where and "opener proof" in where and "inferred" in where.lower()
+    assert "whichever tier group" in where
+
+
+def test_the_router_skill_says_the_successor_may_sit_in_the_conductor_group():
+    text = SKILL["router"]
+    assert "CONDUCTOR group if the conductor opened you" in text
+    assert "inferred" in text[text.index("CONDUCTOR group if the conductor opened you"):][:600].lower()
+
+
+def test_the_readme_no_longer_lists_the_conductor_opened_router_as_not_changed():
+    text = (PLUGIN / "README.md").read_text(encoding="utf-8")
+    bullet = text[text.index("- **The hook now allows for a desk nested in the ROUTER group"):]
+    bullet = bullet[:bullet.index("\n\n")] if "\n\n" in bullet else bullet
+    assert "(CONDUCTOR group) is still not proven by the hook" not in bullet
+    assert "Five changes" in bullet and "a router the conductor opened" in bullet.lower()
+    assert "inferred" in bullet.lower()
+
+
+def test_the_hook_docstrings_no_longer_call_it_an_open_item(hook):
+    src = HOOK_PATH.read_text(encoding="utf-8")
+    assert "an open item, not changed in 0.1.24" not in src
+    assert "is still proven only in the ROUTER or CONDUCTOR group" not in src
