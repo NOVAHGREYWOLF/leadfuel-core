@@ -1,0 +1,38 @@
+# ROUTER #109 · app brain link: handoff (ids only)
+
+Session local_f3267a6e-89cc-4357-ad6f-6d64199db5bb, slot way-slot-03, Sonnet. Reports to CONDUCTOR 057 (local_acc328d8-44cd-4180-afc4-4b56434d067f) who holds router/current; 056 is local_58b1aa7b-a0a9-43d9-b8fd-080b4424ebff. Peer router for the app build: ROUTER #107 (local_70900e3f-0b7b-4e15-8ff5-13159ea0fa64). Owner source: typed in 056 chat 2026-10-30/31 ("NovahOS local connected to brain", "burn code ... all the code ... to the memory"). Rules: Law 9, local branches only, migrations written never applied, no production reads, desks that only write take no lock; new desks at most 3 per 5 minutes; heavy jobs via WORK_QUEUE.md.
+
+## Done (local branches, none pushed, no PRs)
+App repo F:\Leadfuel: one-app/hl1 3763aa0, hl2 2d45b11, hl3 093b2eb, hl4 f7ed021, hl5 4a687c8, hl6 1ad7f99, hl7 f231e9c. int9 (one-app/int9) already holds hl1, hl3, bridge1; hl2/hl4/hl5 pending in #107's train.
+Hub (novahub): arms/hub-todo-token e9744a9a, arms/hub-todo-add 120e9862. Hub MCP: arms/mcp-todo-tool 2d43aa1.
+Landing order when the owner says go: hub todo-token then todo-add (merge deploys), mcp-todo-tool, app via int9. #107 owes: add_todo/set_todo_state to HUB_WRITES, list_todos read.
+
+## Wave 3 (memory/brain scope given by 056)
+Mapper output: .conductor/projects/one-app-brain-link/wave3-partition.md (12 briefs W3-01..12, 10 owner questions, spec v2 on hub branch tiered-memory-phase1 39fa463 supersedes v1).
+Opened (background agents, die with this session): W3-01 (a2773adae0d5b7675, Opus), W3-03 (a73fa09fbf1b1e864, Sonnet), W3-09 (a74cafb64ddcb687b, Sonnet).
+NOT opened yet, in this order: W3-02, W3-04, W3-05 (stack on W3-01 branch), W3-06 (stack arms/mcp-todo-tool), W3-07, W3-08, W3-10, W3-11 (stack int9), W3-12 last.
+Each agent prompt: brief id + file path + hard limits; copy the pattern from W3-01.
+
+## Update after the first note
+Also opened (agents): W3-06 (aacbd537c5f4bb5f5, Opus), W3-10 (a63f2162fbfacd550, Opus), W3-11 (a5b3a57b8eada0b84, Sonnet). Cards q888-q895 posted on the Router desk (LzmP6QcxmYh9TdvMMjS883) = old Q1-Q8. CONDUCTOR 057 decided: no separate memory router; rotate when the six agents report, successor is ROUTER #114 · app brain link, launched into a free slot by fireAt (leadfuel-way:launch), else LAUNCH-REQUEST to launcher local_6c36b783-75e3-4a0b-842c-f1d6aed118b0; stay open until it is live; 057 archives me.
+
+## Update 2 (owner go-wide via 057, ~3:35 am PT 2026-10-31)
+Also opened (agents): W3-02 a6256e9ae2d63b395, W3-04 ae5f1ad3bbabb7e3b, W3-05 a33f5feb9ac1ff78a, W3-07 af2f68f57cfa84b16, W3-08 a5d9f25b7a7aefd18. 11 wave-3 agents running; only W3-12 is unopened (needs W3-07/09/10 branches; owns gate_list, pagebridge, NovahOS.spec, modes.py, wiring.py). Hub desks cut from arms/hub-todo-add and merge the W3-01 branch at the end. Stop opening at weekly 88% (was 52%). Rotation: when agents report, launch ROUTER #114.
+
+## Update 3 (reports so far)
+DONE: W3-06 novahub-mcp arms/mcp-brain-memory 33c24c1 (routed: W3-05/W3-02 agents told shapes, #108 guide.py, #107 classify in int10); W3-11 one-app/w3-11 0bdb5ff; W3-08 one-app/w3-08 ab653c1 (hide-only forget replay; card q951 posted for hard delete in pg.py; names needed by W3-12: forget_status/forget_plan/forget_apply). Still running: W3-01, 02, 03, 04, 05, 07, 09, 10. W3-12 unopened (modes.py is #107's, not W3-12's). Other desks took q896..q932: my card numbers are q888-q895 and q951; use q95x+ for new cards. Stray file F:\scratch_bm.bak (W3-06 mistake) awaits the owner's delete.
+
+## Update 4
+DONE branches: W3-03 hub w3-03-fieldy-health 9fc023f0; W3-05 hub w3-05-forget 24690dab; W3-07 one-app/w3-07 093cfe7; W3-09 one-app/w3-09 5bf1b09; W3-10 one-app/w3-10 b8e21be. RUNNING: W3-01 a2773adae0d5b7675 (no commit seen yet: W3-05 found branch intel/w3-01-memory-tiering at base), W3-02 a6256e9ae2d63b395 (owes app.py hunks from W3-03/W3-05/W3-06), W3-04 ae5f1ad3bbabb7e3b, W3-12 a373eadaa12add9f4 (opened, registers W3-07/08/09/10). Owner cards still to post: partition questions (use q95x+).
+
+## Update 5
+DONE: W3-04 hub w3-04-feedback-heat a962c251; W3-02 hub w3-02-route-jobs 9f82c022 (merges W3-03/04/05 locally with their app.py hunks; assumes W3-01 shapes). Cards q951-q960 posted (wave-3 owner questions). RUNNING: W3-01 a2773adae0d5b7675 (long pole: worktree has uncommitted models.py + memory_redact.py; when it commits, W3-02/04/05 must reconcile shapes: ask them to rebase), W3-12 a373eadaa12add9f4. After both report: verify commits, relay overlaps to #107 for int10, then launch ROUTER #114. Stray F:\scratch_bm.bak awaits owner.
+
+## Update 6 (last before rotation)
+ALL of W3-01..12 reported. W3-01 hub intel/w3-01-memory-tiering 70f74a60 (GDPR guard red on purpose, card q961); W3-12 one-app/w3-12 b846e4e. #107 told us w3-09/w3-10 DUPLICATE its d3/b6 (its desks win; my w3-11 e2e tests unique; w3-12 carries memjobs). W3-02 hit its cap at bd9bf236 (W3-01 merged, 18 tests failing from shape mismatch); RUNNING: W3-02b (Opus) finishing the reconcile on w3-02-route-jobs. Cards posted q888-q895, q951-q961. Successor ROUTER #114 to launch after W3-02b reports: its job is to verify commits, relay to #107 (int10) and CONDUCTOR 057, answer card clicks, and open the follow-ups: hard delete in pg.py (q951), forgetgate.py for W3-08, PRIVACY data_rights lines (q961), MCP fieldy_digest params (ARMS reports desk), hub landing in the order given earlier once the owner says go.
+
+## Owed
+1. ONE owner-question list to 056/057 (<=10 lines, default each, X on every card): Q1-Q8 already sent to 056 (brain proof hub/query/Voyage, Projects, to-do token); the partition file holds 10 more; merge and send once the wave-3 desks report.
+2. Ask 057 to turn questions into Router desk cards.
+3. On each desk report: verify the commit with git, relay file overlaps to #107, never run the live brain proof (Law 9).
+4. A successor must re-read live state; agents above may be lost on rotation: check get/branches before reopening.
