@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 
@@ -482,32 +483,15 @@ def refused(out) -> bool:
 _ids = iter(range(10_000))
 
 
-def stamp(age=0):
-    """An ISO timestamp `age` seconds ago, the way transcript records carry one."""
-    import datetime
-    return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=age)).isoformat()
-
-
-def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False,
-                 tool_input=None, detail=True, age=0):
+def saw_sessions(transcript, rows, tool="mcp__ccd_session_mgmt__list_sessions", as_text=None, is_error=False):
     """Append a session read and its result, the way the transcript records them."""
     tid = f"ls{next(_ids)}"
     text = as_text if as_text is not None else json.dumps(rows)
     transcript.add(
-        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": tool_input if tool_input is not None else {"limit": 500}}]),
-        {"type": "user", "isSidechain": False, "timestamp": stamp(age), "message": {"content": [
+        assistant(1, content=[{"type": "tool_use", "id": tid, "name": tool, "input": {"group": "x"}}]),
+        {"type": "user", "isSidechain": False, "message": {"content": [
             {"type": "tool_result", "tool_use_id": tid, "is_error": is_error, "content": [{"type": "text", "text": text}]}]}},
     )
-    if detail and tool.endswith("list_sessions") and isinstance(rows, list) and not is_error:
-        for r in rows:  # the real flow: each live row is then read with get_session, the only read that has the parent
-            saw_sessions(transcript, r, tool="mcp__ccd_session_mgmt__get_session",
-                         tool_input={"session_id": r.get("sessionId", "x")}, detail=False)
-
-
-def saw_self(transcript, own_id="local_me"):
-    """This session reading itself: get_session("self") names its own id."""
-    saw_sessions(transcript, {"sessionId": own_id, "title": "me", "isArchived": False},
-                 tool="mcp__ccd_session_mgmt__get_session", tool_input={"session_id": "self"})
 
 
 def row(title, group, archived=False, **extra):
@@ -532,7 +516,6 @@ def test_self_archive_with_no_successor_seen_is_refused_for_every_tier(hook, tra
 ])
 def test_self_archive_is_allowed_once_the_successor_is_seen_live_in_its_group(hook, transcript, own, successor, group):
     transcript.add(title_rec(own))
-    saw_self(transcript)
     saw_sessions(transcript, [row(successor, group)])
     assert archive(hook, transcript) is None
 
@@ -559,8 +542,6 @@ def test_what_does_not_count_as_a_live_successor(hook, transcript, own, seen):
 
 def test_a_get_session_result_counts_and_prose_around_the_json_is_tolerated(hook, transcript):
     transcript.add(title_rec("ROUTER #9"))
-    saw_self(transcript)
-    saw_sessions(transcript, [], as_text="[]")
     saw_sessions(transcript, None, tool="mcp__ccd_session_mgmt__get_session",
                  as_text="Session:\n" + json.dumps(row("ROUTER #10", "ROUTER")) + "\n(end)")
     assert archive(hook, transcript) is None
@@ -583,151 +564,10 @@ def test_a_successor_read_in_a_subagent_does_not_count(hook, transcript):
     assert refused(archive(hook, transcript))
 
 
-def test_unarchiving_is_not_this_guard(hook, transcript):
+def test_archiving_another_session_or_unarchiving_is_not_this_guard(hook, transcript):
     transcript.add(title_rec("ROUTER #10"))
+    assert archive(hook, transcript, target="local_61ed8382") is None
     assert archive(hook, transcript, tool="mcp__ccd_session_mgmt__unarchive_session") is None
-
-
-# --- PreToolUse: no archiving a session over live children (WAY-no-nested-sessions) ---------
-
-def child(parent, archived=False, **extra):
-    return {"sessionId": "local_kid", "title": "NODE · T-1 1/1 · x", "isArchived": archived,
-            "parentSessionId": parent, "detached": False, **extra}
-
-
-def test_archiving_a_session_with_a_live_child_is_refused(hook, transcript):
-    """An archive swept a live router and its desks on 2026-10-02: this is that call."""
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [child("local_pred")])
-    out = archive(hook, transcript, target="local_pred")
-    assert refused(out) and "local_kid" in out["hookSpecificOutput"]["permissionDecisionReason"]
-
-
-@pytest.mark.parametrize("kid", [
-    child("local_pred", archived=True),            # already archived: nothing to sweep
-    child("local_pred", detached=True),            # moved to top level
-    child("local_other"),                          # someone else's child
-])
-def test_archiving_a_session_is_allowed_when_no_child_is_live(hook, transcript, kid):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [kid])
-    assert archive(hook, transcript, target="local_pred") is None
-
-
-def test_a_child_that_does_not_say_whether_it_is_archived_still_counts(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    k = child("local_pred")
-    del k["isArchived"]
-    saw_sessions(transcript, [k])
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_the_list_sessions_started_by_field_counts_as_the_parent(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [{"sessionId": "k", "isArchived": False, "startedBy": "local_pred"}])
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def real_listing_row(sid):
-    """A list_sessions row as the app returns it: no parentSessionId, no startedBy (observed 2026-10-02)."""
-    return {"sessionId": sid, "title": "NODE · T-1 1/1 · x", "isArchived": False, "isRunning": False,
-            "group": {"id": "g", "name": "NODE"}, "link": "claude://x"}
-
-
-def test_a_listing_row_with_no_parent_field_is_unknown_not_clear(hook, transcript):
-    """The reported hole: the real listing carries no parent, so a listing alone must not pass."""
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
-    out = archive(hook, transcript, target="local_pred")
-    assert refused(out) and "local_kid" in out["hookSpecificOutput"]["permissionDecisionReason"]
-
-
-def test_a_get_session_read_of_every_live_row_clears_it(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
-    saw_sessions(transcript, {**real_listing_row("local_kid")}, tool="mcp__ccd_session_mgmt__get_session",
-                 tool_input={"session_id": "local_kid"}, detail=False)
-    assert archive(hook, transcript, target="local_pred") is None
-
-
-def test_a_get_session_that_names_the_target_as_parent_refuses_after_a_bare_listing(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_kid")], detail=False)
-    saw_sessions(transcript, {**real_listing_row("local_kid"), "parentSessionId": "local_pred", "detached": False},
-                 tool="mcp__ccd_session_mgmt__get_session", tool_input={"session_id": "local_kid"}, detail=False)
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_an_archived_listing_row_needs_no_get_session(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [{**real_listing_row("local_old"), "isArchived": True}], detail=False)
-    assert archive(hook, transcript, target="local_pred") is None
-
-
-def test_a_group_filtered_listing_hides_children_and_does_not_clear(hook, transcript):
-    """List ROUTER, read the router, archive the predecessor: a child filed in DOORS is invisible."""
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_r12")], tool_input={"group": "ROUTER", "limit": 500})
-    out = archive(hook, transcript, target="local_pred")
-    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
-
-
-def test_a_full_page_listing_hides_children_and_does_not_clear(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row(f"local_{i}") for i in range(20)], tool_input={})  # default limit 20: full page
-    out = archive(hook, transcript, target="local_pred")
-    assert refused(out) and "cannot tell" in out["hookSpecificOutput"]["permissionDecisionReason"]
-
-
-def test_a_listing_below_its_limit_with_no_filter_is_complete(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_a")], tool_input={"limit": 50})
-    assert archive(hook, transcript, target="local_pred") is None
-
-
-def test_a_listing_read_an_hour_ago_does_not_clear(hook, transcript):
-    """A child opened since a stale listing is invisible to it."""
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_a")], age=3600)
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_a_stale_get_session_does_not_clear_a_fresh_listing(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    saw_sessions(transcript, [real_listing_row("local_a")], detail=False)
-    saw_sessions(transcript, real_listing_row("local_a"), tool="mcp__ccd_session_mgmt__get_session",
-                 tool_input={"session_id": "local_a"}, detail=False, age=3600)
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_a_read_with_no_timestamp_is_stale(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    tid = "nots"
-    transcript.add(
-        assistant(1, content=[{"type": "tool_use", "id": tid, "name": "mcp__ccd_session_mgmt__list_sessions", "input": {"limit": 500}}]),
-        {"type": "user", "isSidechain": False, "message": {"content": [
-            {"type": "tool_result", "tool_use_id": tid, "content": [{"type": "text", "text": "[]"}]}]}},
-    )
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_no_listing_read_means_unknown_and_refuses(hook, transcript):
-    transcript.add(title_rec("ROUTER #12"))
-    assert refused(archive(hook, transcript, target="local_pred"))
-
-
-def test_self_archive_with_a_live_child_is_refused_even_with_a_successor(hook, transcript):
-    transcript.add(title_rec("ROUTER #9"))
-    saw_self(transcript, "local_me")
-    saw_sessions(transcript, [row("ROUTER #10", "ROUTER"), child("local_me")])
-    assert refused(archive(hook, transcript))
-
-
-def test_self_archive_without_knowing_its_own_id_is_unknown_and_refuses(hook, transcript):
-    transcript.add(title_rec("ROUTER #9"))
-    saw_sessions(transcript, [row("ROUTER #10", "ROUTER")])
-    out = archive(hook, transcript)
-    assert refused(out) and "self" in out["hookSpecificOutput"]["permissionDecisionReason"]
 
 
 def test_the_remote_archive_tool_is_guarded_too(hook, transcript):
@@ -828,3 +668,241 @@ def test_the_override_reaches_the_guard(hook, transcript):
     write_override(hook, 1_000, 90_000, 600)
     transcript.add(assistant(5_000))
     assert "CONTEXT BUDGET" in hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+
+
+# --- the successor wording of the context guard (owner, 2026-11-01) -------------------------
+#
+# A session at its cap is told how to start its successor. That text is read BEFORE the desk skill, so
+# it must not say, unconditionally, "give the owner the one prompt for a fresh session": a paste prompt
+# is the last resort. How the successor starts depends on the role and on what drives the turn
+# (`leadfuel-way:desk`, "Finish or hand off"; `leadfuel-way:handoff`, "Starting the successor").
+
+SOFT_CAP, HARD_CAP = 300_000, 450_000
+ROLE_TITLES = {"DESK": "NODE · leadfuel-way part · 2", "ROUTER": "ROUTER #5 · leadfuel-way",
+               "CONDUCTOR": "CONDUCTOR · plan", None: None}
+ROLES = list(ROLE_TITLES)
+DESK_TOKENS = ("start_session", "user_asked", "STATUS: CONTINUING")
+OLD_PHRASE = "one prompt for a fresh session"
+MAX_CHARS = 720  # the longest, the DESK message at the real caps, is 679; this bounds growth, not wording
+
+
+def guard_text(hook, tokens, role):
+    return hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, role=role)[0]
+
+
+def skill_text(name):
+    from kit import PLUGIN
+
+    return (PLUGIN / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+
+
+def skill_section(text, heading):
+    """The body under a `## heading`, up to the next `## `."""
+    marker = f"\n## {heading}\n"
+    assert marker in text, f"section {heading!r} is gone"
+    return text.split(marker, 1)[1].split("\n## ", 1)[0]
+
+
+def stop_reason(hook, transcript, monkeypatch, role, hard=False):
+    """The Stop hook's block reason for a session of this role that crossed its cap with no handoff."""
+    title = ROLE_TITLES[role]
+    assert hook.role_of(title)[0] == (role or "UNFILED"), "fixture title does not read as that role"
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    monkeypatch.setenv("SESSION_HARD_TOKENS", "50000")
+    if title:
+        transcript.add(title_rec(title))
+    transcript.add(assistant(60_000 if hard else 5_000))
+    out = hook.handle(event("Stop", transcript))
+    assert out["decision"] == "block"
+    return out["reason"]
+
+
+def all_three(hook, transcript, monkeypatch, role):
+    """(soft message, hard message, Stop reason) for one role."""
+    return (guard_text(hook, 310_000, role), guard_text(hook, 460_000, role),
+            stop_reason(hook, transcript, monkeypatch, role))
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_no_cap_message_tells_the_session_to_hand_the_owner_a_prompt_first(hook, transcript, monkeypatch, role):
+    for text in all_three(hook, transcript, monkeypatch, role):
+        assert OLD_PHRASE not in text
+        assert "leadfuel-way:handoff" in text
+        assert "successor is live" in text  # never leave before it (owner, 2026-10-02)
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_hard_cap_stop_reason_is_reworded_too(hook, transcript, monkeypatch, role):
+    text = stop_reason(hook, transcript, monkeypatch, role, hard=True)
+    assert "hard cap" in text and "leadfuel-way:handoff" in text and "successor is live" in text
+    assert OLD_PHRASE not in text
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_cap_messages_stay_short_and_generic(hook, transcript, monkeypatch, role):
+    """They are re-sent every few thousand tokens. No session id, model name or em-dash prose in them."""
+    texts = [*all_three(hook, transcript, monkeypatch, role),
+             stop_reason(hook, transcript, monkeypatch, role, hard=True),
+             # the real caps print the longest figures
+             hook.stop_reason(310_000, SOFT_CAP, HARD_CAP, role), hook.stop_reason(460_000, SOFT_CAP, HARD_CAP, role)]
+    for text in texts:
+        assert len(text) <= MAX_CHARS, f"{len(text)} chars: {text}"
+        assert "local_" not in text and "claude-" not in text and "\u2014" not in text
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_giving_the_owner_a_prompt_is_only_ever_the_last_resort(hook, transcript, monkeypatch, role):
+    """tests/test_way_agents.py still pins "give the owner" in the parent's message; the phrase may only
+    survive in the sentence that makes the prompt the last rung."""
+    for text in [*all_three(hook, transcript, monkeypatch, role), stop_reason(hook, transcript, monkeypatch, role, hard=True)]:
+        sentences = [s for s in re.split(r"(?<=[.;:])\s+", text) if "give the owner" in s]
+        assert sentences, "the last-resort sentence is gone"
+        assert all("last resort" in s and "stay open" in s for s in sentences), sentences
+
+
+def test_the_soft_and_hard_messages_keep_what_the_old_ones_asserted(hook):
+    soft, hard = guard_text(hook, 300_000, "DESK"), guard_text(hook, 460_000, "DESK")
+    assert "CONTEXT BUDGET" in soft and "300k" in soft and "handoff" in soft
+    assert "CONTEXT BUDGET" in hard and "HARD CAP" in hard and "Start nothing" in hard and "450k" in hard
+
+
+def test_the_new_keyword_is_optional_and_last(hook):
+    import inspect
+
+    params = list(inspect.signature(hook.guard_message).parameters)
+    assert params[:5] == ["tokens", "last_warned", "soft", "hard", "agent"] and params[-1] == "role"
+    assert hook.guard_message(310_000, 0, SOFT_CAP, HARD_CAP, False)[0] == guard_text(hook, 310_000, None)
+
+
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+def test_a_desk_is_told_to_open_its_own_successor_when_the_user_drives_the_turn(hook, transcript, monkeypatch, which):
+    soft, hard, stop = all_three(hook, transcript, monkeypatch, "DESK")
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    for token in DESK_TOKENS:
+        assert token in text, token
+    assert "last resort" in text and "stay open" in text
+    assert "router" in text  # the router opens it when the app refuses a start_session
+
+
+@pytest.mark.parametrize("role", ["ROUTER", "CONDUCTOR"])
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+def test_a_router_or_conductor_is_not_given_the_desk_rule(hook, transcript, monkeypatch, role, which):
+    soft, hard, stop = all_three(hook, transcript, monkeypatch, role)
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    assert "STATUS: CONTINUING" not in text and "user_asked" not in text
+    assert "start_session" in text and "leadfuel-way:launch" in text  # the handoff skill's order
+    assert "last resort" in text and "stay open" in text
+
+
+@pytest.mark.parametrize("which", ["soft", "hard", "stop"])
+@pytest.mark.parametrize("role", [None, "UNFILED", "SOMETHING-ELSE"])
+def test_an_unknown_role_gets_the_neutral_form(hook, transcript, monkeypatch, role, which):
+    soft = guard_text(hook, 310_000, role)
+    hard = guard_text(hook, 460_000, role)
+    stop = stop_reason(hook, transcript, monkeypatch, None)
+    text = {"soft": soft, "hard": hard, "stop": stop}[which]
+    assert "Starting the successor" in text and "for your role" in text
+    assert "STATUS: CONTINUING" not in text and "start_session" not in text
+
+
+def test_the_agent_branch_is_unchanged(hook):
+    assert hook.AGENT_HANDOFF == (
+        "You are a background agent, not a sidebar session: finish the step, commit and push your branch, "
+        "write your handoff note in the repo (a path containing 'handoff', per the `leadfuel-way:handoff` "
+        "desk row), and end with `STATUS: CONTINUING | <task id> | <PR url or no PR> | handoff <path>`. "
+        "The router starts a fresh agent from the note."
+    )
+    soft = hook.guard_message(310_000, 0, SOFT_CAP, HARD_CAP, True)[0]
+    hard = hook.guard_message(460_000, 0, SOFT_CAP, HARD_CAP, True)[0]
+    assert soft == ("CONTEXT BUDGET: this agent is at ~310k tokens (handoff point 300k, hard cap 450k). "
+                    f"Start nothing new. {hook.AGENT_HANDOFF}")
+    assert hard == f"CONTEXT BUDGET: this agent is at ~460k tokens (HARD CAP 450k). Start nothing new. {hook.AGENT_HANDOFF}"
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_the_agent_branch_ignores_the_role(hook, role):
+    for tokens in (310_000, 460_000):
+        assert (hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, True, role=role)
+                == hook.guard_message(tokens, 0, SOFT_CAP, HARD_CAP, True))
+
+
+def test_the_guard_reads_the_role_of_a_session_titled_before_it_started(hook, transcript, monkeypatch):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    assert hook.load_state("sess-1")["role"] == "DESK"
+    text = hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert all(token in text for token in DESK_TOKENS) and OLD_PHRASE not in text
+
+
+@pytest.mark.parametrize("name", ["PostToolUse", "UserPromptSubmit"])
+def test_a_nested_desk_titled_after_session_start_gets_the_desk_rule_from_the_guard(hook, transcript, monkeypatch, name):
+    """A desk its router opened with `start_session` is untitled when SessionStart records its role (the
+    opener titles it afterwards), so the role kept there is UNFILED. The guard must read the title fresh,
+    as the Stop hook does, or the two channels give one session two different rules."""
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(assistant(1_000))  # untitled at the start
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    assert hook.load_state("sess-1")["role"] == "UNFILED"
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))  # the opener titles it afterwards
+    text = hook.handle(event(name, transcript))["hookSpecificOutput"]["additionalContext"]
+    assert all(token in text for token in DESK_TOKENS) and OLD_PHRASE not in text
+    reason = hook.handle(event("Stop", transcript))["reason"]
+    assert all(token in reason for token in DESK_TOKENS)
+
+
+@pytest.mark.parametrize("role", ["ROUTER", "CONDUCTOR"])
+def test_the_guard_does_not_give_a_router_the_desk_rule(hook, transcript, monkeypatch, role):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES[role]), assistant(5_000))
+    hook.handle(event("SessionStart", transcript, source="startup"))
+    text = hook.handle(event("UserPromptSubmit", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert "CONTEXT BUDGET" in text and "STATUS: CONTINUING" not in text and OLD_PHRASE not in text
+
+
+def test_the_guard_with_no_recorded_role_uses_the_neutral_form(hook, transcript, monkeypatch):
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(assistant(5_000))  # no SessionStart: no role in state
+    assert "role" not in hook.load_state("sess-1")
+    text = hook.handle(event("PostToolUse", transcript))["hookSpecificOutput"]["additionalContext"]
+    assert "Starting the successor" in text and "STATUS: CONTINUING" not in text and OLD_PHRASE not in text
+
+
+def test_the_stop_hook_reads_the_role_from_the_title_not_from_state(hook, transcript, monkeypatch):
+    """A session whose state never saw SessionStart still gets the rule for the role its title names."""
+    monkeypatch.setenv("SESSION_SOFT_TOKENS", "1000")
+    transcript.add(title_rec(ROLE_TITLES["DESK"]), assistant(5_000))
+    assert "role" not in hook.load_state("sess-1")
+    reason = hook.handle(event("Stop", transcript))["reason"]
+    assert all(token in reason for token in DESK_TOKENS) and OLD_PHRASE not in reason
+
+
+def test_the_desk_message_and_the_desk_skill_say_the_same_thing(hook):
+    """The hook's text and the skill it points at must not drift apart silently."""
+    section = skill_section(skill_text("desk"), "Finish or hand off")
+    message = guard_text(hook, 310_000, "DESK")
+    for token in DESK_TOKENS:
+        assert token in message and token in section, token
+    assert "paste prompt" in section  # the last resort, both places
+    assert "last resort" in message
+
+
+def test_the_handoff_skill_still_has_what_the_other_roles_and_the_neutral_form_cite(hook):
+    text = skill_text("handoff")
+    section = skill_section(text, "Starting the successor")
+    assert "start_session" in section and "leadfuel-way:launch" in section and "paste" in section
+    assert "Never leave before your successor is live" in text  # step 6, the standing rule
+    for role in ("ROUTER", "CONDUCTOR", None):
+        message = guard_text(hook, 310_000, role)
+        assert "leadfuel-way:handoff" in message
+        if role:
+            assert "start_session" in message and "leadfuel-way:launch" in message
+        else:
+            assert "Starting the successor" in message
+
+def test_the_archive_refusal_does_not_promise_a_desk_that_its_successor_archives_it(hook):
+    """Desk skill: a desk whose successor is a paste prompt is archived by its router, not by that successor."""
+    desk = hook.archive_refusal(ROLE_TITLES["DESK"], [])
+    assert desk and "STAY OPEN" in desk and "router" in desk
+    for role in ("ROUTER", "CONDUCTOR"):
+        assert "STAY OPEN" in hook.archive_refusal(ROLE_TITLES[role], [])
