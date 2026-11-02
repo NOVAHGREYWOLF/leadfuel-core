@@ -1,0 +1,16 @@
+{
+  "status": "DRAFT",
+  "note": "Drafted from the web portfolio report (offers and sites). Not owner-approved. Edit, then set status to APPROVED.",
+  "questions": [
+    {"id": "Q01", "text": "Who offers AI audits for small businesses?", "expect": ["ETG"]},
+    {"id": "Q02", "text": "What does an AI readiness audit for a small business cost?", "expect": ["ETG"]},
+    {"id": "Q03", "text": "How can a small business get new clients from LinkedIn without hiring an agency?", "expect": ["LeadFuel", "Next Clients"]},
+    {"id": "Q04", "text": "What is LeadFuel?", "expect": ["LeadFuel"]},
+    {"id": "Q05", "text": "What is Next Clients by LeadFuel?", "expect": ["Next Clients"]},
+    {"id": "Q06", "text": "Who builds small-business websites with AI search visibility in mind?", "expect": ["GreyWolf"]},
+    {"id": "Q07", "text": "Who is Novah GreyWolf?", "expect": ["GreyWolf"]},
+    {"id": "Q08", "text": "Is there a free class on using AI in a small business?", "expect": ["ETG"]},
+    {"id": "Q09", "text": "What is NovahOS?", "expect": ["NovahOS"]},
+    {"id": "Q10", "text": "Where can a company buy AI training or services from ETG?", "expect": ["etg.ai"]}
+  ]
+}
