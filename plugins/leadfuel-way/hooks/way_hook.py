@@ -702,13 +702,61 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     return their_line is not None and part_key(their_line) == part_key(mine_line) and their_line[2] > mine_line[2]
 
 
+def _read_id(row: dict) -> str:
+    """The `sessionId` a row names, stripped, or "" when it names none readable."""
+    sid = row.get("sessionId")
+    return sid.strip() if isinstance(sid, str) else ""
+
+
+def latest_reads(rows: list[dict]) -> list[dict]:
+    """`rows` (every session row the transcript read, in time order) with each session kept once, as its
+    NEWEST read: an earlier `list_sessions` row and a later `get_session` row of one session are one
+    session, and the later one is what is known now. A row with no readable `sessionId` stands alone,
+    because it cannot be matched to anything. Order is kept. Used by the nested-successor floor in
+    `archive_refusal` only; `sessions_seen` still returns every row."""
+    newest = {sid: i for i, r in enumerate(rows) if (sid := _read_id(r))}
+    return [r for i, r in enumerate(rows) if not _read_id(r) or newest[_read_id(r)] == i]
+
+
+# A desk that opened its successor with `start_session` has it NESTED under it, and the app archives a
+# parent's idle nested sessions together with the parent (`leadfuel-way:way`, sections 2b and 5). So the
+# desk does not archive itself: the successor archives it from inside its own first turn. One paragraph,
+# no session ids; the tests read it for "nested under you", "archives you" and `get_session`.
+NESTED_SUCCESSOR_REFUSAL = (
+    "THE WAY: you may not archive yourself while your successor is nested under you. The successor you read "
+    "back is live and its row names you as the session that opened it, and the app archives a parent's idle "
+    "nested sessions together with the parent. STAY OPEN: the successor archives you from inside its own first "
+    "turn, once it is live and titled, your handoff is pushed, nothing of yours is unpushed and no decision of "
+    "the owner is pending on you (`leadfuel-way:desk`, \"If you are a desk's successor\"). If you detached it "
+    "with `detach_session`, read it with `get_session` on its id so the guard sees `detached: true`; a "
+    "`list_sessions` row has no such field and reads as still nested."
+)
+
+
 def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
-    """The reason to refuse archiving yourself, or None when a live successor has been seen."""
+    """The reason to refuse archiving yourself, or None when a live successor has been seen.
+
+    A DESK whose recognised successor is provably NESTED under it is refused too (`NESTED_SUCCESSOR_REFUSAL`,
+    plugin 0.1.24, the guard floor): `opened_by(row, own_id)` is true, so the row names this session as its
+    opener, and the row does not positively show `detached is True`. A row with no `detached` field, which a
+    `list_sessions` row is, counts as still nested: unknown is not a pass. Each session is judged by its
+    NEWEST read (`latest_reads`): a nested read that a later read of the same session replaced is dropped,
+    so a successor a later `get_session` shows archived is no longer recognised (the usual refusal below),
+    and one it shows detached no longer blocks. Everything not proven nested is judged exactly as before:
+    a launch-slot successor, one the router opened beside the desk, one whose row names no opener or another
+    session, and any successor of a router or conductor (for a tier the rule is a preference in the skills)."""
     mine = own_group(rows)
     own_id = own_session_id(rows)
-    if any(is_successor(own_title, r, mine, own_id=own_id) for r in rows if not r.get("_self")):
-        return None
     role, lane = role_of(own_title)
+    seen = [r for r in rows if not r.get("_self")]
+    recognised = [r for r in seen if is_successor(own_title, r, mine, own_id=own_id)]
+    if role == "DESK":
+        current = {id(r) for r in latest_reads(seen)}
+        recognised = [r for r in recognised if id(r) in current or not opened_by(r, own_id)]
+        if any(opened_by(r, own_id) and r.get("detached") is not True for r in recognised):
+            return NESTED_SUCCESSOR_REFUSAL
+    if recognised:
+        return None
     line = desk_line(own_title)
     if role == "DESK" and mine is not None:
         where = f"your own group, {mine[1] or mine[0]}"

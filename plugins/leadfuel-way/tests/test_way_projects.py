@@ -637,6 +637,11 @@ def test_the_banner_tells_an_unfiled_session_that_a_slot_session_cannot_be_filed
 # session's own `sessionId` from its get_session on `self`). The group alone proves nothing: every
 # desk of every project the router opened sits in that group. A missing or different opener, or an
 # unknown own id or own group, is unknown, and unknown refuses.
+#
+# Recognising a successor is not the same as letting the desk go: a recognised successor that is still
+# nested under the desk (its row names the desk as opener and does not show `detached: true`) makes the
+# self-archive refused (the guard floor, the last section of this file). The accept tests in this section
+# therefore give the successor row `detached=True`.
 
 RG = grp("ROUTER")
 CG = grp("CONDUCTOR")
@@ -671,9 +676,12 @@ def nested(title=NEXT, group=RG, by=ME, field="startedBy", archived=False, drop=
     "INTELLIGENCE · world intel part · 6",    # any later session of the lane in the project
 ])
 def test_a_nested_desk_may_archive_once_the_successor_it_opened_is_live_in_the_router_group(hook, transcript, field, successor):
+    # Since the guard floor (end of this file) a successor still NESTED under the desk is refused; the guard
+    # recognises this one and lets the desk go only because the row shows it `detached`. The refusal for the
+    # same rows without `detached` is `test_a_desk_refuses_to_archive_while_its_nested_successor_is_live`.
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript)
-    saw_list(transcript, nested(successor, field=field))
+    saw_list(transcript, nested(successor, field=field, detached=True))
     assert archive(hook, transcript) is None
 
 
@@ -681,21 +689,21 @@ def test_the_successor_may_be_read_with_get_session_on_its_own_id(hook, transcri
     """get_session names the opener as `parentSessionId`; the guard reads rows from either tool."""
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript)
-    read(transcript, GET, {"session_id": THEM}, nested(field="parentSessionId"))
+    read(transcript, GET, {"session_id": THEM}, nested(field="parentSessionId", detached=True))
     assert archive(hook, transcript) is None
 
 
 def test_both_opener_fields_may_be_present_when_they_agree(hook, transcript):
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript)
-    saw_list(transcript, nested(parentSessionId=ME))
+    saw_list(transcript, nested(parentSessionId=ME, detached=True))
     assert archive(hook, transcript) is None
 
 
 def test_the_groups_may_be_matched_by_name_when_no_ids_are_given(hook, transcript):
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript, group={"name": "ROUTER"})
-    saw_list(transcript, nested(group={"name": "router"}))
+    saw_list(transcript, nested(group={"name": "router"}, detached=True))
     assert archive(hook, transcript) is None
 
 
@@ -766,7 +774,7 @@ def test_a_tier_group_renamed_between_two_reads_cannot_turn_the_opener_proof_off
     assert refused(archive(hook, transcript))
     saw_list(transcript, nested(group=renamed, by=OTHER))
     assert refused(archive(hook, transcript))
-    saw_list(transcript, nested(group=renamed, by=ME))
+    saw_list(transcript, nested(group=renamed, by=ME, detached=True))  # recognised; detached, so the floor lets go
     assert archive(hook, transcript) is None
 
 
@@ -843,7 +851,7 @@ def test_the_newest_self_read_names_your_id_and_group(hook, transcript):
     transcript.add(title_rec(OWNER_EXAMPLE))
     saw_me(transcript)
     saw_me(transcript, drop=("sessionId",))   # the newest read is the one that counts, and it lost the id
-    saw_list(transcript, nested())
+    saw_list(transcript, nested(detached=True))
     assert refused(archive(hook, transcript))
     saw_me(transcript)
     assert archive(hook, transcript) is None
@@ -866,7 +874,7 @@ def test_a_sibling_desk_of_the_same_project_is_not_your_successor(hook, transcri
     saw_list(transcript, nested("INTELLIGENCE · world intel part · 5", by="local_router_9"),
              nested("INTELLIGENCE · world intel part · 6", by=None))
     assert refused(archive(hook, transcript))
-    saw_list(transcript, nested("INTELLIGENCE · world intel part · 4", by=ME))
+    saw_list(transcript, nested("INTELLIGENCE · world intel part · 4", by=ME, detached=True))
     assert archive(hook, transcript) is None
 
 
@@ -970,8 +978,10 @@ def test_a_successor_in_a_project_group_needs_no_opener_proof(hook):
 # `opened_by` and not on something incidental.
 
 @pytest.mark.parametrize("stranger", [
-    pytest.param(nested(by=None), id="no-opener-field"),
-    pytest.param(nested(by=OTHER), id="another-opener"),
+    # detached=True: the patched check below calls every row opened by this desk, and a nested row is
+    # refused by the floor for a different reason; a detached one isolates the opener test.
+    pytest.param(nested(by=None, detached=True), id="no-opener-field"),
+    pytest.param(nested(by=OTHER, detached=True), id="another-opener"),
 ])
 def test_positive_control_a_group_only_check_would_accept_the_stranger(hook, transcript, monkeypatch, stranger):
     transcript.add(title_rec(OWNER_EXAMPLE))
@@ -1081,3 +1091,242 @@ def test_the_desk_skill_no_longer_says_the_banner_and_hooks_call_a_nested_desk_m
     text = SKILL["desk"]
     assert "The banner and the hooks expect the project's group and may tell you" not in text
     assert "0.1.24" in text and "startedBy" in text and "parentSessionId" in text
+
+
+# --- a desk does not archive itself while its nested successor is live (the guard floor, 0.1.24) -------
+# Owner, 2026-11-01: "A guard floor. A nested desk that already has a live nested successor can still
+# archive itself. The guard only checks the simple case." The skills say a desk that opened a NESTED
+# successor stays open and the successor archives it from inside its own first turn (`way` section 2b
+# and 5, `desk`, `handoff`), because the app archives a parent's idle nested sessions together with the
+# parent. So once a successor is recognised and this session is a desk, the self-archive is refused when
+# a recognised row PROVES the successor is nested under this session (`opened_by(row, own_id)`) and the
+# row does not positively show `detached: true`. A row with no `detached` field, which a list_sessions
+# row is, counts as still nested: unknown is not a pass. What the check cannot prove it leaves as it was.
+
+NO_SUCCESSOR_SEEN = "until your successor is live and visible in its sidebar group"  # the older refusal
+LATER = "INTELLIGENCE · world intel part · 6"
+
+
+def why(out) -> str:
+    return out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def assert_nested_refusal(out) -> str:
+    """Refused, and with the floor's own text, not the 'no successor seen' one."""
+    assert refused(out)
+    text = why(out)
+    assert "nested under you" in text and "archives you" in text and "`get_session`" in text
+    assert "STAY OPEN" in text
+    assert NO_SUCCESSOR_SEEN not in text
+    return text
+
+
+def assert_no_successor_refusal(out) -> None:
+    assert refused(out)
+    text = why(out)
+    assert NO_SUCCESSOR_SEEN in text and "nested under you" not in text
+
+
+def desk_in(transcript, group, **mine):
+    transcript.add(title_rec(OWNER_EXAMPLE))
+    saw_me(transcript, group=group, **mine)
+
+
+@pytest.mark.parametrize("group", [RG, WI], ids=["router-group", "project-group"])
+@pytest.mark.parametrize("field", ["startedBy", "parentSessionId"])
+@pytest.mark.parametrize("successor", [NEXT, "INTELLIGENCE · World Intel  part · 4", LATER], ids=["next", "case-and-spacing", "later-n"])
+def test_a_desk_refuses_to_archive_while_its_nested_successor_is_live(hook, transcript, group, field, successor):
+    """The nested successor names this desk as its opener (`startedBy` in list_sessions, `parentSessionId` in
+    get_session) and is live in the desk's own group: the desk stays open and the successor archives it."""
+    desk_in(transcript, group)
+    saw_list(transcript, nested(successor, group=group, field=field))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("group", [RG, WI], ids=["router-group", "project-group"])
+def test_both_opener_fields_agreeing_still_refuse(hook, transcript, group):
+    desk_in(transcript, group)
+    saw_list(transcript, nested(group=group, parentSessionId=ME))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_a_nested_successor_read_with_get_session_on_its_own_id_refuses(hook, transcript):
+    desk_in(transcript, RG)
+    read(transcript, GET, {"session_id": THEM}, nested(field="parentSessionId"))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_groups_matched_by_name_alone_still_refuse(hook, transcript):
+    desk_in(transcript, {"name": "ROUTER"})
+    saw_list(transcript, nested(group={"name": "router"}))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_the_same_successor_read_twice_still_refuses(hook, transcript):
+    """A list_sessions row and then a get_session row of one session: the newest decides, and both say nested."""
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI, field="startedBy"))
+    read(transcript, GET, {"session_id": THEM}, nested(group=WI, field="parentSessionId"))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("flag", ["true", "True", "yes", 1, 0, False, None, [], {}, [True]], ids=repr)
+@pytest.mark.parametrize("group", [RG, WI], ids=["router-group", "project-group"])
+def test_detached_has_to_be_the_boolean_true_to_clear_the_refusal(hook, transcript, group, flag):
+    """Unknown is not a pass: a string, a number, a null or `false` does not say the successor left."""
+    desk_in(transcript, group)
+    saw_list(transcript, nested(group=group, detached=flag))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_the_refusal_text_says_what_to_do(hook, transcript):
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI))
+    text = assert_nested_refusal(archive(hook, transcript))
+    assert text.startswith("THE WAY:") and "leadfuel-way:desk" in text
+    assert "`detach_session`" in text and "`detached: true`" in text
+    assert "\n" not in text                                   # one paragraph
+    assert ME not in text and THEM not in text                # no session ids
+    assert text == hook.NESTED_SUCCESSOR_REFUSAL
+    assert hook.load_state("sess-1")["archives_refused"] == 1
+
+
+# What does not change: a recognised successor the desk cannot be shown to have opened still lets it go.
+
+@pytest.mark.parametrize("field", ["startedBy", "parentSessionId"])
+@pytest.mark.parametrize("group", [RG, WI], ids=["router-group", "project-group"])
+def test_a_detached_successor_lets_the_desk_archive(hook, transcript, group, field):
+    desk_in(transcript, group)
+    saw_list(transcript, nested(group=group, field=field, detached=True))
+    assert archive(hook, transcript) is None
+
+
+@pytest.mark.parametrize("seen", [
+    pytest.param(nested(group=WI, by="local_router_9"), id="the-router-opened-it-beside-the-desk"),
+    pytest.param(nested(group=WI, by=None), id="no-opener-field"),
+    pytest.param(nested(group=WI, by=""), id="empty-opener"),
+    pytest.param(nested(group=WI, by={"sessionId": ME}), id="opener-not-a-string"),
+    pytest.param({**nested(group=WI, by=ME), "parentSessionId": OTHER}, id="the-two-opener-fields-disagree"),
+])
+def test_a_project_group_successor_not_proven_nested_leaves_the_floor_as_it_was(hook, transcript, seen):
+    desk_in(transcript, WI)
+    saw_list(transcript, seen)
+    assert archive(hook, transcript) is None
+
+
+def test_a_desk_that_cannot_read_its_own_id_cannot_prove_the_successor_nested(hook, transcript):
+    """Not a proof, so not a block: the guard as it stood. (A tier-group desk without its id is refused by
+    the recognition itself, `test_unknown_about_yourself_refuses_even_with_the_opener_proof`.)"""
+    desk_in(transcript, WI, drop=("sessionId",))
+    saw_list(transcript, nested(group=WI))
+    assert archive(hook, transcript) is None
+
+
+def test_a_slot_successor_is_not_nested_and_still_lets_the_desk_archive(hook, transcript):
+    desk_in(transcript, WI)
+    saw_slot(transcript, slot("INTELLIGENCE · world intel part · 4"))
+    assert archive(hook, transcript) is None
+
+
+def test_no_successor_seen_keeps_its_own_refusal(hook, transcript):
+    desk_in(transcript, RG)
+    assert_no_successor_refusal(archive(hook, transcript))
+    saw_list(transcript, nested(by=OTHER))                    # recognised by nobody: another opener in the tier group
+    assert_no_successor_refusal(archive(hook, transcript))
+
+
+@pytest.mark.parametrize("own, successor, group", [
+    ("ROUTER #9", "ROUTER #10", "ROUTER"),
+    ("ROUTER #27 · one-interface", "ROUTER #28 · one-interface", "ROUTER"),
+    ("CONDUCTOR · system build", "CONDUCTOR · system build 2", "CONDUCTOR"),
+])
+@pytest.mark.parametrize("by", [ME, None, OTHER], ids=["opened-by-me", "no-opener", "opened-by-another"])
+def test_routers_and_conductors_are_not_touched_by_the_floor(hook, transcript, own, successor, group, by):
+    """For a tier the nested-successor rule is a preference in the skills (`leadfuel-way:router`, Rotate
+    step 4), not a rule: a recognised successor still lets it archive, nested under it or not."""
+    transcript.add(title_rec(own))
+    saw_self(transcript, own, grp(group))
+    saw_list(transcript, nested(successor, grp(group), by=by))
+    assert archive(hook, transcript) is None
+
+
+# The newest read of each session decides (rows with no sessionId stand alone).
+
+def test_a_later_read_showing_the_nested_successor_archived_no_longer_recognises_it(hook, transcript):
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI))
+    assert_nested_refusal(archive(hook, transcript))
+    read(transcript, GET, {"session_id": THEM}, nested(group=WI, field="parentSessionId", archived=True))
+    assert_no_successor_refusal(archive(hook, transcript))     # not the floor's text: nothing is live any more
+
+
+def test_a_later_read_showing_the_nested_successor_detached_lets_the_desk_go(hook, transcript):
+    desk_in(transcript, RG)
+    saw_list(transcript, nested())
+    assert_nested_refusal(archive(hook, transcript))
+    read(transcript, GET, {"session_id": THEM}, nested(field="parentSessionId", detached=True))
+    assert archive(hook, transcript) is None
+
+
+def test_the_newest_read_wins_even_over_an_older_detached_one(hook, transcript):
+    """By design, unknown is not a pass: a later list_sessions row has no `detached` field, so it counts as
+    nested again. To clear the refusal, read the successor with get_session on its id."""
+    desk_in(transcript, WI)
+    read(transcript, GET, {"session_id": THEM}, nested(group=WI, field="parentSessionId", detached=True))
+    assert archive(hook, transcript) is None
+    saw_list(transcript, nested(group=WI))
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_one_detached_successor_does_not_clear_another_that_is_still_nested(hook, transcript):
+    """Two sessions, two ids: the newest read of EACH is judged. One detached does not clear the other."""
+    desk_in(transcript, WI)
+    gone, live = {"sessionId": "local_gone"}, {"sessionId": "local_live"}
+    saw_list(transcript, {**nested(group=WI, detached=True), **gone}, {**nested(LATER, group=WI), **live})
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_a_nested_successor_with_no_session_id_is_judged_as_read(hook, transcript):
+    desk_in(transcript, WI)
+    seen = nested(group=WI)
+    del seen["sessionId"]
+    saw_list(transcript, seen, {**seen, "detached": True})   # no ids: neither row replaces the other
+    assert_nested_refusal(archive(hook, transcript))
+
+
+def test_latest_reads_keeps_the_newest_row_of_each_session(hook):
+    a1, a2, b = {"sessionId": "a", "n": 1}, {"sessionId": "a", "n": 2}, {"sessionId": "b"}
+    assert hook.latest_reads([a1, b, a2]) == [b, a2]
+    assert hook.latest_reads([]) == []
+    assert hook.latest_reads([{"sessionId": " a ", "n": 1}, {"sessionId": "a", "n": 2}]) == [{"sessionId": "a", "n": 2}]
+
+
+@pytest.mark.parametrize("sid", [None, "", "  ", 7, ["a"], {"id": "a"}], ids=repr)
+def test_rows_with_no_readable_session_id_stand_alone(hook, sid):
+    r1, r2 = {"sessionId": sid, "n": 1}, {"sessionId": sid, "n": 2}
+    assert hook.latest_reads([r1, r2]) == [r1, r2]
+    assert hook.latest_reads([{"n": 1}, {"n": 2}]) == [{"n": 1}, {"n": 2}]
+
+
+def test_sessions_seen_still_returns_every_read_in_order(hook, transcript):
+    """The newest-per-session pick is the floor's own; the reader keeps every row, as before."""
+    saw_list(transcript, nested(), nested(detached=True))
+    read(transcript, GET, {"session_id": THEM}, nested(field="parentSessionId"))
+    assert [r.get("detached") for r in hook.sessions_seen(str(transcript.path))] == [None, True, None]
+
+
+# A positive control: the refusal rests on `opened_by`, not on something incidental.
+
+def test_positive_control_without_the_opener_proof_the_floor_would_let_the_desk_go(hook, transcript, monkeypatch):
+    desk_in(transcript, WI)
+    saw_list(transcript, nested(group=WI))
+    assert_nested_refusal(archive(hook, transcript))
+    monkeypatch.setattr(hook, "opened_by", lambda row_, own_id: False)   # a floor that could not see the opener
+    assert archive(hook, transcript) is None
+
+
+def test_positive_control_a_detached_flag_alone_does_not_make_a_stranger_a_successor(hook, transcript):
+    """`detached: true` lifts the floor only for a row the guard already recognises."""
+    desk_in(transcript, RG)
+    saw_list(transcript, nested(by=OTHER, detached=True))
+    assert_no_successor_refusal(archive(hook, transcript))
