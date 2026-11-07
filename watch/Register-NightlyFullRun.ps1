@@ -17,8 +17,11 @@ WHY 05:30 LOCAL (decided 2026-10-11 from measurements, not taste):
   * the other scheduled work is finished by then: NovahOS daily backup 02:30, the weekly LeadfuelBackup
     Sunday 03:30 (about 6 min; the owner asked for 03:30-04:00 to stay clear), VAULT private sync 04:30
     (about 8 min).
-  * a serial run is about 30-60 min and the slot wait is capped at 90 min, so the worst case ends before 08:00,
-    before the daytime desks and CI wake up.
+  * (corrected 2026-11-07) a serial run is NOT 30-60 min on this box: measured 2h39m-2h50m for 14-15k tests
+    in October and about 3h10m or more by November (the CPU runs at about 20-30% of nominal). The script now
+    keeps one time budget of 285 min from its own start (this task's 5 h limit minus 15 min), so slot wait,
+    collection and pytest together always end before Windows kills the task, but a night can run well past
+    08:00 into the daytime desks and CI. Past 5 h Windows kills it and no log line is written.
 
 Settings follow the LeadfuelBackup task: current user, interactive logon, limited rights, IgnoreNew.
 StartWhenAvailable is OFF on purpose: a night the PC was off is simply a night with no log line (read as UNKNOWN),
