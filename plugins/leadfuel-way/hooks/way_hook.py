@@ -25,6 +25,12 @@ Events (one entry point, dispatched on `hook_event_name`):
                       A successor launched into a slot (`leadfuel-way:launch`, 0.1.11) counts
                       without a group: a scheduled run cannot be filed in one, so its
                       `scheduledTaskId` (`way-slot-NN`) stands in for the group test.
+                      Since 0.1.24 a DESK is also refused while its recognised successor is provably
+                      NESTED under it (the row names this session as its opener and does not show
+                      `detached: true`): the app archives a parent's idle nested sessions with the
+                      parent, so the successor archives the desk from inside its own first turn.
+                      Each session is judged by its newest read. Routers and conductors are not
+                      refused for this (the skills advise, the guard does not enforce).
                       Also (0.1.12, reworded 0.1.14): a session the hook can tell was launched into a
                       slot (its first message carries the slot block) may not call
                       `run_scheduled_task`, which the app refuses every scheduled run in every state
@@ -49,6 +55,19 @@ part (`SURFACE · shell · 1`), `LANE · <task id> n/m · topic`, `LANE · topic
 desk's group is no longer named by its title, the archive guard reads the desk's own group from a
 `get_session` on `self`; for an older-form desk that has not read itself, the 0.1.7 rule (its lane's
 group) still applies. This hook never moves or retitles a session.
+
+One exception to "a desk is filed in its project's group" (owner, 2026-11-01, card q1029 option B, 0.1.24):
+a desk its router opens with `start_session` is nested under the router, and the app files a nested
+session in its opener's group and refuses to move it alone, so it sits in the ROUTER group and its title
+carries the project. The banner does not call such a desk misfiled. The archive guard recognises a
+nested desk's own nested successor in a tier group only when the successor row proves this session
+opened it (`startedBy`, from list_sessions, or `parentSessionId`, from get_session, equals this
+session's own `sessionId`, read from its `get_session` on `self`): the tier group is shared by every
+desk of every project, so the group and the title alone cannot tell a successor from a stranger. A
+router's or conductor's successor in the ROUTER or CONDUCTOR group is still proven by that group alone;
+in a tier group other than its role's own (a router the conductor opened with `start_session` is nested
+under it, so it is inferred to sit in the CONDUCTOR group, and so does the successor it opens) it
+counts only with the same opener proof, whichever tier group the router ends up in.
 
 Background agents (AUTO-DESKS). A router may run a desk as a background agent (the Agent tool with
 isolation: worktree) instead of a chip the owner must click. Claude Code fires a subagent's hooks
@@ -84,7 +103,7 @@ import tempfile
 import time
 from pathlib import Path
 
-VERSION = "0.1.21"
+VERSION = "0.1.25"
 TAIL_BYTES = 768 * 1024
 REWARN_EVERY = 10_000  # re-nag after this many more tokens: heard, not spammy
 CAPS = {"haiku": (120_000, 150_000), "default": (300_000, 450_000)}
@@ -416,6 +435,65 @@ def sessions_seen(transcript_path: str) -> list[dict]:
 
 # --- policy (pure, so it can be tested) ---------------------------------------------------
 
+# An ask to the owner that is only words in chat: the Stop gate sends the session back once to post the card
+# (owner, 2026-11-01, card q9124 A). Matches a line that starts with the status or the ask marker, after any
+# markdown emphasis or quote mark.
+OWNER_ASK = re.compile(r"(?mi)^[\s>*_`#-]*(?:STATUS:\s*NEEDS-NOVAH\b|ASK:)")
+# A user record that no person typed: another session's message, a scheduled run's prompt, a task notice.
+MACHINE_PROMPT = re.compile(r"^\s*(?:<cross-session-message|\[SCHEDULED TASK|<task-notification|<system-reminder|<ci-monitor-event)")
+
+
+def _text_of(content) -> str:
+    if isinstance(content, str):
+        return content
+    return "\n".join(str(b.get("text") or "") for b in content or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def turn_asks_owner(transcript_path: str) -> str | None:
+    """'ask' when the session's last turn ends on an owner ask in chat with no card written in that turn,
+    'card' when it asked and wrote a card, 'person' when a person started the turn (the owner is in the chat),
+    None when it did not ask or the turn cannot be read (unknown is not a block).
+
+    The turn is everything after the newest user record that is not a tool result. A turn that began before
+    the transcript tail cannot be seen whole, so it is unknown."""
+    try:
+        text, size = _tail(transcript_path)
+    except OSError:
+        return None
+    recs = [r for r in _records(text) if isinstance(r, dict) and not r.get("isSidechain")]
+    start = None
+    for i in range(len(recs) - 1, -1, -1):
+        if recs[i].get("type") != "user":
+            continue
+        content = (recs[i].get("message") or {}).get("content")
+        if isinstance(content, list) and any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+            continue
+        start = i
+        break
+    if start is None:
+        return None
+    opening = _text_of((recs[start].get("message") or {}).get("content"))
+    if not MACHINE_PROMPT.match(opening):
+        return "person"
+    final = ""
+    wrote_card = False
+    for rec in recs[start + 1:]:
+        if rec.get("type") != "assistant":
+            continue
+        blocks = (rec.get("message") or {}).get("content") or []
+        said = _text_of(blocks)
+        if said.strip():
+            final = said
+        for block in blocks:
+            if isinstance(block, dict) and block.get("type") == "tool_use" and "ArtifactData" in str(block.get("name") or ""):
+                inp = json.dumps(block.get("input") or {})
+                if '"questions"' in inp and re.search(r'"(?:set|update|batch)"', inp):
+                    wrote_card = True
+    if not OWNER_ASK.search(final):
+        return None
+    return "card" if wrote_card else "ask"
+
+
 def role_of(title: str | None) -> tuple[str, str | None]:
     """(CONDUCTOR | ROUTER | DESK | UNFILED, lane or None). A tier is never a lane."""
     if not title:
@@ -465,7 +543,7 @@ def part_key(line: tuple[str, str, int]) -> tuple[str, str]:
 def project_of(part: str) -> str | None:
     """The project's name in a project-form middle: `world intel part` -> `world intel`. None when the
     middle does not end in the word `part` (the 0.1.8 free-text wording) or is only that word. Used for
-    the banner's wording only; no check reads it."""
+    the banner's wording and the tier-group branch of `is_successor`."""
     m = re.match(r"^(.*\S)\s+part$", part.strip(), re.I)
     return m.group(1) if m else None
 
@@ -497,6 +575,41 @@ def own_group(rows: list[dict]) -> tuple[str, str] | None:
     return None
 
 
+def own_session_id(rows: list[dict]) -> str | None:
+    """This session's own id, from the `sessionId` of its newest `get_session` on `self`, or None
+    (unknown). A newest read with no `sessionId`, or an empty or non-string one, is unknown, never an
+    older read's id and never a guess: the opener proof in `is_successor` compares against this."""
+    for r in reversed(rows):
+        if r.get("_self"):
+            sid = r.get("sessionId")
+            sid = sid.strip() if isinstance(sid, str) else ""
+            return sid or None
+    return None
+
+
+OPENER_FIELDS = ("startedBy", "parentSessionId")  # list_sessions gives a linked session `startedBy`; get_session `parentSessionId`
+
+
+def opened_by(row: dict, own_id: str | None) -> bool:
+    """True only if `row` names this session (`own_id`) as the session that opened it. Every opener field
+    the row carries must be a readable id and equal to `own_id`; a field that is absent or empty says
+    nothing, but a row with none at all, a field that is not a string, two fields that disagree, or an
+    unknown `own_id` is unknown, and unknown is not proof."""
+    me = own_id.strip() if isinstance(own_id, str) else ""
+    if not me:
+        return False
+    named: list[str] = []
+    for field in OPENER_FIELDS:
+        value = row.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            return False  # present but unreadable
+        if value.strip():
+            named.append(value.strip())
+    return bool(named) and all(n == me for n in named)
+
+
 SLOT_TASK = re.compile(r"^way-slot-\d{2}$")
 
 
@@ -508,7 +621,8 @@ def is_slot_row(row: dict) -> bool:
     return bool(SLOT_TASK.match(str(row.get("scheduledTaskId") or "").strip()))
 
 
-def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None = None) -> bool:
+def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None = None, *,
+                 own_id: str | None = None) -> bool:
     """True only if `row` (a session as list_sessions / get_session returns it) is provably this
     session's successor: live, filed in the right group, and the next of the same line. Anything the
     row does not say (no `isArchived`, no `group`) is unknown, and unknown is not live.
@@ -518,9 +632,19 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     live, the same role, and the next of the same line.
 
     ROUTER #N: another ROUTER, numbered above N when both carry a number, in the ROUTER group.
-    CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one).
+    CONDUCTOR: another CONDUCTOR in the CONDUCTOR group (there is only ever one). Both are judged by the
+    row's group NAME, with no opener proof, exactly as in 0.1.7.
+    A router the conductor opened with `start_session` is nested under it and lands in the CONDUCTOR group
+    (inferred from the measured filing of nested sessions, never run), and the successor it opens the same
+    way lands there too. So a ROUTER's or CONDUCTOR's successor row is also accepted in a TIER group other
+    than the one its role names, whichever tier group that is (the owner does not have to decide where
+    routers live), when ALL hold: `mine` is known, is that same group (`same_group`, by id when both carry
+    one) and is itself a tier group, so this session is nested in it; and the row proves this session
+    opened it (`opened_by(row, own_id)`). The row's group NAME is not asked for, so a tier group renamed
+    between two reads cannot skip the opener proof. Same role, live, a different title and, for a router, a
+    number above N still apply. An unknown own id, own group or opener refuses.
     DESK: the same lane (it stays in the title), in the same sidebar group as this session (`mine`,
-    read from a `get_session` on `self`), never a tier group, and the next of the same line:
+    read from a `get_session` on `self`), and the next of the same line:
       `LANE · <project> part · n`      the same project, n advanced (the title cannot tell two tasks of
                                        one lane in one project apart, so any later desk of that lane in
                                        the project's group counts);
@@ -530,6 +654,20 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     desk does not: its group is its project, which only a read of itself can name, so unknown refuses.
     Across forms nothing counts: an older-form desk whose successor took the project form is archived
     by its router, not by itself.
+
+    A row in a TIER group is the one change in 0.1.24 (owner, 2026-11-01, card q1029 option B): a desk its
+    router opened with `start_session` is nested under the router and so is itself filed in the ROUTER
+    group, and its own nested successor lands in that same group. That group holds every desk the router
+    opened, for every project, so the group and the title cannot tell a successor from a stranger. Such a
+    row counts only when ALL hold: (i) `mine` is known, is that same group (`same_group`) and is a tier
+    group, so this desk is itself nested in it; (ii) both titles are project-form lines
+    (`desk_line(...)[0] == "part"` with a project named, `project_of`) of the same project, n strictly
+    advanced (the older `LANE · topic` and task-id forms and the 0.1.8 free-text part stay refused here); (iii) the row proves this session opened it: `opened_by(row, own_id)`,
+    its `startedBy` or `parentSessionId` equals this session's own `sessionId` (`own_id`, from
+    `own_session_id`). A missing own id, a missing, unreadable or conflicting opener field, or a different
+    opener is unknown and refuses. `own_id` is keyword-only and optional, so callers that pass
+    `(own_title, row, mine)` still work; without it a tier-group desk row never counts, as before, and a
+    ROUTER's or CONDUCTOR's successor counts only in the group its role names.
     """
     own_role, own_lane = role_of(own_title)
     title = str(row.get("title") or "")
@@ -544,15 +682,37 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
         return False
     if own_role in TIERS:
         if not slot and (theirs is None or theirs[1].upper() != own_role):
-            return False
+            # Not in the group the role names. The one other way in: this session is itself nested in a tier
+            # group (a router the conductor opened sits in the CONDUCTOR group: inferred, never run) and the
+            # row is in that same group AND proves this session opened it. The group alone proves nothing
+            # there: it holds every router the conductor opened, for every project. The row's group NAME is
+            # not asked for (a group renamed between two reads still matches by id): this session's own is.
+            if (theirs is None or mine is None or not same_group(mine, theirs)
+                    or mine[1].upper() not in TIERS or not opened_by(row, own_id)):
+                return False
         if own_role == "ROUTER":
             m, t = _router_number(own_title or ""), _router_number(title)
             if m is not None and (t is None or t <= m):
                 return False
         return True
-    if lane != own_lane or (not slot and (theirs is None or theirs[1].upper() in TIERS)):
+    if lane != own_lane or (not slot and theirs is None):
         return False
     mine_line, their_line = desk_line(own_title), desk_line(title)
+    if not slot and (theirs[1].upper() in TIERS or (mine is not None and same_group(mine, theirs)
+                                                      and mine[1].upper() in TIERS)):
+        # By the row's group name, or by the desk's own tier group when the id matches under another name:
+        # a group renamed between two reads must not turn the opener proof off.
+        # A desk nested under its router, and the successor it opened: both in a tier group, which the
+        # whole project's desks share. Only the opener proof tells a successor from a sibling desk.
+        if mine is None or not same_group(mine, theirs) or mine[1].upper() not in TIERS:
+            return False
+        if mine_line is None or their_line is None or mine_line[0] != "part" or their_line[0] != "part":
+            return False
+        if not project_of(mine_line[1]) or not project_of(their_line[1]):
+            return False  # the 0.1.8 free-text part names no project: the opener proof alone is not enough
+        if part_key(their_line) != part_key(mine_line) or their_line[2] <= mine_line[2]:
+            return False
+        return opened_by(row, own_id)
     if slot:
         pass  # no group to compare: the slot id stood in for it above, the line test below still applies
     elif mine is not None:
@@ -567,12 +727,65 @@ def is_successor(own_title: str | None, row: dict, mine: tuple[str, str] | None 
     return their_line is not None and part_key(their_line) == part_key(mine_line) and their_line[2] > mine_line[2]
 
 
+def _read_id(row: dict) -> str:
+    """The `sessionId` a row names, stripped, or "" when it names none readable."""
+    sid = row.get("sessionId")
+    return sid.strip() if isinstance(sid, str) else ""
+
+
+def latest_reads(rows: list[dict]) -> list[dict]:
+    """`rows` (every session row the transcript read, in time order) with each session kept once, as its
+    NEWEST read: an earlier `list_sessions` row and a later `get_session` row of one session are one
+    session, and the later one is what is known now. A row with no readable `sessionId` stands alone,
+    because it cannot be matched to anything. Order is kept. Used by the nested-successor floor in
+    `archive_refusal` only; `sessions_seen` still returns every row."""
+    newest = {sid: i for i, r in enumerate(rows) if (sid := _read_id(r))}
+    return [r for i, r in enumerate(rows) if not _read_id(r) or newest[_read_id(r)] == i]
+
+
+# A desk that opened its successor with `start_session` has it NESTED under it, and the app archives a
+# parent's idle nested sessions together with the parent (`leadfuel-way:way`, sections 2b and 5). So the
+# desk does not archive itself: the successor archives it from inside its own first turn. One paragraph,
+# no session ids; the tests read it for "nested under you", "archives you" and `get_session`.
+NESTED_SUCCESSOR_REFUSAL = (
+    "THE WAY: you may not archive yourself while your successor is nested under you. The successor you read "
+    "back is live and its row names you as the session that opened it, and the app archives a parent's idle "
+    "nested sessions together with the parent. STAY OPEN: the successor archives you from inside its own first "
+    "turn, once it is live and titled, your handoff is pushed, nothing of yours is unpushed and no decision of "
+    "the owner is pending on you (`leadfuel-way:desk`, \"If you are a desk's successor\"). If you detached it "
+    "with `detach_session`, read it with `get_session` on its id so the guard sees `detached: true`; a "
+    "`list_sessions` row has no such field and reads as still nested."
+)
+
+
 def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
-    """The reason to refuse archiving yourself, or None when a live successor has been seen."""
+    """The reason to refuse archiving yourself, or None when a live successor has been seen.
+
+    A DESK whose recognised successor is provably NESTED under it is refused too (`NESTED_SUCCESSOR_REFUSAL`,
+    plugin 0.1.24, the guard floor): `opened_by(row, own_id)` is true, so the row names this session as its
+    opener, and the row does not positively show `detached is True`. A row with no `detached` field, which a
+    `list_sessions` row is, counts as still nested: unknown is not a pass. Each session is judged by its
+    NEWEST read (`latest_reads`), for every tier and every successor, whoever opened it: a read that a later
+    read of the same session replaced is dropped, so a successor a later `get_session` shows archived is no
+    longer recognised (the usual refusal below), and one it shows detached no longer blocks. (Before 0.1.24
+    any row ever seen live counted. A later read of a session that cannot be read as live, for instance one
+    with no `group`, now drops the older live read too: unknown is not a pass.) Everything not proven nested is judged exactly as before:
+    a launch-slot successor, one the router opened beside the desk, one whose row names no opener or another
+    session, and any successor of a router or conductor (for a tier the rule is a preference in the skills)."""
     mine = own_group(rows)
-    if any(is_successor(own_title, r, mine) for r in rows if not r.get("_self")):
-        return None
+    own_id = own_session_id(rows)
     role, lane = role_of(own_title)
+    seen = [r for r in rows if not r.get("_self")]
+    recognised = [r for r in seen if is_successor(own_title, r, mine, own_id=own_id)]
+    # Each session is judged by its NEWEST read, whoever opened it: a row a later read of the same session
+    # replaced (archived since, say) is no longer a live successor, nested under this session or not.
+    current = {id(r) for r in latest_reads(seen)}
+    recognised = [r for r in recognised if id(r) in current]
+    if role == "DESK":
+        if any(opened_by(r, own_id) and r.get("detached") is not True for r in recognised):
+            return NESTED_SUCCESSOR_REFUSAL
+    if recognised:
+        return None
     line = desk_line(own_title)
     if role == "DESK" and mine is not None:
         where = f"your own group, {mine[1] or mine[0]}"
@@ -581,13 +794,22 @@ def archive_refusal(own_title: str | None, rows: list[dict]) -> str | None:
                  "so the guard can see it")
     elif role == "DESK":
         where = f"{lane}, or your own group once `get_session` with `self` has shown it"
+    elif role in TIERS and mine is not None and mine[1].upper() in TIERS and mine[1].upper() != role:
+        # Nested in another tier's group (a router the conductor opened sits in the CONDUCTOR group: inferred).
+        where = (f"the {role} group, or your own group, {mine[1]}, if you were opened nested under "
+                 "another session")
+    elif role == "ROUTER" and mine is None:
+        where = (f"{role}, or the group you were opened nested in, which this session has not read: if the "
+                 "conductor opened you, run `get_session` with `self` so the guard can see it")
     else:
         where = role if role in TIERS else "unfiled: title and file yourself first"
     return (
         "THE WAY: you may not archive yourself until your successor is live and visible in its "
         f"sidebar group ({where}). Owner, 2026-10-02: a "
         "session never leaves before its successor exists. If the successor can only be a paste "
-        "prompt, give the owner the prompt and STAY OPEN: the successor archives you once it is live. "
+        "prompt, give the owner the prompt and STAY OPEN (a desk first reports `STATUS: CONTINUING` and "
+        "its router opens the successor): the successor archives you once it is live, or for a desk its "
+        "router does. "
         "If you started it yourself, run `list_sessions` with that group (a desk also `get_session` "
         "with `self`) and archive only once the result shows it, not archived. A successor you "
         "launched into a slot (`leadfuel-way:launch`) has no group: read it with `get_session` on its "
@@ -647,8 +869,45 @@ AGENT_HANDOFF = (
 )
 
 
-def guard_message(tokens: int, last_warned: int, soft: int, hard: int, agent: bool = False) -> tuple[str | None, int]:
-    """(message or None, new last_warned). `agent` words it for a background agent."""
+# How a session at its cap starts its successor (owner, 2026-11-01). This text is read BEFORE the skill,
+# so it carries the order and not a paste prompt: that is the last resort. It must agree with
+# `leadfuel-way:desk` ("Finish or hand off", the four situations) and `leadfuel-way:handoff` ("Starting
+# the successor"); tests/test_way_hook.py reads both skills to keep them from drifting apart.
+NEVER_LEAVE = (
+    "Never leave before your successor is live (owner's rule); check it with `get_session`."
+)
+# The paste prompt is a conditional, last rung and never the first instruction.
+LAST_RESORT = "As a last resort, give the owner a paste prompt and stay open."
+SUCCESSOR_DESK = (
+    "If the user's own words drive this turn, open the successor with `start_session` (find it with "
+    "ToolSearch if deferred; `initiation: \"user_asked\"`, nested under you); it archives you. If another "
+    "session's message (probably also a hook or notification) drives it, the app refuses: end with "
+    f"`STATUS: CONTINUING` and the handoff path; your router opens it. {LAST_RESORT}"
+)
+SUCCESSOR_COORDINATOR = (
+    "Start the successor as `leadfuel-way:handoff`, \"Starting the successor\", says: `start_session` "
+    "if you have it and the app allows it (it refuses one while you work on another session's message), "
+    f"else launch it into a slot yourself (`leadfuel-way:launch`). {LAST_RESORT}"
+)
+SUCCESSOR_NEUTRAL = (
+    "Start your successor as `leadfuel-way:handoff`, section \"Starting the successor\", says for your "
+    f"role. {LAST_RESORT}"
+)
+
+
+def successor_clause(role: str | None) -> str:
+    """How this role starts its successor at the cap; the neutral form for a role not known."""
+    if role == "DESK":
+        return SUCCESSOR_DESK
+    if role in ("ROUTER", "CONDUCTOR"):
+        return SUCCESSOR_COORDINATOR
+    return SUCCESSOR_NEUTRAL
+
+
+def guard_message(tokens: int, last_warned: int, soft: int, hard: int, agent: bool = False,
+                  role: str | None = None) -> tuple[str | None, int]:
+    """(message or None, new last_warned). `agent` words it for a background agent; `role` (a role_of
+    result, or None when not known) words how the successor is started."""
     if tokens < soft:
         return None, last_warned
     if last_warned and tokens - last_warned < REWARN_EVERY:
@@ -660,15 +919,44 @@ def guard_message(tokens: int, last_warned: int, soft: int, hard: int, agent: bo
     if tokens >= hard:
         return (
             f"CONTEXT BUDGET: HARD CAP. This session is at ~{k}k tokens (cap {hard // 1000}k). "
-            "Start nothing. Run the `leadfuel-way:handoff` skill now: write the note, commit and push it, give the "
-            "owner the one prompt for a fresh session, end your turn."
+            "Start nothing. Run the `leadfuel-way:handoff` skill now: write the note, commit and push it. "
+            f"{NEVER_LEAVE} {successor_clause(role)}"
         ), tokens
     return (
         f"CONTEXT BUDGET: ~{k}k tokens (handoff point {soft // 1000}k, hard cap {hard // 1000}k). "
-        "Finish the step you are on, start nothing new, and run the `leadfuel-way:handoff` skill: write the note, "
-        "commit and push it, give the owner the one prompt for a fresh session, end your turn. "
-        "If you try to end a turn without a handoff note, the Stop hook will send you back to write it."
+        "Finish this step, start nothing new, run the `leadfuel-way:handoff` skill: write the note, "
+        f"commit and push it. {NEVER_LEAVE} {successor_clause(role)}"
     ), tokens
+
+
+def stop_reason(tokens: int, soft: int, hard: int, role: str | None) -> str:
+    """The Stop hook's block reason: past the cap, no handoff note written since."""
+    cap = f"hard cap {hard // 1000}k" if tokens >= hard else f"handoff point {soft // 1000}k"
+    return (
+        f"THE WAY: you are at ~{tokens // 1000}k tokens, past your {cap}, and no handoff note was "
+        "written since. Run `leadfuel-way:handoff` now: write the note (path with "
+        f"'handoff'), commit and push it. {NEVER_LEAVE} {successor_clause(role)}"
+    )
+
+
+# A desk its router opened with `start_session` is nested under the router and filed in the router's
+# group (owner, 2026-11-01, card q1029 option B), so the project-group check below must allow for it.
+NESTED_FILING = (
+    "If your router opened you nested under it with `start_session` (or the desk before you did, as its "
+    "successor), you are filed in the group your opener is in (the ROUTER group; your title carries the "
+    "project), and `move_sessions` refuses to move a nested session alone, so read `get_session` on "
+    "`self` and do not try to move yourself."
+)
+
+# The same for a router the conductor opened with `start_session` (the guard's recognition of its successor is
+# `is_successor`, the tier branch). Nested under the conductor, it is filed in the conductor's group, the
+# CONDUCTOR group: INFERRED from the measured filing of nested sessions, never run with a conductor as opener.
+NESTED_TIER_FILING = (
+    "If the conductor opened you nested under it with `start_session` (or the router before you did, as its "
+    "successor), you are filed in the group your opener is in, which is the CONDUCTOR group (inferred, not "
+    "run), and that is not misfiled: `move_sessions` refuses to move a nested session alone, so read "
+    "`get_session` on `self` and do not try to move yourself; your title carries the project."
+)
 
 
 def banner(source: str, title: str | None, role: str, lane: str | None, model: str | None,
@@ -683,7 +971,11 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
     line = desk_line(title) if role == "DESK" else None
     if role == "UNFILED":
         lines.append(
-            "2. You are not filed. Before any work, title and file yourself (`leadfuel-way:way`, section 2a): "
+            "2. You are not filed, as far as this banner can tell: it is computed before the session that "
+            "opened you titles and files you, so a desk a router opened with `start_session` is nested "
+            "under it and may already be titled and filed although this banner says `Title: None`. Read "
+            "`get_session` on `self` first; if it shows a title and a group, you are filed and must not "
+            "try to file yourself. Otherwise, before any work, title and file yourself (`leadfuel-way:way`, section 2a): "
             "a desk `LANE · <project> part · n` (the lane, then the project's name followed by the word `part`, "
             "then n) in its PROJECT's sidebar group, never its lane's (a project "
             "with no group gets one from `leadfuel-way:new-project`, step 2); a router `ROUTER #N · <project>` "
@@ -696,13 +988,14 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
         if project:
             lines.append(
                 f"2. Your title files you as a desk: lane {lane}, project '{project}', session {line[2]}. "
-                f"Check you are in the '{project}' project's sidebar group (not the {lane} lane group)."
+                f"Check you are in the '{project}' project's sidebar group (not the {lane} lane group). "
+                f"{NESTED_FILING}"
             )
         else:  # the 0.1.8 wording, a free-text part: it still works, nobody is asked to retitle it
             lines.append(
                 f"2. Your title files you as a desk: lane {lane}, part '{line[1]}', session {line[2]} (the 0.1.8 "
                 f"wording; it still works, leave it). Check you are in your project's sidebar group (not the "
-                f"{lane} lane group)."
+                f"{lane} lane group). {NESTED_FILING}"
             )
     elif role == "DESK":
         lines.append(
@@ -712,6 +1005,8 @@ def banner(source: str, title: str | None, role: str, lane: str | None, model: s
             "and its group exists; otherwise keep your title and group. Never move or retitle other "
             "sessions to migrate them: one at a time, never in bulk."
         )
+    elif role == "ROUTER":
+        lines.append(f"2. Your title files you. Check you are in the {role} sidebar group. {NESTED_TIER_FILING}")
     else:
         lines.append(f"2. Your title files you. Check you are in the {role} sidebar group.")
     lines.append(
@@ -836,7 +1131,8 @@ def _guard(state: dict, name: str, tokens: int | None, model: str | None, size: 
         state["soft_crossed_at"] = size
     if tokens >= hard and "hard_crossed_at" not in state:
         state["hard_crossed_at"] = size
-    msg, state["last_warned"] = guard_message(tokens, int(state.get("last_warned") or 0), soft, hard, agent)
+    msg, state["last_warned"] = guard_message(tokens, int(state.get("last_warned") or 0), soft, hard, agent,
+                                              role=state.get("role"))
     return {"hookSpecificOutput": {"hookEventName": name, "additionalContext": msg}} if msg else None
 
 
@@ -893,6 +1189,10 @@ def handle(event: dict) -> dict | None:
             # The agent's own size, not its parent's: a desk agent hands off at its cap, never the router's.
             out = _guard(astate, name, *last_turn(agent_transcript(tpath, agent), agent=True), agent=True)
         else:
+            # Read the title fresh, as the Stop hook does: a nested desk is untitled when SessionStart
+            # records its role, so the role kept there would give it the neutral cap text.
+            role, lane = role_of(cached_title(tpath, state))
+            state.update(role=role, lane=lane)
             out = _guard(state, name, *last_turn(tpath))
 
     elif name == "Stop" and not guard_off:
@@ -906,13 +1206,8 @@ def handle(event: dict) -> dict | None:
                 key = "hard_crossed_at" if tokens >= hard else "soft_crossed_at"
                 if not handoff_written_since(tpath, int(state[key])):
                     state["stops_blocked"] = int(state.get("stops_blocked") or 0) + 1
-                    out = {"decision": "block", "reason": (
-                        f"THE WAY: this session is at ~{tokens // 1000}k tokens, past its "
-                        f"{'hard cap ' + str(hard // 1000) if tokens >= hard else 'handoff point ' + str(soft // 1000)}k, "
-                        "and no handoff note has been written since. Run the `leadfuel-way:handoff` skill now: "
-                        "write the note (path containing 'handoff'), commit and push it, give the owner "
-                        "the one prompt for a fresh session, then end your turn."
-                    )}
+                    role, _lane = role_of(cached_title(tpath, state))
+                    out = {"decision": "block", "reason": stop_reason(tokens, soft, hard, role)}
         slot_gate = (out is None and roles_on and not event.get("stop_hook_active")
                      and int(state.get("slot_stops_blocked") or 0) < 3 and is_slot_run(tpath, state))
         if slot_gate:
@@ -929,6 +1224,22 @@ def handle(event: dict) -> dict | None:
                     "(\"Ask the launcher\"). If no launcher is live, give the owner the paste prompt and "
                     "stay open. Do not archive yourself until get_session shows the successor live."
                 )}
+
+        card_gate = (out is None and roles_on and not agent and not event.get("stop_hook_active")
+                     and os.environ.get("WAY_CARD_GATE", "1") != "0"
+                     and int(state.get("card_stops_blocked") or 0) < 3)
+        if card_gate and turn_asks_owner(tpath) == "ask":
+            state["card_stops_blocked"] = int(state.get("card_stops_blocked") or 0) + 1
+            out = {"decision": "block", "reason": (
+                "THE WAY: your last message asks the owner something (a `STATUS: NEEDS-NOVAH` or an `ASK:` line) "
+                "and no card was written to the Router desk in this turn. The owner approves through cards, not "
+                "chat (card q9124, 2026-11-01). Post it yourself: read the highest `n` in the `questions` "
+                "collection of the Router desk, run `python \"${CLAUDE_PLUGIN_ROOT}/scripts/post_card.py\" "
+                "--n <highest+1> --asker <your title> --asker-session <your own id> --title ... --say ... --why ... "
+                "--check ... --option A=... --option B=... --default A --default-reason ... --out <file>`, then "
+                "ArtifactData `set` that file as `questions/q<n>`, then end your turn. If nothing needs the owner, "
+                "reword the line instead."
+            )}
 
     elif session_refusal:
         # An agent touching `self` is told why that is never its call; anyone moving several sessions
