@@ -34,6 +34,9 @@ def out(passed=1490, skipped=8, xfailed=2, failed=0, errors=0, selected=1500, ba
 
 def cls(rc, text, **kw):
     kw.setdefault("expected_sha", SHA)
+    # By default the independent bare count agrees with the run's own scope line, so the older tests keep
+    # testing what they tested; the bare-count rule has its own tests below.
+    kw.setdefault("bare_collected", nfr.parse_pytest_output(text)["collected"])
     return nfr.classify(rc, text, **kw)
 
 
@@ -138,6 +141,206 @@ def test_previous_collected_reads_the_last_pass_or_fail_line():
     assert nfr.previous_collected("") is None and nfr.previous_collected(None) is None
 
 
+# ── the bare collection count ─────────────────────────────────────────────────────────────────
+
+def test_bare_count_that_matches_the_run_is_pass():
+    assert cls(0, out(), bare_collected=1500)["status"] == "PASS"
+
+
+def test_bare_count_that_differs_is_unknown_naming_both_numbers():
+    r = cls(0, out(), bare_collected=1512)
+    assert r["status"] == "UNKNOWN" and "1512" in r["reason"] and "1500" in r["reason"], r
+
+
+def test_bare_count_unknown_is_unknown_never_pass():
+    r = cls(0, out(), bare_collected=None, bare_why="the collection exited rc=2")
+    assert r["status"] == "UNKNOWN" and r["reason"].startswith("bare collection count not established")
+    assert "rc=2" in r["reason"]
+    # the default, for a caller that forgets to pass it, is the safe one
+    assert nfr.classify(0, out(), expected_sha=SHA)["status"] == "UNKNOWN"
+
+
+def test_a_fail_stays_fail_but_notes_a_bare_count_it_could_not_match():
+    text = out(passed=1495, failed=1, errors=1, skipped=2, xfailed=1, ids="FAILED a.py::t - m\n")
+    differs = cls(1, text, bare_collected=1600)
+    unknown = cls(1, text, bare_collected=None)
+    same = cls(1, text, bare_collected=1500)
+    assert differs["status"] == unknown["status"] == same["status"] == "FAIL"
+    assert "bare-collected-1600-vs-run-1500" in differs["notes"]
+    assert "bare-count-unknown" in unknown["notes"]
+    assert not any("bare" in n for n in same["notes"])
+
+
+@pytest.mark.parametrize("rc,text,count", [
+    (0, "a.py::t1\na.py::t2\n\n15012 tests collected in 45.31s\n", 15012),
+    (0, "15000/15012 tests collected (12 deselected) in 45.31s\n", 15000),
+    (0, "1 test collected in 0.01s\n", 1),
+    # the hub conftest's scope line wins over pytest's own summary
+    (0, "=== this run is a statement about ===\n  base:  abcdef0\n  scope: 14990 tests selected\n"
+        "15012 tests collected in 45.31s\n", 14990),
+    (0, "  scope: 7 tests selected\n", 7),
+])
+def test_collect_parser_reads_the_count(rc, text, count):
+    assert nfr.parse_collect_output(rc, text)["count"] == count
+
+
+def test_collect_parser_notes_a_scope_that_disagrees_with_the_summary():
+    got = nfr.parse_collect_output(0, "  scope: 14990 tests selected\n15012 tests collected in 45.31s\n")
+    assert got["count"] == 14990 and got["notes"] == ["collect-summary-15012-vs-scope-14990"]
+
+
+@pytest.mark.parametrize("rc,text,timed_out,why", [
+    (2, "ERROR t.py\n!!! Interrupted: 1 error during collection !!!\n  scope: 3 tests selected\n"
+        "3 tests collected, 1 error in 9.68s\n", False, "1 error"),
+    (1, "3 tests collected, 2 errors in 7.17s\n", False, "2 error"),
+    (5, "no tests collected in 0.01s\n", False, "rc=5"),
+    (0, "something else entirely\n", False, "neither"),
+    (None, "15012 tests collected in 45.31s\n", True, "killed at its cap"),
+    (None, "", False, "exit code"),
+])
+def test_a_collection_with_errors_or_no_summary_is_not_a_count(rc, text, timed_out, why):
+    got = nfr.parse_collect_output(rc, text, timed_out=timed_out)
+    assert got["count"] is None and why in got["why"], got
+
+
+# ── the time budget ───────────────────────────────────────────────────────────────────────────
+
+def test_wait_window_leaves_the_run_its_allowance():
+    assert nfr.wait_window(285, 1, 90) == 90                       # default night: the wait is not clipped
+    assert nfr.wait_window(285, 1, 240, min_run_minutes=120) == 164
+    assert nfr.wait_window(285, 200, 90, min_run_minutes=120) == 0  # never negative
+    assert nfr.wait_window(285, 0, 0) == 0
+
+
+def test_caps_are_clipped_to_what_is_left_and_never_above_it():
+    assert nfr.clip_cap(270, 285, 1) == 270                         # granted at once: about 4.5 h
+    assert nfr.clip_cap(270, 285, 92) == 285 - 92 - nfr.END_SLACK_MINUTES
+    assert nfr.clip_cap(30, 285, 280) == 2
+    assert nfr.clip_cap(270, 285, 300) == 0
+    for elapsed in (0, 10, 91.5, 150, 281, 284.9):
+        for cap in (30, 270, 1000):
+            got = nfr.clip_cap(cap, 285, elapsed)
+            assert 0 <= got <= cap and got <= max(0, 285 - elapsed - nfr.END_SLACK_MINUTES)
+
+
+def test_the_defaults_fit_inside_the_task_limit():
+    assert nfr.BUDGET_MINUTES <= 5 * 60 - 10
+    assert nfr.WAIT_MINUTES + nfr.MIN_RUN_MINUTES <= nfr.BUDGET_MINUTES
+    assert nfr.CAP_MINUTES <= nfr.BUDGET_MINUTES - nfr.END_SLACK_MINUTES
+    assert nfr.MUTEX_STALE_HOURS * 60 > nfr.BUDGET_MINUTES
+
+
+# ── progress, stall and the cap ───────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("text,pct", [
+    ("....................................................................... [ 93%]\n"
+     "....................................................................... [ 94%]\n....", 94),
+    ("..... [  5%]\n", 5),
+    ("..... [100%]\n", 100),
+    ("tests/test_x.py::test_y[ 5%] PASSED\n", None),      # a marker that is not at the end of a line
+    ("....\n", None),
+    ("", None),
+])
+def test_progress_marker(text, pct):
+    assert nfr.last_progress(text) == pct
+
+
+def test_cap_reason_keeps_the_old_prefix_and_adds_progress_and_pace():
+    r = nfr.killed_reason(timed_out=True, stalled=False, cap_minutes=270, stall_minutes=30, pct=90,
+                          elapsed_s=270 * 60, bare=15000)
+    assert r.startswith("exceeded the 270 min wall cap; killed, no verdict")
+    assert "; reached 90% (about 13500 of 15000 tests)" in r and "at this pace the run needs about 300 min" in r
+    plain = nfr.killed_reason(timed_out=True, stalled=False, cap_minutes=180, stall_minutes=30, pct=None,
+                              elapsed_s=10800, bare=None)
+    assert plain == "exceeded the 180 min wall cap; killed, no verdict"
+
+
+def test_stall_reason():
+    r = nfr.killed_reason(timed_out=False, stalled=True, cap_minutes=270, stall_minutes=30, pct=47,
+                          elapsed_s=3600, bare=15000)
+    assert r == "no output for 30 min at 47%; killed as stalled, no verdict"
+    assert cls(None, out(), stalled=True)["status"] == "UNKNOWN"
+
+
+class FakeProc:
+    """A child that finishes at `finish_at` (fake seconds), or never; kill() makes poll() answer -9."""
+
+    def __init__(self, fc, finish_at=None, rc=0):
+        self.fc, self.finish_at, self.rc, self.killed, self.pid = fc, finish_at, rc, False, 0
+
+    def poll(self):
+        if self.killed:
+            return -9
+        if self.finish_at is not None and self.fc.t >= self.finish_at:
+            return self.rc
+        return None
+
+    def wait(self, timeout=None):
+        return self.poll()
+
+    def kill(self):
+        self.killed = True
+
+
+def fake_output(fc, grows_until, pct_per_minute=1.0, bytes_per_second=10):
+    def size():
+        return int(min(fc.t, grows_until) * bytes_per_second)
+
+    def tail():
+        pct = min(100, int(min(fc.t, grows_until) / 60.0 * pct_per_minute))
+        return "." * 70 + f" [{pct:3d}%]\n...."
+    return size, tail
+
+
+def test_watch_child_kills_a_stalled_run_and_reports_where(monkeypatch):
+    fc = FakeClock()
+    proc = FakeProc(fc)
+    size, tail = fake_output(fc, grows_until=47 * 60)            # 47 min of output, then nothing
+    said, killed = [], []
+    w = nfr.watch_child(proc, size=size, tail=tail, cap_s=270 * 60, stall_s=30 * 60, progress_every_s=600,
+                        poll_s=30, say=said.append, clock=fc.clock, sleep=fc.sleep,
+                        kill=lambda p: (killed.append(p), p.kill()))
+    assert w["stalled"] and not w["timed_out"] and w["rc"] is None and killed == [proc]
+    assert w["pct"] == 47
+    assert 77 * 60 <= fc.t <= 78 * 60                             # 47 min + 30 min of silence, give or take a poll
+    assert max(fc.sleeps) <= 30
+    assert said and said[0].startswith("progress 10% after 10m00s (output")
+    assert len(said) == 7                                         # one line every 10 min up to 70 min
+
+
+def test_watch_child_kills_at_the_cap_and_never_sleeps_past_it():
+    fc = FakeClock()
+    proc = FakeProc(fc)
+    size, tail = fake_output(fc, grows_until=10 ** 9, pct_per_minute=0.35)
+    w = nfr.watch_child(proc, size=size, tail=tail, cap_s=270 * 60, stall_s=30 * 60, poll_s=30,
+                        clock=fc.clock, sleep=fc.sleep, kill=lambda p: p.kill())
+    assert w["timed_out"] and not w["stalled"] and w["rc"] is None
+    assert fc.t == 270 * 60 and w["pct"] == 94
+    res = nfr.classify(None, tail(), timed_out=True, cap_minutes=270, progress=w["pct"], elapsed_s=w["elapsed"],
+                       bare_collected=15000, expected_sha=SHA)
+    assert res["status"] == "UNKNOWN" and not res["finished"]
+    assert "reached 94% (about 14100 of 15000 tests)" in res["reason"] and "needs about 287 min" in res["reason"]
+
+
+def test_watch_child_returns_the_exit_code_of_a_run_that_finishes():
+    fc = FakeClock()
+    proc = FakeProc(fc, finish_at=100 * 60, rc=1)
+    size, tail = fake_output(fc, grows_until=10 ** 9)
+    w = nfr.watch_child(proc, size=size, tail=tail, cap_s=270 * 60, stall_s=30 * 60, poll_s=30,
+                        clock=fc.clock, sleep=fc.sleep, kill=lambda p: pytest.fail("must not kill"))
+    assert w["rc"] == 1 and not w["timed_out"] and not w["stalled"] and fc.t == 100 * 60
+
+
+def test_a_quiet_but_growing_run_is_not_a_stall():
+    fc = FakeClock()
+    proc = FakeProc(fc, finish_at=200 * 60)
+    # grows by one byte every 29 min: slow, but never 30 min without growth
+    w = nfr.watch_child(proc, size=lambda: int(fc.t // (29 * 60)), tail=lambda: "", cap_s=270 * 60,
+                        stall_s=30 * 60, poll_s=30, clock=fc.clock, sleep=fc.sleep,
+                        kill=lambda p: pytest.fail("must not kill"))
+    assert w["rc"] == 0 and w["pct"] is None
+
+
 # ── the log line ──────────────────────────────────────────────────────────────────────────────
 
 def test_format_pass_line_and_fail_ids():
@@ -145,10 +348,32 @@ def test_format_pass_line_and_fail_ids():
     line = nfr.format_result("PASS", sha=SHA, res=res, wall_s=2052, wait_s=0, py="3.12.10-venv", pytest_version="9.1.1",
                              when=nfr.dt.datetime(2026, 10, 12, 13, 7, 22, tzinfo=nfr.dt.timezone.utc), host="H")
     assert line == ("2026-10-12T13:07:22Z PASS main=abcdef012345 collected=1500 passed=1490 failed=0 skipped=8 errors=0 "
-                    "xfail=2 xpass=0 wall=34m12s wait=0m00s py=3.12.10-venv pytest=9.1.1 host=H\n")
+                    "xfail=2 xpass=0 wall=34m12s wait=0m00s py=3.12.10-venv pytest=9.1.1 host=H "
+                    "bare=- collect=- progress=- budget=-\n")
     fail = cls(1, out(passed=1495, failed=1, errors=1, skipped=2, xfailed=1, ids="FAILED a.py::t - m\nERROR b.py::u\n"))
     text = nfr.format_result("FAIL", sha=SHA, res=fail, wall_s=60, wait_s=0, py=None, pytest_version=None, reason=fail["reason"])
     assert text.count("\n") == 3 and text.splitlines()[1] == "  FAILED a.py::t" and text.splitlines()[2] == "  ERROR b.py::u"
+
+
+OLD_FIELDS = ["main", "collected", "passed", "failed", "skipped", "errors", "xfail", "xpass", "wall", "wait",
+              "py", "pytest", "host"]
+
+
+def test_new_fields_come_after_host_and_old_fields_keep_their_positions():
+    killed = cls(None, out(), timed_out=True, cap_minutes=270, progress=94, elapsed_s=270 * 60, bare_collected=15000)
+    line = nfr.format_result("UNKNOWN", sha=SHA, res=killed, wall_s=16200, wait_s=0, py="3.12.10-venv",
+                             pytest_version="9.0.3", reason=killed["reason"], notes=["n1"], host="H", bare=15000,
+                             collect_s=65, progress=94, budget_minutes=285,
+                             when=nfr.dt.datetime(2026, 11, 8, 13, 30, tzinfo=nfr.dt.timezone.utc))
+    toks = line.split(" ")
+    assert toks[0] == "2026-11-08T13:30:00Z" and toks[1] == "UNKNOWN"
+    assert [t.split("=", 1)[0] for t in toks[2:2 + len(OLD_FIELDS)]] == OLD_FIELDS
+    assert toks[2 + len(OLD_FIELDS):2 + len(OLD_FIELDS) + 4] == ["bare=15000", "collect=1m05s", "progress=94%", "budget=285"]
+    rest = " ".join(toks[2 + len(OLD_FIELDS) + 4:])
+    assert rest.startswith('reason="exceeded the 270 min wall cap; killed, no verdict; reached 94%')
+    assert line.rstrip("\n").endswith('note="n1"')
+    # the old reader of collected= is not confused by the new collect= field
+    assert nfr.previous_collected(line.replace("UNKNOWN", "PASS")) == 1500
 
 
 def test_not_run_lines_carry_dashes_and_a_one_line_reason():
@@ -236,6 +461,15 @@ FAKE_HELPER = textwrap.dedent('''\
         elif mode == "crash":
             print("boom")
             sys.exit(2)
+        elif mode == "grant-then-hang":     # killed by the timeout AFTER the token is on disk
+            open(tf, "w").write("tok123")
+            print("heavy lock: granted slot-1 to nightly-full-run", flush=True)
+            import time; time.sleep(120)
+        elif mode == "hang-then-grant":     # the first attempt hangs (docker under load), the next one grants
+            if n == 1:
+                import time; time.sleep(120)
+            open(tf, "w").write("tok123")
+            print("heavy lock: granted slot-1 to nightly-full-run")
 ''')
 
 
@@ -303,6 +537,54 @@ def test_slot_that_cannot_be_established_is_unknown_not_busy_and_not_granted(tmp
     with pytest.raises(nfr.Stop) as ei:
         nfr.acquire_slot(ctx, wait_minutes=5, poll_seconds=120, sleep=fc.sleep, clock=fc.clock)
     assert ei.value.status == "UNKNOWN" and why in ei.value.reason
+
+
+def test_an_acquire_that_times_out_after_writing_its_token_uses_the_token(tmp_path, monkeypatch):
+    # a real timeout, a real kill: the fake helper writes the token and then hangs
+    monkeypatch.setattr(nfr, "ACQUIRE_TIMEOUT_SECONDS", 5)
+    ctx = slot_ctx(tmp_path, monkeypatch, "grant-then-hang")
+    fc = FakeClock()
+    assert nfr.acquire_slot(ctx, wait_minutes=90, poll_seconds=120, sleep=fc.sleep, clock=fc.clock) == "tok123"
+    assert fc.sleeps == [] and "acquire-helper-timed-out-after-grant" in ctx.notes
+
+
+def test_an_acquire_that_times_out_without_a_token_is_retried_not_the_end(tmp_path, monkeypatch):
+    monkeypatch.setattr(nfr, "ACQUIRE_TIMEOUT_SECONDS", 5)
+    ctx = slot_ctx(tmp_path, monkeypatch, "hang-then-grant")
+    fc = FakeClock()
+    assert nfr.acquire_slot(ctx, wait_minutes=90, poll_seconds=120, sleep=fc.sleep, clock=fc.clock) == "tok123"
+    assert fc.sleeps == [120]
+
+
+def test_run_helper_reports_a_timeout_as_rc_99_timeoutexpired(tmp_path, monkeypatch):
+    ctx = slot_ctx(tmp_path, monkeypatch, "hang-then-grant")
+    rc, text = nfr.run_helper(ctx, "acquire", "--job", "j", "--pid", "1", "--token-file",
+                              str(tmp_path / "tf"), timeout=3)
+    assert rc == 99 and "TimeoutExpired" in text
+
+
+def test_acquire_timing_out_every_time_ends_unknown_inside_the_wait_window(tmp_path, monkeypatch):
+    ctx = slot_ctx(tmp_path, monkeypatch, "grant")
+    seen = []
+
+    def fake_helper(_ctx, *args, timeout=180):
+        seen.append(timeout)
+        return 99, "helper could not run: TimeoutExpired"
+    monkeypatch.setattr(nfr, "run_helper", fake_helper)
+    fc = FakeClock()
+    with pytest.raises(nfr.Stop) as ei:
+        nfr.acquire_slot(ctx, wait_minutes=10, poll_seconds=120, sleep=fc.sleep, clock=fc.clock)
+    assert ei.value.status == "UNKNOWN" and "timed out" in ei.value.reason
+    assert len(seen) >= 2 and set(seen) == {nfr.ACQUIRE_TIMEOUT_SECONDS} and sum(fc.sleeps) <= 600
+
+
+def test_a_helper_that_cannot_start_at_all_still_ends_the_night_at_once(tmp_path, monkeypatch):
+    ctx = slot_ctx(tmp_path, monkeypatch, "grant")
+    monkeypatch.setattr(nfr, "run_helper", lambda _c, *a, timeout=180: (99, "helper could not run: FileNotFoundError"))
+    fc = FakeClock()
+    with pytest.raises(nfr.Stop) as ei:
+        nfr.acquire_slot(ctx, wait_minutes=10, poll_seconds=120, sleep=fc.sleep, clock=fc.clock)
+    assert ei.value.status == "UNKNOWN" and "rc=99" in ei.value.reason and fc.sleeps == []
 
 
 # ── the whole job against real local git repos ────────────────────────────────────────────────
@@ -405,6 +687,11 @@ def test_full_pass_night(job):
     assert not (job.state / "nightly.lock").exists()
     # raw output is kept locally, not in the log
     assert list((job.state / "runs").glob("*/pytest.out"))
+    # the independent bare count agreed, and the new fields sit after host=
+    assert list((job.state / "runs").glob("*/collect.out"))
+    tail = first.split(" host=", 1)[1].split(" ")
+    assert tail[1] == "bare=5" and tail[2].startswith("collect=") and tail[2] != "collect=-"
+    assert tail[3:5] == ["progress=-", "budget=285"]
 
 
 def test_second_night_updates_the_same_worktree_to_the_new_main(job):
@@ -503,5 +790,27 @@ def test_a_run_that_dies_mid_suite_is_unknown_and_releases_the_slot(job):
 def test_a_run_over_the_wall_cap_is_killed_and_unknown(job):
     commit_hub(job.hub, TESTS_OK + "\ndef test_hangs():\n    import time\n    time.sleep(120)\n")
     assert nfr.run(job.args("--cap-minutes", "0.1")) == 2
-    assert " UNKNOWN " in lines(job)[0] and "wall cap" in lines(job)[0]
+    assert " UNKNOWN " in lines(job)[0] and "exceeded the 0.1 min wall cap" in lines(job)[0]
+    assert (job.tmp / "RELEASED").exists()
+
+
+def test_a_collection_that_cannot_count_still_runs_the_suite_but_cannot_pass(job):
+    assert nfr.run(job.args("--collect-cap-minutes", "0")) == 2
+    first = lines(job)[0]
+    assert " UNKNOWN " in first and "bare collection count not established" in first and "bare=-" in first
+    assert "collected=5 passed=5 failed=0" in first          # pytest still ran, under the slot
+    assert (job.tmp / "RELEASED").exists()
+
+
+def test_a_failing_main_with_no_bare_count_is_still_fail_with_a_note(job):
+    commit_hub(job.hub, TESTS_FAIL)
+    assert nfr.run(job.args("--collect-cap-minutes", "0")) == 1
+    assert " FAIL " in lines(job)[0] and "bare-count-unknown" in lines(job)[0]
+
+
+def test_a_budget_used_up_before_pytest_is_unknown_and_runs_nothing(job):
+    assert nfr.run(job.args("--budget-minutes", "1")) == 2
+    first = lines(job)[0]
+    assert " UNKNOWN " in first and "budget was used up before pytest could start" in first and "budget=1" in first
+    assert not list((job.state / "runs").glob("*/pytest.out"))
     assert (job.tmp / "RELEASED").exists()
