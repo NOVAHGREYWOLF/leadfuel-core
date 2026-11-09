@@ -10,7 +10,10 @@ Written 2026-11-09 ~15:30 Pacific at the context guard's handoff point (~300k). 
 ## State
 Branch `claude/conductor-050`; this note is the only file this desk touched in this repo. Nothing built, merged, deployed or spent; the only outward writes are the cards. No sub-agent running. STATUS sends to the opener: six, each reported delivered by the tool, read not confirmed.
 
-## Next
+## Update ~15:50 Pacific (no part 4)
+On the opener's instruction this desk folded the three earlier answers (q432/q1016, q429/q431, q420/q796/q927/q1012) and q832/q371 into `02`-`05` itself, each place marked `[corr 11-09]`; `06-DECISIONS.md` lists where. The opener asks the owner before this desk is archived. Card answers that change the design are new tasks for the owner to queue. Not done: an independent fact-check of `02`-`05`.
+
+## Next (superseded by the update above; kept for a part 4 if the owner wants one)
 Part 4 (`PRODUCT · multi-user app part · 4`): invoke `leadfuel-way:way` and `leadfuel-way:desk`; read section 3b of the build notes; then (0) fold the correction in section 3b's "Owed to part 4" line (card answers q432, q1016, q429) into `02`-`05`; (1) have a read-only sub-agent fact-check `02`-`05` against the fact sheet and the sources they cite (plan step not done here); (2) as the owner answers the cards, fold each answer into `02`-`05` and mark it in `06-DECISIONS.md`; (3) report to the opener. Start no build: only the owner queues tasks from `05-TASKS.md`.
 
 ## Owed / not delivered
