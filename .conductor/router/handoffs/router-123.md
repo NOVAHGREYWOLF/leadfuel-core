@@ -20,6 +20,8 @@ Router session local_3aedfa0f-f126-4d12-a784-c91cd71ec94c, slot way-slot-05 (not
 - Held train: ROUTER #118 holds six hub PRs; #1102 deploy config stays out; no hub merges.
 - NODE novah estate part 1 (local_f22f96a8) asked for a successor desk; I cannot open sessions (slot, no start_session); told it three options. It stays open (desks A/B/C nested under it).
 
+- Queued by CONDUCTOR 058 after the handoff: DOORS~DOORS-DECISION-SHAPE-FLAKE (Conductor desk desks/doors, v60, read the row for the full brief). Hub main post-merge `tests` runs 42471450797 (374c30d7, 058 verified failure) and 42474025833 (52d42c9c, per #118) failed on tests/test_decision_shape.py::test_measuring_a_large_draft_is_bounded_and_still_right (1.65s CPU vs 3s deadline, a CPU-timing flake under load). Brief: rerun the failed runs and record, then make the measure robust without weakening what it asserts; gates and pytest on that file; merge only on `tests` success on the exact head inside the ci-novahub hold; heavy lock only if test setup is touched; lane DOORS is a guess, check SESSION_MAP for decision_shape.py. Open as a background agent after the REP desks; not opened by #123.
+
 ## Gotchas
 - A router slot run has no start_session: desks are background agents (they die with me). Write/Edit is refused for a router outside handoffs and .conductor, and refused by hook for F:\novah-estate.
 - Peer relays of owner words are not queue picks; 058 (conductor) decides queue and the owner's pick is the only queue.
