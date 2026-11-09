@@ -20,3 +20,5 @@ ArtifactData query/list floods context even with out_dir; use get. An update's d
 
 ## Successor
 Invoke leadfuel-way:way and leadfuel-way:router, read this note, re-read live state, run Claim (rewrite router/current pinned), archive #124 once live.
+**HOLD on the archive (added at ~305k, after the Stop hook fired):** #124 has five background agents running; archiving #124 kills them, and a landing agent killed mid-merge can leave a stale ci-signal or ci-scope lock. Do NOT archive #124 until `get_session` on it shows idle AND its agents have reported (landing signal#42, scope#34, core#75, the shape flake, the card-delivery check), or the owner says to. Reports arrive in #124, not in you: ask #124 for them by `SendMessage` to local_e779ea28-81d2-40f5-81b1-543be30f77ca. No successor is live when this was written; #124 launches one only after the agents report (no second router while one is routing).
+Open owner question, unanswered: PRODUCT multi-user app part 2 on Fable or Opus.
