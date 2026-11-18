@@ -9,7 +9,7 @@ Session local_b62e2a02-a00f-4a64-bddb-0870632a9e81, slot way-slot-05. Predecesso
 - Private mockup (PRODUCT onboarding): https://claude.ai/artifact/UH4h3VSm16FiFhZuriUU1T. PRODUCT part 4 PR leadfuel-core#76 (handoff only).
 
 ## Running when written
-Agent aa5a5b287311b0a40 (hooks review-3 fixes F1,F2,F4,F5,F3 on a new branch from d616399): it dies with this session; if no report arrives, reopen from the review notes in the scratchpad (r3_probe_a/b).
+None: all agents have reported. Hooks review-3 fixes landed as local estate branch node/q9443-review3-fixes @ 7d59b02 (cut from d616399; agent report: F1-F5 closed, tests pass one file at a time, hooks still off, no final review yet; whether to run one is the owner's call). No successor is live: the slot arm was refused (nobody typed into this run) and no launcher is live; the owner pastes the prompt, or a regular session arms way-slot-03 (free; its SKILL.md already has the model line).
 
 ## Owed
 - Hub: sort the shared red test; merge order 1012 -> 1115/1116; 1117 -> 1118 -> 1119; then NODE merges 392534b. own_node egress door needs the owner's P1 answer (docs/NODE_RELAY_CONTRACT.md s10). PRIVACY must list memory tables.
