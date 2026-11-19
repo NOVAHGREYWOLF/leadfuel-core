@@ -16,5 +16,9 @@ None: all agents have reported. Hooks review-3 fixes landed as local estate bran
 - Unrouted owner answers with no desk: q9223 B, q9224 X, q9225 B, q9226 X, q9227 A (blocks hub#1105). Unanswered: q9321 (retire 15 sessions), q9306-q9320. IDENTITY desk (q9286 A) needs a SESSION_MAP lane. Design-note copies in scratchpad product-multi-user-ans-11-10 need a diff and copy into F:\Claude Sessions\product-multi-user\. Reach brief B (19 group B routes) owed. Wake-pass finding: 71 cards UNDELIVERED, 16 HELD (NODE part 11 reported; unchecked).
 - Part 11 (local_674b6e47) is at about 334k and has a pending successor proposal task_9aa1ec8a; do not wake. q9438 (Railway flag) must NOT be set. Unopened picks: REP-R0/R2/R3/R6/R7, TAILSCALE, EVERYTHING-ON other-lane pieces, phone Files panel.
 
+## Added after the first push (~345k)
+- INTELLIGENCE · novah estate part · 1 (local_b6ba70a1-04ad-4c24-9d74-139b30362339) asked for a SENSORS desk (Novah's word, 2026-11-18 evening Pacific: collapse the ~30,131 redundant web_liveness rows). Full brief: C:\Users\novah\AppData\Local\Temp\claude\dbcfc8230e7026ae\37eac687-e418-4382-99b7-aa9d189991d9\scratchpad\web-liveness-collapse-brief.md. Needs a SESSION desk (SENSORS lane), not a background agent: the production dry run needs Novah's typed yes in the desk's own chat, and the apply needs a second yes. NOT OPENED by #125 (past cap). Reply to local_b6ba70a1 with the desk id once opened. Claim to verify: no live SENSORS desk exists (it checked only the 80 newest sessions).
+- NODE part 11 (local_674b6e47) says cards q9424-q9431, q9435, q9437, q9426 (answered), q9427 B are unacted; I corrected its other claims (see above).
+
 ## Gotchas
 ArtifactData get only, with out_dir; a background agent cannot message the router (its final notice is the report); start_session absent in a slot run.
