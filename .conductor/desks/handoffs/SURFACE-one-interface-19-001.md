@@ -6,12 +6,12 @@ Session `local_b4236aaf-d394-4eff-ae35-4601fe92ba4e` (Opus). It was nested under
 - Hub #1128 merged as main `e2797b9f`. It fixes the parts cache, which was keyed on mtime only: `command_focus`/`command_screen` now key on `(st_mtime_ns, st_size, st_ino)`. This was the estate-wide `test_command_rungs` flake. The test itself was not touched.
 - Hub #1122 (globe) merged as main `635f2d4a`.
 - Hub #1129 (step 2: screen moves as named actions with undo, `static/command/actions.js`) merged as main `3322f8b3`. CI ran 15,658 of 15,658 tests.
-- Hub #1130 (step 3: the "What the AI can do here" sheet, `cando.js` and `GET /api/command/can-do`): see State.
+- Hub #1130 (step 3: the "What the AI can do here" sheet, `cando.js` and `GET /api/command/can-do`) merged as main `f2a58543`. CI ran 15,720 of 15,720 tests.
 - Board D redrawn inside the NovahOS window and published on Design canvas `RTbymAgoSTKozb7h5kHbPp`.
 - Part 18 archived through the gate and read back.
 
 ## State (re-read before acting)
-- Re-check #1130's merge state with `gh pr view 1130`. If it is still open, the `ci-novahub` lock (`F:\Claude Sessions\.locks\ci-novahub`, stamp `held-by-SURFACE-one-interface-19--local_b4236aaf`) may still be mine. Take it over by replacing the stamp, then finish the sequence and release.
+- No PR of this desk is open. The `ci-novahub` lock was released at 09:42 UTC, and every SURFACE worktree this desk used is removed (each was clean and pushed).
 - The `.wait` queue holds 5 old tickets whose desks are not live.
 
 ## Next (owner's go: "Ok let's do it"; order relayed as 2, 3, 4, 6, one PR per slice)
