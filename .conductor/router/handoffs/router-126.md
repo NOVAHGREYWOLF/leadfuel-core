@@ -34,3 +34,6 @@ start_session is refused in notification turns (agents instead); ArtifactData ge
 ## Update 2 (about 16:10 PST)
 - ROUTER #124 reports CONFIRMED (Outlook metadata, its own check): 8 command books Nov 11 to 18 have no attachment, none after Nov 19 5:54 am PST; cause unknown. Lead only: the spend approval mail (11 asks, up to 0.82 dollars, Nov 19 6:45 am PST, owner forward 12:40 pm) says nothing runs until answered; Railway deploys are blocked (q9518 B). #124 is at its cap and writing its handoff; its successor owns the reports lane. I post nothing for reports.
 - Hub main moved: 7c6feb95 (a commit #124 could not match to a merged PR; newest merged PR still 1131). PR 1102 head 0c93df2e is ahead 2, behind 14. Landing agents must merge current main, not 0a763d29.
+
+## Update 3 (about 16:25 PST)
+- Storage part 3 (local_756bc124) did pick up the relay and CHECKED the audit itself (read only): chain failure at 07:30 Nov 20 was NOT power (worn disk sda, real unreadable sectors); power event journals say 15:04 not 15:07; the 2 TB drive is safe (copy on the 620 verified 07:26 Nov 20); it relocked sda, sdb, sdc read only and started a new chain at 14:42 for sdb then sdc; sda salvage is the owner's call (the desk posts its own card). Correct cluster_audit_1 wording if it says 15:07 or power as cause. Relay to always on part 4 (local_eb4bc8eb) still unconfirmed.
