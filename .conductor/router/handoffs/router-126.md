@@ -22,3 +22,11 @@ Session local_3dcfabeb-3f91-4824-a749-42f64c84f680, slot way-slot-03 (owner open
 
 ## Gotchas
 start_session is refused in notification turns (agents instead); ArtifactData get with out_dir only; list_sessions saved file parsed with scratchpad parse_sessions.py; wake runs and cards are UNDELIVERED because of the 10 send cap and unknown askers.
+
+## Update (2026-11-21 about 16:00 PST, about 330k tokens)
+- Cards posted: q9549 (archive old scheduled runs, open), q9550 (restore desk or reuse Phase 0 copy), q9551 (hub PR 1102); cluster audit agent ac1146925dd53246c DONE, posted q9560 to q9563, findings on board router/cluster_audit_1 (R620 power supply 1 dead, power event 15:07 Nov 20, F1 likely the built in NIC fault, 710 storage back about 13:08 Nov 21).
+- NOT LANDED (undelivered, held): relays of the audit findings to NODE overlord storage part 3 (local_756bc124-5bb2-4a69-8d1e-5d1615dbac5b: its drives chain failed 7:30 am Nov 20 rc 4) and NODE always on part 4 (local_eb4bc8eb-4c75-46ce-b936-bac9c9239574: vault backup 2:15 and sync 2:45 am Nov 21 failed because the 710 was down; check the 2:15 am Nov 22 run). The cards carry the same facts; resend when the owner types in those chats.
+- SENSORS part 1 (local_c4f5b466-aec8-4253-accd-6470fcf9b3a5) is at about 318k and asked for SENSORS part 2: hub draft PR 1132 (head a982b441, pytest pending), handoff note .conductor/desks/handoffs/web-liveness-collapse-001.md on claude/sensors-web-liveness-collapse-453414 (f94b8b3, verified on remote). start_session was refused in a message driven turn; open part 2 in the next turn the owner types into, or by a way slot, nested under the router, then archive part 1 through the gate. The desk stays open meanwhile (hard cap 450k).
+- Globe merge settled by SURFACE part 21: merges go ahead, only the deploy is blocked (q9518 B); redeploy owed when he picks a Railway plan.
+- Send cap: about 8 of 10 used, plus 2 undelivered.
+- Agents still running at this point: DOORS 1, DOORS 2, INTELLIGENCE 4, ARMS 1, NODE 12, routing audit done, Railway check aaef57bcb05349e60.
