@@ -30,3 +30,7 @@ start_session is refused in notification turns (agents instead); ArtifactData ge
 - Globe merge settled by SURFACE part 21: merges go ahead, only the deploy is blocked (q9518 B); redeploy owed when he picks a Railway plan.
 - Send cap: about 8 of 10 used, plus 2 undelivered.
 - Agents still running at this point: DOORS 1, DOORS 2, INTELLIGENCE 4, ARMS 1, NODE 12, routing audit done, Railway check aaef57bcb05349e60.
+
+## Update 2 (about 16:10 PST)
+- ROUTER #124 reports CONFIRMED (Outlook metadata, its own check): 8 command books Nov 11 to 18 have no attachment, none after Nov 19 5:54 am PST; cause unknown. Lead only: the spend approval mail (11 asks, up to 0.82 dollars, Nov 19 6:45 am PST, owner forward 12:40 pm) says nothing runs until answered; Railway deploys are blocked (q9518 B). #124 is at its cap and writing its handoff; its successor owns the reports lane. I post nothing for reports.
+- Hub main moved: 7c6feb95 (a commit #124 could not match to a merged PR; newest merged PR still 1131). PR 1102 head 0c93df2e is ahead 2, behind 14. Landing agents must merge current main, not 0a763d29.
