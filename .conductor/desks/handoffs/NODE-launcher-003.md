@@ -17,7 +17,10 @@ UPDATE 12:32 PT: ROUTER #113 started 12:21 in slot 01 as local_aaa2cb23 (read ba
 - Slot 07 is NOT Bypass (SLOT-NOT-BYPASS mode=default, measured twice); owner step still owed. The scheduler also fires 6 to 12 minutes late at times.
 - Weekly all-models 75% at ~12:00 PT (resets 2 pm PT Oct 31). The launcher does not open work, but tell requesters the figure.
 
-## UPDATE 13:42 PT (newest; supersedes the held-launch lines below)
+## UPDATE 2026-11-21 (newest of all)
+This launcher (part 3) is retired at about 425k tokens and answers no more LAUNCH-REQUESTs (declined ROUTER #128's SENSORS · novah estate part · 3, #6/#7/#121 earlier). No launcher part 4 was ever started by me; the board doc launcher/current still names part 3, so requesters keep finding me: whoever opens a launcher, or the conductor, should rewrite it. The owner's current rule (2026-11-21): a session starts its successor itself, nested start_session first, a slot only as fallback, so a standing launcher may not be needed. Slot facts from 2026-11-01 (not re-read): fires wait while any session of the slot's routine is mid-turn; slot 07 not Bypass; the scheduler stalled for hours when the PC slept.
+
+## UPDATE 13:42 PT (older; supersedes the held-launch lines below it)
 Launched and read back (GO sent, LAUNCHED sent or queued): ROUTER #119 · build board local_420a0e48 (slot 05, started 13:30, requester #116), TRUTH · Resonance Effect part · 3 local_5a3c6b0d (slot 06, Fable, started 13:34, effort medium, requester #5; slot 06 model line back to sonnet). Only ROUTER #118 · reports (slot 04, armed by #108, GO sender #108) is still unfired. Declined: ROUTER #6 · resonance (#5, LAUNCH-FAILED past cap). No launcher request is open with me.
 
 ## UPDATE 13:22 PT (read this first)
