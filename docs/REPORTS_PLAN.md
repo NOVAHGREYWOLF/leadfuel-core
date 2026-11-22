@@ -1,5 +1,15 @@
 # Reports rebuild: one command email, every report attached
 
+## Status 2026-11-22 (refresh; this block overrides the dated sections below where they conflict)
+- **Not only a plan.** Steps 3, 4 and 5 have code on hub main (novahub #672, #683, #701). Steps 1, 2 and 6 are recorded in the completion table below; not re-verified in this refresh.
+- **Attachments are gated** by `MASTER_ATTACH_REPORTS` and `MASTER_ATTACH_PDF`. #701 added `pdf_engine.py` and `report_pdf.py`. The PDF path stays off until a real send lands.
+- **Side senders retired** by novahub #672, pinned by `tests/test_side_senders_retired.py`. Old line references removed.
+- **Pull model partly built.** `spoke_authority.UNCONTESTED_BUILDERS` exists and #683 added `prime_digest.py`. `SPOKE_SUBMIT_AUTHORITY` is still off.
+- **Roster merged since the plan:** Ledger report (novahub #1048, `ledger_report.py`), Estate weekly (#696), DMARC digest (#695, dormant until `DMARC_MAILBOX` is set), Scope and Core builders (#694).
+- **Format superseded.** The PDF-first plan predates owner decision q9001 A (offline HTML). **Owner goal: ALL reports work locally.**
+- **Open (novahub):** #1134 offline attachments for all reports; #1136 fieldy-local; #1102 WeasyPrint fix (open, not draft); #1108 report registry (draft). #1135 merged 2026-11-22.
+- **Proof send:** the proof send script covers only health and location so far.
+
 Decided 2026-09-29 with Novah. Work happens in `NOVAHGREYWOLF/novahub` (report code lives there; this repo is only the plan record).
 Each step below is one session: finish, open a draft PR, retire.
 
@@ -12,8 +22,8 @@ Each step below is one session: finish, open a draft PR, retire.
 
 ## Current state (from code read 2026-09-29)
 - Briefing built in `novahub/command_book.py`, `master_report.py`, sent at `app.py` (~26715, `service="novahprime"`).
-- Attachments off since 2026-08-24: nine `.html` files got the 08-22 book junked by Defender. `MASTER_ATTACH_REPORTS` (unset) restores them.
-- Side senders to remove: `app.py` ~25869 (`service="lucid"`, "Your day, in review"), ~2485 (`service="echo"`), `todo.py` ("Today: nothing open", `hello@`).
+- Attachments off since 2026-08-24: nine `.html` files got the 08-22 book junked by Defender. Gated by `MASTER_ATTACH_REPORTS` and `MASTER_ATTACH_PDF` (see status block).
+- Side senders (Lucid, Echo, `hello@` todo mail): retired by novahub #672, pinned by `tests/test_side_senders_retired.py`.
 - Spokes push to the hub today (`_master_store_spoke`, `spoke_authority.py`, `SPOKE_SUBMIT_AUTHORITY` off). The hub reconstructs lucid/echo/orbit/signal/reach/odyssey from its own data.
 - Railway on 2026-09-29: `Postgres` (16:55 UTC) and `novahub-cron-15min` (18:38 UTC) crashed; builds failed 09-24/25.
 
@@ -23,7 +33,7 @@ Ops, daily, attached every day (one combined PDF): System health, Spend, Coverag
 Weekly / on demand: Estate, Echo, Scope, Trait check, Dossier.
 Lucid's day-plan-vs-actual stays as a spoke report inside the briefing.
 
-## Attachment format
+## Attachment format (superseded: see status block, owner decision q9001 A, offline HTML)
 One PDF per report, rendered server-side (HTML attachments caused the junking). Ops combined into one PDF. Must be proven by a real send landing in the etg.ai inbox, not assumed.
 An allow-rule for `mail.leadfuel.cloud` in Microsoft 365 is a fallback, not the plan.
 
