@@ -24,3 +24,7 @@ q9594, q9598, q9600, q9601 (posted). Owed cards: redline-9, U01, sooner-4 sync f
 
 ## Gotchas
 Conductor 058 is local_b7630866-f2e7-4436-9936-af237cbc5c34 (short ids do not deliver). start_session is refused in turns another session's message began. Agents cannot git in F:\Leadfuel or F:\Claude Sessions worktrees. Usage 26% at 058's read; stop at 88.
+
+## Update (11:55 PT)
+- q9600 answered A: marked routed by #131 (verified on the card). Conductor 058 (local_b7630866-f2e7-4436-9936-af237cbc5c34) is moving done node rows to desks/node-archive then filing the 66, and will report.
+- OWED to #132: (1) ask the page owner CONDUCTOR plan + task list (id starts local_18eeff8c, full id not known; find with list_sessions and check it is live) to render the node-archive doc on the Conductor desk page. (2) q9602 answered A (land hub 1140, production book local or plain, no cloud fallback) at 19:18Z; its wake to ROUTER #130 is HELD: confirm #130 has read it (id not known to me).
