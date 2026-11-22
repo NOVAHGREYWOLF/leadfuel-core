@@ -18,3 +18,6 @@ Session local_03a085d6-8b14-42df-ab4a-e9927cd2d7df, slot way-slot-02. router/cur
 
 ## Gotchas
 Send cap 10 until the owner types (he typed; about 7 used since). ArtifactData get with out_dir only; cards versions bump (wake pass), re-read before pinned writes. Stop hook false-fires 'handoff without successor' on read-only handoff files. NODE part 18 (local_4f93581f) owns cards q9582 to q9592; owner wants links and paste text given in chat, never 'go search'.
+
+## Update (about 22:05 PST, about 305k tokens)
+- SENSORS part 3 IS LIVE (local_cd0ddd87-4bef-4420-93fc-e18ee7854ae4, verified with get_session; it reports PR 1132 head e74a73c5, running gates and CI; the owner types the dry run yes in its chat). SENSORS part 2 ARCHIVED through the gate (verified clean, pushed at a7bddf1). ROUTER #126 archive REFUSED (mid-turn); retry when idle, nothing nested under it. Owed: successor router (paste prompt given to the owner; start_session absent, slot arm refused), hub 1102 hand merge card q9594 (open), September triage landing desks, q9549 routine-run archive.
