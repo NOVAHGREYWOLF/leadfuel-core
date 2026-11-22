@@ -22,3 +22,7 @@ One front-door session for the owner: this router line. Every other session repo
 - Peer ids: conductor 058 local_b7630866; NODE part 18 local_4f93581f; ROUTER #127 local_9aa9b954.
 ## Gotchas
 start_session refused in turns another session's message began; use Agent background desks. ArtifactData get with out_dir only. Card versions bump; re-read before pinned writes.
+
+## Update (about 22:35 PST)
+- Dashboard: https://claude.ai/artifact/YHBPZMmcs6kZndq5HvGxqt (NODE part 18, local_4f93581f, page v7: 7 done, 2 running, 1 blocked of 344). Standing ask from part 18: when a desk opens, ends or blocks on a queue item, send it one line `LIVE: <item id> | running|queued|blocked|done | desk session id | note`; it writes LIVE.json and republishes. U02 shows running until a 04:30 nightly verdict exists (log F:\Claude Sessions\handoff\nightly-full-run.log). I sent lines for U02, U03, U04, C10, W05, W08.
+- Owner has been given the paste prompt for ROUTER #131 (start_session was refused over Remote Control). NODE off railway part 3 reported: six databases copied and restore-checked; JobHunter volumes and HOWL Development_V2 not copied; no deletion date known; home deploy (q9530 B) not built; it is at its cap and says type `start part 4` in its chat.
