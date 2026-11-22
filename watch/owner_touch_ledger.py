@@ -10,6 +10,7 @@ solid and the split as indicative.
 
   python watch/owner_touch_ledger.py --days 3
   python watch/owner_touch_ledger.py --days 1 --line      # the single line for the Conductor desk
+  python watch/owner_touch_ledger.py --days 1 --min-transcripts 2 --out result.json   # daily run
   python watch/owner_touch_ledger.py --selftest
 
 Exit 0 = counted. Exit 2 = UNKNOWN: the ledger could not see, and says so instead of printing 0.
@@ -144,6 +145,35 @@ def report(sessions_seen, touches, days, user_msgs, with_origin, root=ROOT, line
     return 0
 
 
+def result_doc(sessions_seen, touches, days, user_msgs, with_origin, root=ROOT, today=None,
+               min_transcripts=1):
+    """The one result the daily run writes: a dict with the line and, only when counted, the numbers.
+
+    Absent numbers mean UNKNOWN. A count the code cannot establish is never written as 0.
+    """
+    stamp = today or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
+    written = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        code = report(sessions_seen, touches, days, user_msgs, with_origin, root=root, line=True,
+                      today=stamp, min_transcripts=min_transcripts)
+    doc = {"line": buf.getvalue().strip(), "status": "counted" if code == 0 else "unknown",
+           "date": stamp, "written_at": written}
+    if code == 0:
+        doc.update(touches=len(touches), sessions=len({s for _, s, _ in touches}),
+                   transcripts=sessions_seen)
+    return doc, code
+
+
+def write_result(path, doc):
+    """Write the one result atomically (temp file then replace)."""
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=1)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
 def selftest():
     cases = {
         "go": "go / approve / click-answer",
@@ -180,6 +210,8 @@ def main(argv=None):
                     help="UNKNOWN if fewer transcript files than this were in the window (default 1; "
                          "a run inside a Claude session sees its own transcript, so use 2 there)")
     ap.add_argument("--line", action="store_true", help="print the single Conductor desk line")
+    ap.add_argument("--out", help="write the one result (line, status, counts) as JSON to this path; "
+                                  "implies --line. Counts are absent when the status is unknown")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -188,6 +220,12 @@ def main(argv=None):
         return selftest()
     since = time.time() - a.days * 86400
     seen, touches, user_msgs, with_origin = read_touches(a.root, since)
+    if a.out:
+        doc, code = result_doc(seen, touches, a.days, user_msgs, with_origin, root=a.root,
+                               min_transcripts=a.min_transcripts)
+        write_result(a.out, doc)
+        print(doc["line"])
+        return code
     return report(seen, touches, a.days, user_msgs, with_origin, root=a.root, line=a.line,
                   min_transcripts=a.min_transcripts)
 

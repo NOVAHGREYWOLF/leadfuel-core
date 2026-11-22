@@ -73,3 +73,18 @@ removing the two UNKNOWN guards fails the tests. Taken on trust: that `origin.ki
 what the app sets for typed text (the original author's finding; the live transcripts do carry the
 field, but I did not check it against a case where I know the owner typed), and that `watch/` is
 WATCH's directory (the session map has no per-file row for it; its neighbours there are WATCH's).
+
+## Part 2: the daily command writes one result (`--out`)
+
+```
+python -I watch/owner_touch_ledger.py --days 1 --min-transcripts 2 --out <result.json>
+```
+
+Prints the one Conductor desk line and writes the same result as JSON: `line`, `status`
+(`counted` or `unknown`), `date`, `written_at`, and, only when counted, `touches`, `sessions`,
+`transcripts`. When the status is `unknown` the number fields are absent, never 0. Exit 0 counted,
+exit 2 UNKNOWN. The write is atomic. Message text is never stored.
+
+Not done here, by instruction: the schedule (a scheduled Claude session is needed, since only a
+session can write the Conductor desk page database) and the page write. Place the JSON as the single
+document `ledger/owner-touch` on that page, replaced daily. The router routes the install step.
