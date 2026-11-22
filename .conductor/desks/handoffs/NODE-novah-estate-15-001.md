@@ -31,4 +31,4 @@ Desk folder (the only place written, plus the published page): the session folde
 No desk opened, nothing merged, nothing sent outside the machine, no mail sent or changed.
 
 ## Archive state of parts 14 and 13
-See the commit message of this note's latest revision, or read get_session on both ids: this section is filled in after the attempt.
+Both archived by part 15 at about 18:50 PT, one at a time, through the gate: handoff notes pushed (1b3e398 and 30ab9a3 are ancestors of the remote head), both idle, no PR, no worktree, part 14's two sub-agent files present, part 13's five sweep 2 files present. Read back: part 14 shows isArchived true. Part 13 was not read back after its archive call returned success: read it. Part 15 stayed running through both. Undo is unarchive_session.
