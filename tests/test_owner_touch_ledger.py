@@ -139,3 +139,26 @@ def test_min_transcripts_floor_makes_a_lone_self_transcript_unknown(tmp_path):
     _write(tmp_path, "q", "other", [_user("go")])
     r = _run(tmp_path, "--days", "1", "--min-transcripts", "2", "--line")
     assert r.returncode == 0
+
+
+def test_out_writes_one_result_unknown_has_no_numbers(tmp_path):
+    out = tmp_path / "result.json"
+    r = _run(tmp_path / "nothing", "--days", "1", "--out", str(out))
+    assert r.returncode == 2
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["status"] == "unknown"
+    assert "touches" not in doc and "transcripts" not in doc  # absent, never 0
+    assert doc["line"].startswith("OWNER-TOUCH-LEDGER ") and "not zero" in doc["line"]
+
+
+def test_out_counted_result_carries_numbers_and_line(tmp_path):
+    root = tmp_path / "root"
+    _write(root, "p", "s1", [_user("something new to decide here"), _user("go")])
+    out = tmp_path / "result.json"
+    r = _run(root, "--days", "1", "--out", str(out))
+    assert r.returncode == 0
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["status"] == "counted"
+    assert (doc["touches"], doc["sessions"], doc["transcripts"]) == (2, 1, 1)
+    assert doc["line"] == r.stdout.strip()
+    assert "something new" not in out.read_text(encoding="utf-8")  # counts only
