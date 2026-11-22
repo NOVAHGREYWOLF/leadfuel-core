@@ -18,5 +18,8 @@ Hub main 15e3235d at ~9 pm. Draft PR #1134 = reports-attach-all (head 1004f9ad, 
 ## Owed / not delivered
 Owner answers: q9595, q9596. Replies from 10f0a004 and f67e0839. My message to #129 ("FREE" on INTELLIGENCE/CLOUD-LOCAL-REPORTS) was QUEUED, not confirmed read. I used 9 of 10 sends; the cap resets when the owner types. Missing daily command books (none since Nov 19 5:54 am Pacific): unlinked leads only; Railway and production reads need the owner's word.
 
+## Addendum (after the first push, ~9:30 pm Pacific)
+ROUTER #129 (estate router) passed me the CLOUD-LOCAL-REPORTS results: per-item list F:\Claude Sessions\handoff\INTELLIGENCE-novah-estate-part-4\remaining.md, saved cloud text cloud-save.md there (its desk agent's claims). P7 code DONE: hub #696 merged 2026-10-01 23:27 UTC, files on main (verified by me; test count not checked), written into the board `reports` field. P5-F1 is UNKNOWN: re-check on main (test and code), then mark DONE or name the gap. Draft PRs #1134 and #1135 exist (reports-attach-all, reports-local-qa); fieldy-local had no remote branch yet.
+
 ## Gotchas
 A card set on an existing id is refused: retry n+1 (q9594 was #128's). Read answered cards yourself. ArtifactData always with out_dir. Never read an agent's output file. gh through Start-Process splits quoted args. The lock is ci-novahub (spoken "ci-hub").
