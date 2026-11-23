@@ -189,6 +189,8 @@ def _origin(url: str) -> str:
         raise Refused("insecure_origin")
     if port is None:
         port = 443 if scheme == "https" else 80
+    if ":" in host:  # IPv6: keep the brackets so host and port cannot run together
+        host = f"[{host}]"
     return f"{scheme}://{host}:{port}"
 
 

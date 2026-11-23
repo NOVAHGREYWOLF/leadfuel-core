@@ -139,7 +139,7 @@ backend refuses.
 
 ## Verified and taken on trust
 
-- Verified by this desk: the handle layer and its 34 tests pass locally with fake values
+- Verified by this desk: the handle layer and its 36 tests pass locally with fake values
   (`python -m pytest tests/test_credhandles.py`); the existing bridge's modes and its no-show-in-chat
   reasoning, read from `lfdesk/vault/__init__.py`, `tools.py`, `secret.py` and `SETUP.md`.
 - Taken on trust: the dates and wording of the four asks, from the queue item's planner fields; the

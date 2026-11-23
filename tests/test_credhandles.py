@@ -118,6 +118,8 @@ def test_handle_shows_no_ref_backend_or_value():
 @pytest.mark.parametrize("origin", [
     "https://router.example.test.evil.test",   # lookalike suffix
     "https://evil.test/?next=https://router.example.test",
+    "https://router.example.test@evil.test",   # userinfo: the real host is evil.test
+    "https://router.example.test.",            # trailing dot is a different string, refused
     "https://router.example.test:8443",        # same host, other port
     "http://router.example.test",              # downgrade
     "javascript:alert(1)",
@@ -141,6 +143,9 @@ def test_loopback_http_allowed_other_http_refused_at_register():
     broker = HandleBroker(approver=lambda r: True)
     broker.register(label="dev", backend=MemoryBackend({}), ref="x", kind="token",
                     origins=("http://localhost:8080",), sinks=("type",))
+    v6 = broker.register(label="v6", backend=MemoryBackend({}), ref="x", kind="token",
+                         origins=("http://[::1]:8080",), sinks=("type",))
+    assert v6.origins == ("http://[::1]:8080",)
     with pytest.raises(Refused):
         broker.register(label="bad", backend=MemoryBackend({}), ref="x", kind="token",
                         origins=("http://router.example.test",), sinks=("type",))
