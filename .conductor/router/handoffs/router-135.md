@@ -27,3 +27,18 @@ Do not rotate while agents run. At the cap: stop refilling, wait for the running
 
 ## Addendum (13:5x PT): ROUTER #134 stays open
 #134 addendum bd0ca84 is on origin (verified with ls-remote, newest handoff: old-cards audit from NODE 19, NovahOS desk). A NovahOS-usable background Opus agent a79a6007c03162362 runs inside #134's process and dies if #134 is archived. Its report path F:\Claude Sessions\handoff\NODE-novah-estate-part-13\novahos-usable\REPORT.md does not exist yet (checked). Do NOT archive #134 (local_1e60df5f) until that report exists or the owner accepts the loss.
+
+## Wave 3 results so far (14:1x PT; claims from agent reports unless marked; PR links are github.com/NOVAHGREYWOLF/<repo>/pull/N)
+DONE: chats-11 password-manager design + 36 tests (leadfuel-core 90). p16-1 walk scoreboard, 52 tests, 0/108 passed (leadfuel-core 92; page not published; handoff F:\Claude Sessions\handoff\ROUTER-135\p16-1\NOTE.md).
+CONTINUING (agent hit its cap; a continuation reads the note): firstwalk+chats-2 (leadfuel-core 91, note in worktree agent-ab0bad36...) restarted; fold-s-autonomy (branch doors/fold-s-autonomy 4e80babd, 121 tests, no PR yet) restarted; W04 (local branch node/w04-turn-on d403eee in F:\Leadfuel\.claude\worktrees\w04-turn-on; estate repo push is DISABLED, only VAULT sync pushes) restarted; W11 built (branch node/w11-phone-icons 924937b, 30 tests) and fold-a-phone spec ready (branch node/fold-a-phone), both estate repo, no PR possible; G40 design note F:\Claude Sessions\handoff\ROUTER-135\fold-a-G40\HANDOFF.md (branch doors/local-ai-approval, no code); desks-3-6 (leadfuel-core 93, Siri guide + Stop-LeakedScans.ps1, handoff on that branch); redline-6 (leadfuel-core 94 triage: all 57 gaps mostly landed, build-now GAP-03/04/05 incl. a real defect: assistant/turn.py drops meta warnings; worktree F:\Leadfuel\.claude\worktrees\redline-6-gap-triage).
+Refills started: mail2-38 (multi-model chat), mail-25 (phone link preview + face photo), W04c, autonomy-c, firstwalk-c.
+## Owner steps collected (exact; attach to the work they block)
+- chats-11: go/no-go on docs/CHATS-11_CREDENTIAL_HANDLES_DESIGN.md section 5 | blocks Windows Credential Manager backend, type-into-field, credential screen.
+- firstwalk/p16-1: owner walks lines L01-L15 and rooms R01-R09 and marks pass/fail; confirm which Atlas is the original and mockup M2 | blocks scoreboard cells leaving not tested.
+- autonomy: approve scope D1/D2 in FOLD-S-AUTONOMY-001.md; set grant thresholds and flip STANDING_GRANT_ENABLED in production | blocks T1-T4 wiring, skills reaching step 3.
+- W04: make the Turn on taps on GREYWOLF (15-TURN-ON-RUNBOOK sections 1-7), answer q9564; run the part 21 build wrapper under heavy_lock | blocks NOT-YET rows, installed window.
+- desks-3-6: iPhone Tailscale connected then Safari overlord :8106, run Pair-Phone.cmd and type the code; run Stop-LeakedScans.ps1 -Apply on GREYWOLF | blocks phone chat and Siri; about 1 core of CPU.
+- W11: answer q9308 (try NovahOS from the desktop icon), give his word per icon for lfdesk.install.retire; decide q9243 HTTPS | blocks retiring any old icon.
+- G40: set LOCAL_AI_INWARD_WITHOUT_APPROVAL on /admin/system-settings after the build lands | blocks local-model own-data writes without a typed approval.
+- redline-6: approve order in docs/ONE_APP_GAP_TRIAGE.md | blocks which slice goes first.
+Findings: GREYWOLF CPU is 100% with 24-28 claude.exe running and two leaked find / scans: keep agents at or under 20 total.
