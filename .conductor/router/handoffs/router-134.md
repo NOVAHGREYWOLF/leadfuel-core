@@ -21,6 +21,5 @@ D03 table F:\Claude Sessions\handoff\NODE-novah-estate-part-13\D03\table.md (pro
 
 ## Added after note (2026-11-23 late)
 - NODE 19 audit of old Router desk cards: F:\Claude Sessions\handoff\NODE-novah-estate-part-13\OLD-CARDS-AUDIT-2026-11-23.md (115 answered with no routed field, 40 unanswered, first 1000 docs only). Sweep each against current state before routing; ask the owner only about unanswered cards still true (queue C01-C03).
-- NovahOS desk is a background Opus agent (a79a600, resumed after a restart): report at F:\Claude Sessions\handoff\NODE-novah-estate-part-13
-ovahos-usable\REPORT.md. 059 order: 20-agent cap continuously, NovahOS first, 137 picks, no new cards for non-blocking items.
+- NovahOS desk is a background Opus agent (a79a600, resumed after a restart): report at F:\Claude Sessions\handoff\NODE-novah-estate-part-13\novahos-usable\REPORT.md. 059 order: 20-agent cap continuously, NovahOS first, 137 picks, no new cards for non-blocking items.
 - DOORS 114 archived (PR 89 merged 56ede1d).
