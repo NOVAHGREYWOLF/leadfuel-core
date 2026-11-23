@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model compare mockup</title>
+<!--
+  mail2-38 mockup: one prompt, several LOCAL models, answers side by side, inside the NovahOS chat.
+  This file is the picture the code in modelcompare/ is built to. It is not connected to anything:
+  every name, number and answer below is SAMPLE DATA, and the page loads nothing over the wire
+  (no script src, no stylesheet link, no font, no image URL). tests/test_modelcompare.py checks that.
+  Tokens are copied from home-node/app/assistant/ui/style.css (dark by default, light on request).
+-->
+<style>
+:root{
+  color-scheme:dark;
+  --ground:#09090e; --surface:#101019; --surface-2:#171725; --surface-3:#1d1d2e;
+  --ink:#ececf1; --ink-2:rgba(236,236,241,.85); --muted:#8e8e9e;
+  --line:#262633; --line-2:#34344a;
+  --accent:#6366f1; --accent-lit:#b9b6ff; --on-accent:#ffffff;
+  --up:#34d399; --up-soft:rgba(52,211,153,.14);
+  --down:#fb7185; --down-soft:rgba(244,63,94,.14);
+  --unk:#fbbf24; --unk-soft:rgba(251,191,36,.14);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",Monaco,Consolas,"Liberation Mono",monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --ground:#f4f5fa; --surface:#ffffff; --surface-2:#f0f1f8; --surface-3:#e7e8f3;
+  --ink:#0b0c14; --ink-2:rgba(28,30,46,.82); --muted:rgba(30,32,46,.66);
+  --line:rgba(10,12,30,.10); --line-2:rgba(10,12,30,.18);
+  --accent:#5048e5; --accent-lit:#5048e5;
+  --up:#059669; --up-soft:#ecfdf5; --down:#be123c; --down-soft:#fff1f2; --unk:#92400e; --unk-soft:#fffbeb;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font:14px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;font-size:13px;padding:6px 13px;border-radius:7px;cursor:pointer;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2)}
+button:hover:not(:disabled){border-color:var(--accent);color:var(--accent-lit)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+button.primary:hover:not(:disabled){color:var(--on-accent);filter:brightness(1.1)}
+button.danger{border-color:var(--down);color:var(--down)}
+button:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* the strip that says this is a picture, and lets you flip between its moments */
+.strip{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.strip b{color:var(--unk)}
+.strip .scenes{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.strip button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-lit);background:var(--surface-3)}
+.wrap{max-width:1240px;margin:18px auto;padding:0 16px}
+.caption{margin:0 0 12px;color:var(--muted);font-size:13px}
+
+/* the NovahOS window, reduced to what this feature touches */
+.win{display:grid;grid-template-columns:52px 210px 1fr;min-height:640px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.rail{background:var(--depth,#07070c);border-right:1px solid var(--line);padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.rail i{display:block;width:30px;height:30px;border-radius:8px;background:var(--surface-3)}
+.rail i.on{background:var(--accent)}
+.side{border-right:1px solid var(--line);padding:12px;color:var(--muted);font-size:13px}
+.side h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.side div{padding:6px 8px;border-radius:6px}
+.side div.on{background:var(--surface-3);color:var(--ink)}
+.main{display:flex;flex-direction:column;min-width:0}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.bar .t{font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;border:1px solid var(--line-2);color:var(--muted);background:var(--surface-2)}
+.pill.local::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--up)}
+.scroll{flex:1;padding:16px;overflow:auto}
+.msg{max-width:760px;margin:0 0 14px}
+.msg.user{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.msg .who{font-size:12px;color:var(--muted);margin-bottom:2px}
+
+/* the compare card: this is the new thing */
+.cmp{border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);padding:14px;margin:6px 0 14px}
+.cmp-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
+.cmp-head .ask{flex:1 1 280px;min-width:0}
+.cmp-head .ask small{display:block;color:var(--muted);font-size:12px}
+.cmp-head .acts{display:flex;gap:6px;flex-wrap:wrap}
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.lane{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);overflow:hidden}
+.lane[data-state="running"]{border-color:var(--accent)}
+.lane[data-state="error"]{border-color:var(--down)}
+.lane header{padding:9px 11px;border-bottom:1px solid var(--line)}
+.lane .name{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.lane .meta{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:4px;font-size:12px;color:var(--muted)}
+.tag{padding:0 7px;border-radius:999px;border:1px solid var(--line-2);font-size:11.5px}
+.tag.warn{color:var(--unk);border-color:var(--unk);background:var(--unk-soft)}
+.state{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+.state.queued{color:var(--muted)} .state.running{color:var(--accent-lit)} .state.done{color:var(--up)}
+.state.error,.state.stopped{color:var(--down)} .state.skipped{color:var(--unk)}
+.body{padding:10px 11px;flex:1;min-height:150px;white-space:pre-wrap;word-wrap:break-word;font-size:13.5px}
+.body.empty{color:var(--muted);font-style:italic}
+.caret::after{content:"";display:inline-block;width:7px;height:1em;vertical-align:text-bottom;margin-left:2px;background:var(--accent-lit);animation:b 1s steps(2) infinite}
+@keyframes b{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.caret::after{animation:none}}
+.lane footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 11px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.lane footer button{white-space:nowrap;flex:none}
+.msg.user.pending{border-style:dashed}
+.note{margin:10px 2px 0;color:var(--muted);font-size:12.5px}
+.kept{border-left:3px solid var(--up);padding-left:10px}
+
+/* the composer, with compare switched on */
+.composer{border-top:1px solid var(--line);padding:12px 16px;background:var(--surface)}
+.row{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;min-height:44px;resize:vertical;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px}
+.bar2{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-top:8px}
+.toggle{display:inline-flex;align-items:center;gap:6px}
+.toggle[aria-pressed="true"]{border-color:var(--accent);color:var(--accent-lit);background:var(--surface-3)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 6px 3px 10px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);font-family:var(--mono);font-size:12px}
+.chip button{padding:0 6px;border:0;background:none;color:var(--muted);font-size:14px;line-height:1.4}
+.chip.refused{border-color:var(--down);color:var(--down);background:var(--down-soft)}
+.chip.refused s{opacity:.9}
+.count{color:var(--muted);font-size:12px;margin-left:auto}
+.banner{margin:8px 0 0;padding:8px 11px;border-radius:8px;border:1px solid var(--down);background:var(--down-soft);color:var(--ink);font-size:13px}
+.banner b{color:var(--down)}
+.help{margin:8px 0 0;color:var(--muted);font-size:12.5px}
+.sr{position:absolute;left:-9999px}
+
+@media (max-width:900px){
+  .win{grid-template-columns:44px 1fr}
+  .side{display:none}
+}
+@media (max-width:560px){
+  .win{grid-template-columns:1fr}
+  .rail{flex-direction:row;padding:6px 10px;border-right:0;border-bottom:1px solid var(--line)}
+  .rail i{width:26px;height:26px}
+  .lanes{grid-template-columns:1fr}
+  .count{margin-left:0}
+}
+</style>
+</head>
+<body>
+<div class="strip" role="region" aria-label="Mockup controls">
+  <span><b>MOCKUP.</b> mail2-38, sample data, connected to nothing.</span>
+  <span class="scenes" role="group" aria-label="Moment to show">
+    <button type="button" data-scene="ready" aria-pressed="true">1 Ready</button>
+    <button type="button" data-scene="running" aria-pressed="false">2 Running</button>
+    <button type="button" data-scene="finished" aria-pressed="false">3 Finished</button>
+    <button type="button" data-scene="kept" aria-pressed="false">4 Kept one</button>
+    <button type="button" data-scene="refused" aria-pressed="false">5 Refused</button>
+    <button type="button" id="theme" aria-pressed="false">Light</button>
+  </span>
+</div>
+
+<div class="wrap">
+  <p class="caption" id="caption"></p>
+  <div class="win" id="win" aria-live="off">
+    <nav class="rail" aria-label="Panes (sample)"><i class="on"></i><i></i><i></i><i></i><i></i></nav>
+    <aside class="side" aria-label="Chats (sample)">
+      <h4>Today</h4>
+      <div class="on">Why is the first answer slow?</div>
+      <div>Draft: reply to Dana</div>
+      <h4 style="margin-top:14px">Earlier</h4>
+      <div>Backup restore notes</div>
+    </aside>
+    <main class="main">
+      <div class="bar"><span class="t">Why is the first answer slow?</span><span class="pill local">Local, this PC</span></div>
+      <div class="scroll" id="scroll"></div>
+      <div class="composer" id="composer"></div>
+    </main>
+  </div>
+  <noscript><p class="caption">This mockup needs its small script to switch moments. Nothing in it is connected to anything.</p></noscript>
+</div>
+
+<script>
+/* SAMPLE DATA. Model ids are the kind the local engine lists; sizes and timings are invented for the picture. */
+var PROMPT = "In two sentences, why is a local model slower the first time it answers?";
+var M = {
+  a: {id:"qwen2.5:7b-instruct-q4_K_M", p:"7.6B", gb:"4.7 GB"},
+  b: {id:"mistral:7b", p:"7.2B", gb:"4.4 GB"},
+  c: {id:"qwen3:4b-instruct-2507-q8_0", p:"4.0B", gb:"4.3 GB"},
+  d: {id:"qwen2.5:14b-instruct-q4_K_M", p:"14.8B", gb:"9.0 GB", slow:true}
+};
+var T = {
+  a: "The model has to be read from disk into the graphics card's memory before it can answer, and that load happens once. After that it stays resident, so later answers start at once.",
+  b: "On the first request the runtime loads the model's weights into memory, which takes seconds. Later requests reuse the loaded copy, so only the first one pays that cost.",
+  c: "Loading the weights into memory is the slow part. Once they are loaded the model answers quickly, so only the first request waits."
+};
+var SCENES = {
+  ready: {cap:"Compare is switched on in the composer. Three local models are chosen; the Compare button says how many. Nothing has been sent.", lanes:null, composer:{on:true, chips:["a","b","c"]}},
+  running: {cap:"The models run one after another, because this PC's card holds one at a time. Lane 1 is finished, lane 2 is streaming, lane 3 waits. Skip drops only the current one; Stop ends the rest.",
+    lanes:[
+      {m:"a", s:"done", t:T.a, foot:"first token 1.8 s, 31 tokens, 6.2 s"},
+      {m:"b", s:"running", t:"On the first request the runtime loads the model's weights into memory, which takes sec", foot:"running 3.1 s"},
+      {m:"c", s:"queued", t:"", foot:"waits for lane 2"}
+    ], acts:["skip","stop"], composer:{on:true, chips:["a","b","c"], disabled:true}},
+  finished: {cap:"All lanes have ended. Each finished lane offers Use this answer. A lane that was skipped keeps what it had, marked as not finished, and cannot be chosen.",
+    lanes:[
+      {m:"a", s:"done", t:T.a, foot:"first token 1.8 s, 31 tokens, 6.2 s", pick:true},
+      {m:"b", s:"done", t:T.b, foot:"first token 2.9 s, 29 tokens, 7.4 s", pick:true},
+      {m:"c", s:"skipped", t:"Loading the weights into memory is the slow", foot:"skipped by you after 4.0 s, not finished"}
+    ], acts:["copy","discard"], composer:{on:true, chips:["a","b","c"]}},
+  kept: {cap:"Nothing was saved until the pick. Choosing one writes your question and that answer into the chat, with one line saying where it came from. The other answers stay available to copy until you leave this chat.",
+    kept:{m:"a", t:T.a, line:"Chosen from 3 local models. Next messages use qwen2.5:7b-instruct-q4_K_M."}, composer:{on:false, chips:[]}},
+  refused: {cap:"A model that is not on this PC is refused before anything runs. A cloud model is a separate decision of yours and has no switch here. Nothing was sent.",
+    lanes:null, refuse:[{id:"claude-sonnet", why:"not on this PC"}], composer:{on:true, chips:["a","d"], refused:true, banner:"claude-sonnet was not added: this compare is local only. A cloud model needs your decision first, and costs money per model, so it is not a fallback."}}
+};
+
+function el(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+function stateLabel(s){ return {queued:"Queued", running:"Running", done:"Done", skipped:"Skipped", error:"Error", stopped:"Stopped"}[s]; }
+function icon(s){ return {queued:"○", running:"◐", done:"✓", skipped:"↷", error:"!", stopped:"■"}[s]; }
+
+function lane(L){
+  var m=M[L.m], d=el("article","lane"); d.dataset.state=L.s;
+  var h=el("header"), n=el("div","name",m.id); h.appendChild(n);
+  var meta=el("div","meta");
+  var st=el("span","state "+L.s, icon(L.s)+" "+stateLabel(L.s)); meta.appendChild(st);
+  meta.appendChild(el("span","tag",m.p+" · "+m.gb));
+  if(m.slow) meta.appendChild(el("span","tag warn","slower here: bigger than the card"));
+  h.appendChild(meta); d.appendChild(h);
+  var b=el("div","body"+(L.t?"":" empty")+(L.s==="running"?" caret":""), L.t||"Waiting its turn."); d.appendChild(b);
+  var f=el("footer"); f.appendChild(el("span",null,L.foot||""));
+  if(L.pick){ var p=el("button","primary","Use this answer"); p.type="button"; f.appendChild(p); }
+  d.appendChild(f); return d;
+}
+
+function card(S){
+  var c=el("section","cmp"); c.setAttribute("aria-label","Comparison");
+  var h=el("div","cmp-head"), a=el("div","ask"); a.appendChild(el("div",null,"Comparing "+S.lanes.length+" local models"));
+  a.appendChild(el("small",null,"One at a time, on this PC. Nothing leaves it.")); h.appendChild(a);
+  var acts=el("div","acts");
+  (S.acts||[]).forEach(function(k){
+    var b=el("button", k==="stop"?"danger":"", {skip:"Skip current",stop:"Stop",copy:"Copy all answers",discard:"Discard"}[k]); b.type="button"; acts.appendChild(b);
+  });
+  h.appendChild(acts); c.appendChild(h);
+  var g=el("div","lanes"); g.setAttribute("aria-live","polite"); S.lanes.forEach(function(L){ g.appendChild(lane(L)); }); c.appendChild(g);
+  c.appendChild(el("p","note", S.lanes.some(function(L){return L.pick;}) ? "Pick one to keep it in this chat. Nothing is saved until you pick." : "Answers appear as each model gets its turn."));
+  return c;
+}
+
+function composer(S){
+  var C=S.composer, box=document.getElementById("composer"); box.textContent="";
+  var row=el("div","row"), ta=el("textarea"); ta.value=(S.lanes&&S.lanes.length)||S.kept?"":PROMPT; ta.setAttribute("aria-label","Message"); ta.rows=2; ta.disabled=!!C.disabled;
+  var send=el("button","primary", C.on ? "Compare "+C.chips.length : "Send"); send.type="button"; send.disabled=!!C.disabled || (C.on && C.chips.length<2);
+  row.appendChild(ta); row.appendChild(send); box.appendChild(row);
+  var bar=el("div","bar2");
+  var t=el("button","toggle","Compare models"); t.type="button"; t.setAttribute("aria-pressed", C.on?"true":"false"); bar.appendChild(t);
+  if(C.on){
+    C.chips.forEach(function(k){
+      var ch=el("span","chip"); ch.appendChild(el("span",null,M[k].id));
+      var x=el("button",null,"×"); x.type="button"; x.setAttribute("aria-label","Remove "+M[k].id); ch.appendChild(x); bar.appendChild(ch);
+    });
+    if(C.refused){ var r=el("span","chip refused"); r.appendChild(el("s",null,"claude-sonnet")); r.appendChild(el("span",null,"refused")); bar.appendChild(r); }
+    var add=el("button",null,"+ Add local model"); add.type="button"; bar.appendChild(add);
+    bar.appendChild(el("span","count", C.chips.length+" of 4 chosen, 2 needed"));
+  }
+  box.appendChild(bar);
+  if(C.banner){ var bn=el("div","banner"); bn.setAttribute("role","alert"); bn.appendChild(el("b",null,"Refused. ")); bn.appendChild(document.createTextNode(C.banner)); box.appendChild(bn); }
+  box.appendChild(el("p","help", C.on ? "Local models only. They run one after another on this PC, with no tools and no files, and nothing is saved until you pick an answer." : "Compare is off: one model answers, as today."));
+}
+
+function render(name){
+  var S=SCENES[name], sc=document.getElementById("scroll"); sc.textContent="";
+  document.getElementById("caption").textContent=S.cap;
+  var u=el("div","msg user"); u.appendChild(el("div","who","You")); u.appendChild(el("div",null,"Does Ollama keep a model loaded between questions?")); sc.appendChild(u);
+  var a=el("div","msg"); a.appendChild(el("div","who","qwen2.5:7b-instruct-q4_K_M")); a.appendChild(el("div",null,"Yes. It keeps the model in memory for a while after the last request (30 minutes here), so the next question skips the load.")); sc.appendChild(a);
+  if(S.lanes){
+    var u2=el("div","msg user pending"); u2.appendChild(el("div","who","You, not saved until you pick an answer")); u2.appendChild(el("div",null,PROMPT)); sc.appendChild(u2);
+    sc.appendChild(card(S));
+  }
+  if(S.kept){
+    var u3=el("div","msg user"); u3.appendChild(el("div","who","You")); u3.appendChild(el("div",null,PROMPT)); sc.appendChild(u3);
+    var k=el("div","msg kept"); k.appendChild(el("div","who",M[S.kept.m].id)); k.appendChild(el("div",null,S.kept.t)); k.appendChild(el("div","note",S.kept.line)); sc.appendChild(k);
+  }
+  composer(S);
+  document.querySelectorAll(".scenes button[data-scene]").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.scene===name?"true":"false"); });
+}
+
+document.querySelectorAll(".scenes button[data-scene]").forEach(function(b){ b.addEventListener("click", function(){ render(b.dataset.scene); }); });
+document.getElementById("theme").addEventListener("click", function(e){
+  var root=document.documentElement, light=root.getAttribute("data-theme")==="light";
+  if(light) root.removeAttribute("data-theme"); else root.setAttribute("data-theme","light");
+  e.currentTarget.setAttribute("aria-pressed", light?"false":"true"); e.currentTarget.textContent=light?"Light":"Dark";
+});
+var first=(location.hash||"").replace("#","");
+render(SCENES[first] ? first : "ready");
+if(location.hash==="#light"){ document.getElementById("theme").click(); }
+</script>
+</body>
+</html>
