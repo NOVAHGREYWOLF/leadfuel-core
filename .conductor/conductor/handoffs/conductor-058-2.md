@@ -25,3 +25,10 @@ Archive 055; fix my sidebar group (slot run, cannot be grouped); launcher/curren
 - ROUTER #133 reports is LIVE: local_132e3270-ba4e-4bc7-889e-a8ae0d3bc14f (slot way-slot-04, launched, GO sent). Taken on trust from its reports: hub #1148 merged (I verified with gh), REP-R6 board page on estate main fc14519, local only. Rows I set done: REP-R1, REP-R5, REPORTS-MASTER-STORE-SILENT, WATCH/REPORTS-DELIVERABILITY-DORMANT, WATCH/REP-R6 (closed_notes say what 058 verified).
 - The owner rejected my arming way-slot-02 for CONDUCTOR 059. Do NOT arm a slot for a successor without his fresh word for that slot (memory: feedback_nests_not_slots). Paste prompt route only; no CONDUCTOR 059 is live as of this write (list_sessions checked).
 - Still owed as owner words: machines-10, P03, q9595 B, proof email, q9603, q9604, q9605, q9564, coverage-57, q9518 B, REP-R0/R3/R4/R7.
+
+## Update 2026-11-22 Pacific 17:30 (owner "start everything")
+- Owner words, read by me: "make sure everything that can be coded designed made starts being made. Why are we held for anything. Burn through the credits. Keep going until you have to have a question from me. End to end."
+- q9604 A and q9621 A (read myself): desks/node-2 holds 66 QV2 rows (3 moved to desk OTHER), desks/node-archive holds 9 done rows, desks/node trimmed to 257,846 bytes. Told #132 DONE (delivered).
+- 137 new picks written (ranks 2001 to 2137, `by` quotes the owner), 3 batches committed. Screen was a KEYWORD filter, routers must re-screen. Left out: QV2-machines-10 (owed owner word), 342 keyword-guarded rows, needs-owner, blocked, unverified. 21 rows already had a pick (some in an older nested data.data shape that a decided_at query misses: list the collection, do not query by decided_at).
+- #132 and #133 told to run everything startable at the 20-agent cap and ask only true owner questions. Their replies are not in yet.
+- Still: no CONDUCTOR 059 live; owner rejected arming a slot; paste prompt route only.
