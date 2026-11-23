@@ -1,14 +1,12 @@
 # Reports rebuild: one command email, every report attached
 
-## Status 2026-11-22 (refresh; this block overrides the dated sections below where they conflict)
-- **Not only a plan.** Steps 3, 4 and 5 have code on hub main (novahub #672, #683, #701). Steps 1, 2 and 6 are recorded in the completion table below; not re-verified in this refresh.
-- **Attachments are gated** by `MASTER_ATTACH_REPORTS` and `MASTER_ATTACH_PDF`. #701 added `pdf_engine.py` and `report_pdf.py`. The PDF path stays off until a real send lands.
-- **Side senders retired** by novahub #672, pinned by `tests/test_side_senders_retired.py`. Old line references removed.
-- **Pull model partly built.** `spoke_authority.UNCONTESTED_BUILDERS` exists and #683 added `prime_digest.py`. `SPOKE_SUBMIT_AUTHORITY` is still off.
-- **Roster merged since the plan:** Ledger report (novahub #1048, `ledger_report.py`), Estate weekly (#696), DMARC digest (#695, dormant until `DMARC_MAILBOX` is set), Scope and Core builders (#694).
-- **Format superseded.** The PDF-first plan predates owner decision q9001 A (offline HTML). **Owner goal: ALL reports work locally.**
-- **Open (novahub):** #1134 offline attachments for all reports; #1136 fieldy-local; #1102 WeasyPrint fix (open, not draft); #1108 report registry (draft). #1135 merged 2026-11-22.
-- **Proof send:** the proof send script covers only health and location so far.
+## Status 2026-11-22 (refresh 2026-11-23; this block overrides the dated sections below where they conflict)
+Verified with `gh` against `NOVAHGREYWOLF/novahub` on 2026-11-22 (UTC dates unless marked Pacific).
+- **Hub PRs merged:** #1048 (Ledger), #1135, #1134, #1108 (38-row report registry, REP-R1), #1139 (proof-send script, dry run by default), #1141 (every report runs locally from a sample day), #1140 (command book written by a local model by default), #1148 (REP-R5 horizons: quarter, all-time, recency weight, coverage, future block), #1149 (REP-R6 reports board and health, retirement dry-run plan), #1136 (Fieldy local write-up, merge `158c3cbc`, 2026-11-23 01:14 UTC, which is 2026-11-22 5:14 pm Pacific).
+- **Built, local only (no remote):** REP-R2 daily-report routine and the REP-R6 app board page, on the estate repo main.
+- **Found already fixed:** REPORTS-MASTER-STORE-SILENT and REPORTS-DELIVERABILITY-DORMANT, by hub #1045 and #1046.
+- **Still gated on the owner:** REP-R0 (production read), REP-R3 (channel and test send), REP-R4 (PDF versus offline HTML), REP-R7 (cutover), the production data copy, the real proof send, and retirement of scheduled reports A3 to A7. Card q9606 was answered C, hold: A3 to A7 are **not** retired.
+- **Format:** the PDF-first plan below predates owner decision q9001 A (offline HTML). Owner goal: all reports work locally.
 
 Decided 2026-09-29 with Novah. Work happens in `NOVAHGREYWOLF/novahub` (report code lives there; this repo is only the plan record).
 Each step below is one session: finish, open a draft PR, retire.
@@ -69,12 +67,12 @@ The plan's steps 1 to 6 above map to the tasks below. The previous reconciliatio
 | P5-F5 | scan source coverage once per pull (#700) | merged 2026-10-02 | verified |
 | P9 | attach every report as a PDF (#701), WeasyPrint libs in the build (#714), print CSS (#722) | merged | verified. In production the PDF engine reported itself missing at boot (reported, from a deploy log); fix is deploy configuration, an owner step |
 | Desk Log | daily Desk Log (#742) | merged | verified |
-| Spend | metered LLM spend, gate and fixed floor, as the `spend` spoke; ops roster is core + spend + deliverability (novahub#775) | draft | verified (this PR). `health_ops` and `coverage` were not built: `core` already reports system health and source coverage |
-| Visual rebuild | every report as one offline interactive HTML file (novahub#774) | open draft | verified state; owned by the reports visual desk |
+| Spend | metered LLM spend, gate and fixed floor, as the `spend` spoke; ops roster is core + spend + deliverability (novahub#775) | merged 2026-10-07 | verified. `health_ops` and `coverage` were not built: `core` already reports system health and source coverage |
+| Visual rebuild | every report as one offline interactive HTML file (novahub#774) | merged 2026-10-07 | verified |
 | P10 | end-to-end check, briefing lands with every attachment | not run | needs a real send, which leaves the machine: owner approval first |
 
 ## What is left, in order
-1. **Land the Spend report** (novahub#775) and the visual rebuild (#774) through the merge train.
+1. **Owner gates (2026-11-22 status block above):** REP-R0, REP-R3, REP-R4, REP-R7, the production data copy, the real proof send, and retirement of A3 to A7 (card q9606, held).
 2. **PDF engine in production**: a deploy-configuration change so the boot line reads ready (owner step). Check after any fix that the engine reports ready at boot.
 3. **DMARC_MAILBOX** (owner step): until it is set the Deliverability report stays dormant.
 4. **Proof send (P10)**: one real briefing to the owner's inbox through the proof-send gate, with every attachment. Leaves the machine, so the owner runs it, after item 2.
