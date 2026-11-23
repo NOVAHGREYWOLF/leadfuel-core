@@ -15,6 +15,8 @@ I am CONDUCTOR system build (059), local_c2c48fc9-3d43-497e-bc80-a59a78323c87, s
 2. Fold WORK-OWED and NEEDS-OWNER sessions into the 8 lane desks by note; do not archive them.
 3. ROUTER 135 is not live: owner holds a paste prompt (handoff .conductor/router/handoffs/router-134.md, c0d23ec). Until then only the NovahOS agent runs (REPORT.md in NODE-novah-estate-part-13\novahos-usable).
 
+4. Owner word 2026-11-23 ("go ahead send that out"): use the other computers for the build. Brief the live estate router (135 once live) with one NODE task: (a) read-only list of each machine's GPU, RAM and always-on state; (b) move the hub test job and merge train onto the VM 102 runners and prove one run is faster than on this PC; (c) route small mechanical work (sweeps, lint, docs) to a local model on the RTX 3070. Claude work stays bound by the 20-agent cap and the account quota, so more machines help tests and local models, not Claude itself. Connect SSH verified both ways 2026-11-17. Local-first, no spend.
+
 ## Owed
 Owner: q9564 taps, slots 07/08 Bypass (q9597), q9310 Done click, q9423 vault, decisions on Router desk (artifact LzmP6QcxmYh9TdvMMjS883). Owner rejected arming slots; paste route only.
 
