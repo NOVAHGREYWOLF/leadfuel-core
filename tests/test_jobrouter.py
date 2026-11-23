@@ -250,12 +250,52 @@ def test_the_older_of_two_ages_wins(tmp_path):
 
 
 def test_timestamps_ahead_of_our_clock_are_not_trusted(tmp_path):
-    ahead = row("fakebox", 1.0, age=-3600)                             # collected an hour in the future
+    ahead = row("fakebox", 1.0, collected=iso(NOW + 3600))              # collected an hour in the future
     e = Env(tmp_path, two_hosts(), {"job": C(["fakebox"])}, [row("overlord"), ahead])
     code, text = e.cli("pick", "job")
     assert code == 3 and "ahead of this clock" in text
-    e.set_feed([row("overlord"), row("fakebox", 1.0, age=-30)], file_age=0)   # inside the slack: fine
+    e.set_feed([row("overlord"), row("fakebox", 1.0, collected=iso(NOW + 30))], file_age=0)   # inside the slack: fine
     assert e.cli("pick", "job")[0] == 0
+
+
+@pytest.mark.parametrize("field,junk", [("collected", "yesterday"), ("collected", "2026-11-22T00:00:00"),
+                                        ("facts_age_s", "60"), ("facts_age_s", -5), ("cpu_now_pct", "12"),
+                                        ("cpu15_pct", True)])
+def test_a_field_that_is_present_but_unusable_makes_the_host_unknown(tmp_path, field, junk):
+    broken = row("fakebox", 1.0)
+    broken[field] = junk                  # the other fields are fine: a half-broken row is still not evidence
+    e = Env(tmp_path, two_hosts(), {"job": C(["fakebox"])}, [row("overlord"), broken])
+    code, text = e.cli("pick", "job")
+    assert code == 3 and ("unusable" in text or "no CPU reading" in text), text
+    e.set_feed([row("overlord"), row("fakebox", 1.0)])                  # positive control
+    assert e.cli("pick", "job")[0] == 0
+
+
+@pytest.mark.parametrize("over,needle", [({"generated_ts": "soon"}, "generated_ts is not a usable number"),
+                                         ({"generated": "tomorrow"}, "not a time with a Z"),
+                                         ({"generated_ts": None, "generated": None}, "no usable generation time")])
+def test_a_feed_header_that_is_there_but_broken_is_an_error(tmp_path, over, needle):
+    e = Env(tmp_path, two_hosts(), {"job": C(["overlord"])}, [row("overlord")], **over)
+    code, text = e.cli("pick", "job")
+    assert code == 2 and needle in text, text
+
+
+def test_two_generation_stamps_that_disagree_the_older_wins(tmp_path):
+    e = Env(tmp_path, two_hosts(), {"job": C(["fakebox"])}, [row("overlord"), row("fakebox", 1.0)],
+            generated=iso(NOW - 900))                                   # ts says 30 s ago, the text says 15 minutes ago
+    code, text = e.cli("pick", "job")
+    assert code == 3 and "facts are" in text
+    e.set_feed([row("overlord"), row("fakebox", 1.0)])                  # positive control: they agree
+    assert e.cli("pick", "job")[0] == 0
+
+
+def test_a_job_file_whose_id_does_not_match_its_name_is_refused(tmp_path):
+    e = Env(tmp_path, two_hosts(), {"job": C(["overlord"])}, [row("overlord", threads=36)])
+    d = r.ensure_state(e.state)
+    write(os.path.join(d["pending"], "evil.json"), {"id": "../../escape", "class": "job"})
+    fake = FakeMachines()
+    code, text = e.cli("dispatch", runner=fake)
+    assert code == 2 and "job id does not match" in text and fake.runs == []
 
 
 def test_a_row_with_no_collection_time_is_unknown(tmp_path):

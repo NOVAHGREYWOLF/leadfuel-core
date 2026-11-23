@@ -95,6 +95,7 @@ EXIT_OK, EXIT_FAILED, EXIT_ERROR, EXIT_NO_HOST, EXIT_LOCKED = 0, 1, 2, 3, 4
 
 NOT_FOR_CLASS = "not a host this class may use"
 _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
+_JOB_ID_RE = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-z0-9][a-z0-9-]{0,62}-[0-9a-f]{6}$")
 
 HOST_KEYS = {"id", "hostnames", "threads", "ram_gb", "gpu", "always_on", "thermal_limited",
              "ceiling_cpu_pct", "in_cluster", "accepts_jobs", "in_feed", "exec", "note"}
@@ -345,11 +346,20 @@ def read_feed(path, now):
         if r["id"] in by_id:
             raise FeedError("utilization feed %s lists host %r twice" % (path, r["id"]))
         by_id[r["id"]] = r
-    gen = _num(doc.get("generated_ts"), 0, 4e9)
-    if gen is None:
-        gen = parse_time(doc.get("generated"))
-    if gen is None:
+    stamps = []
+    if doc.get("generated_ts") is not None:
+        g = _num(doc.get("generated_ts"), 0, 4e9)
+        if g is None:
+            raise FeedError("utilization feed %s: generated_ts is not a usable number" % path)
+        stamps.append(g)
+    if doc.get("generated") is not None:
+        g = parse_time(doc.get("generated"))
+        if g is None:
+            raise FeedError("utilization feed %s: 'generated' is not a time with a Z or offset" % path)
+        stamps.append(g)
+    if not stamps:
         raise FeedError("utilization feed %s has no usable generation time" % path)
+    gen = min(stamps)                         # two stamps that disagree: believe the older one
     limit = _num(doc.get("stale_after_s"), 1, 86400)
     limit = STALE_AFTER_S if limit is None else min(limit, STALE_AFTER_S)
     return Feed(path, gen, now - gen, limit, by_id)
@@ -364,33 +374,38 @@ def classify(host, feed, now, stale_after_s):
     row = feed.rows.get(host.id)
     if row is None:
         return HostState(UNKNOWN, "not listed in the utilization feed", none, none, none, none, False)
+    state = row.get("state")
+    if state != "up":
+        return HostState(UNKNOWN, "feed says state %r%s" % (state, _why(row)), none, none, none, none, False)
     limit = min(stale_after_s, feed.stale_after_s)
-    # How old are this host's facts NOW? Every way the feed lets us work it out; the oldest wins.
-    ages = []
-    collected = parse_time(row.get("collected"))
-    if collected is not None:
-        ages.append(now - collected)
-    fa = _num(row.get("facts_age_s"), 0, 1e9)
-    if fa is not None:
-        ages.append(fa + (now - feed.generated_ts))
-    ages.append(now - feed.generated_ts)       # the facts cannot be newer than the file that quotes them
-    age = max(ages)
+    # How old are this host's facts NOW? Every way the feed lets us work it out; the oldest wins. A
+    # field that is there but unusable makes the host unknown: a half-broken row is not evidence.
+    coll_raw, fa_raw = row.get("collected"), row.get("facts_age_s")
+    collected, fa = parse_time(coll_raw), _num(fa_raw, 0, 1e9)
+    if (coll_raw is not None and collected is None) or (fa_raw is not None and fa is None):
+        return HostState(UNKNOWN, "feed gives an unusable collection time or facts age for this host",
+                         none, none, none, none, False)
     if collected is None and fa is None:
         return HostState(UNKNOWN, "feed gives no collection time for this host, so its age is not known",
                          none, none, none, none, False)
+    ages = [now - feed.generated_ts]           # the facts cannot be newer than the file that quotes them
+    if collected is not None:
+        ages.append(now - collected)
+    if fa is not None:
+        ages.append(fa + (now - feed.generated_ts))
+    age = max(ages)
     if min(ages) < -FUTURE_SLACK_S:
         return HostState(UNKNOWN, "feed timestamps are %.0f s ahead of this clock; cannot trust them" % -min(ages),
                          none, none, none, none, False)
-    state = row.get("state")
-    if state != "up":
-        return HostState(UNKNOWN, "feed says state %r%s" % (state, _why(row)), none, none, none, age, False)
     if age > limit:
         return HostState(UNKNOWN, "facts are %.0f s old (limit %.0f s)%s"
                          % (age, limit, _file_age_hint(feed, limit)), none, none, none, age, False)
-    readings = [v for v in (_num(row.get("cpu15_pct")), _num(row.get("cpu_now_pct"))) if v is not None]
-    load = max(readings) if readings else None     # the busier of the 15-minute mean and now
-    if load is None:
+    raw = [row.get("cpu15_pct"), row.get("cpu_now_pct")]
+    vals = [_num(v) for v in raw]
+    readings = [v for v in vals if v is not None]
+    if not readings or any(v is None and rv is not None for v, rv in zip(vals, raw)):
         return HostState(UNKNOWN, "no CPU reading that is a number from 0 to 100", none, none, none, age, False)
+    load = max(readings)                        # the busier of the 15-minute mean and now
     ram = _num(row.get("ram_pct"))
     return HostState(UP, "facts %.0f s old" % age, load, ram, _num(row.get("ram_total_gb"), 0, 1e6), age,
                      bool(row.get("memory_bound")))
@@ -610,6 +625,8 @@ def _load_job(path):
         job = json.load(f)
     if not isinstance(job, dict) or not isinstance(job.get("id"), str) or not isinstance(job.get("class"), str):
         raise ValueError("not a job file")
+    if not _JOB_ID_RE.match(job["id"]) or os.path.basename(path) != job["id"] + ".json":
+        raise ValueError("job id does not match its file name")
     return job
 
 
@@ -759,7 +776,8 @@ def _note_deferral(ctx, d, job, kind, why, considered=None):
     """Log a deferral once per distinct reason, so a job waiting two days does not write 24 lines a day."""
     path = os.path.join(d["pending"], job["id"] + ".json")
     sig = "%s|%s" % (kind, why)
-    if job.get("deferred", {}).get("sig") == sig:
+    prior = job.get("deferred")
+    if isinstance(prior, dict) and prior.get("sig") == sig:
         return
     job = dict(job)
     job["deferred"] = {"sig": sig, "kind": kind, "why": why, "since": utc_iso(ctx.clock())}
@@ -802,7 +820,7 @@ def status(ctx):
             sub = parse_time(j.get("submitted_at"))
             if sub is not None:
                 entry["age_s"] = round(now - sub)
-            if j.get("deferred"):
+            if isinstance(j.get("deferred"), dict):
                 entry["waiting_because"] = j["deferred"].get("why")
             if where == "running":
                 cls = ctx.classes.get(j["class"])
