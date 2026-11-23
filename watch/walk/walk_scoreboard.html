@@ -1,0 +1,2513 @@
+<title>Walk Scoreboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  --ws-bg:#f1f4f6; --ws-surface:#ffffff; --ws-ink:#15202a; --ws-muted:#52606b; --ws-line:#d3dbe1; --ws-line-soft:#e4eaee; --ws-accent:#0b6a8a;
+  --ws-nt-fg:#46545e; --ws-nt-bg:#e6ebef; --ws-nt-dot:#9aa8b1;
+  --ws-pass-fg:#1b6a2e; --ws-pass-bg:#dcf0df; --ws-pass-dot:#2f9e4a;
+  --ws-fail-fg:#a2261c; --ws-fail-bg:#fbe3e0; --ws-fail-dot:#d33a2c;
+  --ws-unk-fg:#855000; --ws-unk-bg:#fdebc9; --ws-unk-dot:#d98a12;
+  --ws-clo-fg:#573d90; --ws-clo-bg:#eae3f6; --ws-clo-dot:#7b5cc7;
+  --ws-font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ws-mono:ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ws-bg:#0f161b; --ws-surface:#172028; --ws-ink:#e4ecf0; --ws-muted:#9db0bb; --ws-line:#2b3944; --ws-line-soft:#212d36; --ws-accent:#5bbbdb;
+    --ws-nt-fg:#aebdc6; --ws-nt-bg:#25313a; --ws-nt-dot:#5f6f7a;
+    --ws-pass-fg:#88d69c; --ws-pass-bg:#1a3423; --ws-pass-dot:#4cc06a;
+    --ws-fail-fg:#ff968c; --ws-fail-bg:#3a1c1a; --ws-fail-dot:#ff6f62;
+    --ws-unk-fg:#f3bb62; --ws-unk-bg:#37290f; --ws-unk-dot:#f0a93a;
+    --ws-clo-fg:#c2acf2; --ws-clo-bg:#2b2243; --ws-clo-dot:#a98ae8;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ws-bg:#0f161b; --ws-surface:#172028; --ws-ink:#e4ecf0; --ws-muted:#9db0bb; --ws-line:#2b3944; --ws-line-soft:#212d36; --ws-accent:#5bbbdb;
+  --ws-nt-fg:#aebdc6; --ws-nt-bg:#25313a; --ws-nt-dot:#5f6f7a;
+  --ws-pass-fg:#88d69c; --ws-pass-bg:#1a3423; --ws-pass-dot:#4cc06a;
+  --ws-fail-fg:#ff968c; --ws-fail-bg:#3a1c1a; --ws-fail-dot:#ff6f62;
+  --ws-unk-fg:#f3bb62; --ws-unk-bg:#37290f; --ws-unk-dot:#f0a93a;
+  --ws-clo-fg:#c2acf2; --ws-clo-bg:#2b2243; --ws-clo-dot:#a98ae8;
+  color-scheme:dark;
+}
+body{background:var(--ws-bg);color:var(--ws-ink);font-family:var(--ws-font);font-size:15px;line-height:1.5}
+.ws-wrap{max-width:1040px;margin-inline:auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ws-wrap *{box-sizing:border-box}
+.ws-wrap h1,.ws-wrap h2,.ws-wrap p,.ws-wrap ul,.ws-wrap dl,.ws-wrap dd{margin:0}
+.ws-wrap h1{font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.01em}
+.ws-wrap h2{font-size:18px;line-height:1.25;font-weight:700;text-wrap:balance}
+.ws-wrap a{color:var(--ws-accent);overflow-wrap:anywhere}
+.ws-wrap a:focus-visible,.ws-wrap button:focus-visible{outline:2px solid var(--ws-accent);outline-offset:2px}
+.ws-mono{font-family:var(--ws-mono);font-size:.86em}
+.ws-sub{color:var(--ws-muted);max-width:72ch;margin-top:6px}
+.ws-top{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:16px 28px;align-items:end;margin-top:18px}
+.ws-big{font-size:56px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ws-cap{color:var(--ws-muted);font-size:13.5px;margin-top:6px;max-width:30ch}
+.ws-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
+.ws-tile{font:inherit;color:inherit;text-align:left;cursor:pointer;padding:9px 11px;border:1px solid var(--ws-line);border-radius:8px;background:var(--ws-surface);min-width:0}
+.ws-tile b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.ws-tile span{font-size:12.5px;color:var(--ws-muted)}
+.ws-tile i{font-style:normal;font-weight:700}
+.ws-t-not-tested i{color:var(--ws-nt-dot)}.ws-t-pass i{color:var(--ws-pass-dot)}.ws-t-fail i{color:var(--ws-fail-dot)}.ws-t-unknown i{color:var(--ws-unk-dot)}.ws-t-closed i{color:var(--ws-clo-dot)}
+.ws-tile[aria-pressed="true"]{border-color:var(--ws-accent);box-shadow:0 0 0 1px var(--ws-accent)}
+.ws-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--ws-line-soft);margin-top:14px}
+.ws-bar i{display:block;height:100%}
+.ws-fresh{margin-top:12px;font-size:13px;color:var(--ws-muted)}
+.ws-banner{margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--ws-unk-bg);color:var(--ws-unk-fg);font-size:13.5px}
+.ws-banner p+p{margin-top:4px}
+.ws-nav{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:18px;font-size:14px}
+.ws-sec{margin-top:26px;min-width:0}
+.ws-sech{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 16px}
+.ws-count{font-size:13px;color:var(--ws-muted);font-variant-numeric:tabular-nums}
+.ws-blurb{color:var(--ws-muted);font-size:14px;margin-top:3px;max-width:75ch}
+.ws-defs{margin-top:8px;font-size:13px;color:var(--ws-muted);display:grid;gap:3px;max-width:80ch}
+.ws-defs dt{display:inline;font-weight:600;color:var(--ws-ink)}
+.ws-defs dd{display:inline}
+.ws-list{list-style:none;margin:10px 0 0;padding:0;border:1px solid var(--ws-line);border-radius:10px;background:var(--ws-surface);overflow:hidden}
+.ws-item{display:grid;grid-template-columns:9.5rem minmax(0,1fr);gap:4px 16px;padding:12px 14px;border-top:1px solid var(--ws-line-soft)}
+.ws-item:first-child{border-top:0}
+.ws-lab{font-weight:600;overflow-wrap:anywhere}
+.ws-text{margin-top:3px;overflow-wrap:anywhere;max-width:80ch}
+.ws-meta{margin-top:6px;font-size:13px;color:var(--ws-muted);display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.ws-warn{color:var(--ws-unk-fg);font-weight:600}
+.ws-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.ws-chip i{font-style:normal}
+.ws-s-not-tested{background:var(--ws-nt-bg);color:var(--ws-nt-fg)}
+.ws-s-pass{background:var(--ws-pass-bg);color:var(--ws-pass-fg)}
+.ws-s-fail{background:var(--ws-fail-bg);color:var(--ws-fail-fg)}
+.ws-s-unknown{background:var(--ws-unk-bg);color:var(--ws-unk-fg);outline:1px dashed var(--ws-unk-fg);outline-offset:-1px}
+.ws-s-closed{background:var(--ws-clo-bg);color:var(--ws-clo-fg)}
+.ws-when{display:block;margin-top:5px;font-size:12px;color:var(--ws-muted)}
+.ws-scroll{margin-top:10px;overflow-x:auto;border:1px solid var(--ws-line);border-radius:10px;background:var(--ws-surface)}
+.ws-tab{width:100%;border-collapse:collapse;font-size:14px}
+.ws-tab th,.ws-tab td{padding:9px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--ws-line-soft)}
+.ws-tab thead th{border-top:0;font-size:12.5px;color:var(--ws-muted);font-weight:600;white-space:nowrap}
+.ws-tab th[scope=row]{font-weight:600;min-width:11rem}
+.ws-tab .ws-claim{display:block;font-weight:400;font-size:12px;color:var(--ws-muted)}
+.ws-tab td{min-width:12rem}
+.ws-tab td a{font-size:12.5px}
+.ws-foot{margin-top:30px;font-size:12.5px;color:var(--ws-muted);max-width:80ch;display:grid;gap:6px}
+@media (max-width:620px){
+  .ws-top{grid-template-columns:minmax(0,1fr)}
+  .ws-item{grid-template-columns:minmax(0,1fr)}
+  .ws-big{font-size:46px}
+}
+</style>
+<main class="ws-wrap" id="walk-scoreboard">
+<h1>Walk scoreboard</h1>
+<p class="ws-sub">Every line of the root goal, NovahOS finished, as not tested, pass, fail, unknown or closed by design. A cell moves only when a run file exists, and every row links its proof. Until a run exists the link shows what proof is needed.</p>
+<div class="ws-top"><div><div class="ws-big" aria-label="0 / 108 cells passed over cells not closed by design">0 / 108</div><p class="ws-cap">cells passed / cells not closed by design</p></div><div class="ws-tiles"><button type="button" class="ws-tile ws-t-not-tested" data-filter="not-tested" aria-pressed="false"><b>106</b><span><i aria-hidden="true">○</i> not tested</span></button><button type="button" class="ws-tile ws-t-pass" data-filter="pass" aria-pressed="false"><b>0</b><span><i aria-hidden="true">✓</i> pass</span></button><button type="button" class="ws-tile ws-t-fail" data-filter="fail" aria-pressed="false"><b>1</b><span><i aria-hidden="true">✕</i> fail</span></button><button type="button" class="ws-tile ws-t-unknown" data-filter="unknown" aria-pressed="false"><b>1</b><span><i aria-hidden="true">?</i> unknown</span></button><button type="button" class="ws-tile ws-t-closed" data-filter="closed" aria-pressed="false"><b>0</b><span><i aria-hidden="true">■</i> closed by design</span></button></div></div>
+<div class="ws-bar" role="img" aria-label="Share of cells by status"><i style="width:98.148%;background:var(--ws-nt-dot)" title="not tested: 106"></i><i style="width:0.926%;background:var(--ws-fail-dot)" title="fail: 1"></i><i style="width:0.926%;background:var(--ws-unk-dot)" title="unknown: 1"></i></div>
+<p class="ws-fresh">Built Nov 23, 2:23 PM PST from watch/walk/walk_grid.json and 2 run file(s) in watch/walk/runs. Rebuild with <span class="ws-mono">python watch/walk_scoreboard.py build</span>. A pass or fail older than its limit reads unknown.</p>
+
+<nav class="ws-nav" aria-label="Sections"><a href="#ws-sec-lines">The 15 lines of the root goal</a><a href="#ws-sec-rooms">Rooms</a><a href="#ws-sec-spokes">The 33 spokes, by two drivers</a><a href="#ws-sec-machines">Machine grid</a><a href="#ws-sec-protect">Protect lines</a></nav>
+<section class="ws-sec" id="ws-sec-lines"><div class="ws-sech"><h2>The 15 lines of the root goal</h2><span class="ws-count">0 passed / 15 not closed by design</span></div><p class="ws-blurb">GOAL-NOVAHOS is done when the owner has walked all fifteen lines himself. Each line is one cell.</p><p class="ws-defs">Proof needed for every row here: The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.</p><ul class="ws-list"><li class="ws-item" id="ws-line-01" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 1: One icon, one window</div><p class="ws-text">On GREYWOLF he opens one NovahOS icon. One window opens. No other program has to be started first.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-02" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 2: Sign in once, same rooms on the Surface</div><p class="ws-text">He signs in once. He signs in again on the Surface with the same account and sees the same rooms and the same history.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-03" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 3: Walk every room and mark it</div><p class="ws-text">He walks every room in the window (command center, Atlas, reports, approvals, Prime voice, Character Design, Decompress, Home Node controls, documents) and marks each pass or fail on one checklist page.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-04" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 4: Three questions only his own data can answer</div><p class="ws-text">He asks the brain three questions only his own data can answer (something said on Fieldy last week, a number from QuickBooks, a person from his mail). Each answer names where it came from.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-05" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 5: Network cable out, the local brain answers</div><p class="ws-text">He pulls the network cable and asks one of them again. The local model answers from the local brain. Nothing leaves the machine.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-06" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 6: Every spoke runs one real task on the local node</div><p class="ws-text">For each spoke on the list (hub, odyssey, reach, signal, scope, orbit, echo, lucid, inbound, scout, money, Fieldy, self, Prime) he starts one real task from the window. It runs once on the local node and files its own report. The grid shows pass, fail or &#x27;closed by design&#x27; in every cell.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-07" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 7: An odyssey pursuit that is not a job</div><p class="ws-text">He gives odyssey a pursuit that is not a job (one person, one client). It plans, drafts and stops for his approval before anything is sent.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-08" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 8: Approve one action, reject one</div><p class="ws-text">An action that would send, post or spend shows up as one approval in the window. He approves one and rejects one. Nothing went out before his click, and the rejected one never goes out.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-09" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 9: The iPhone away from home answers a card</div><p class="ws-text">He opens NovahOS on the iPhone away from home. He sees the same rooms, answers one question card, and the desk that asked gets his answer.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-10" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 10: Level 1, a side quest, a mission and a boss</div><p class="ws-text">He plays level 1, one side quest, one mission and one boss in the window. Each records an outcome in the brain.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-11" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 11: One job and one model call placed on another machine</div><p class="ws-text">From the window he starts one job and one model call. The job router places the job on another machine and the one model service answers. The window shows where each ran.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-12" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 12: GREYWOLF off for a day</div><p class="ws-text">He switches GREYWOLF off for a day. Every timed job still runs, the brain still answers from the phone and the Surface, and nothing is lost.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-13" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 13: Restore one backup; backups and off-machine copy pass</div><p class="ws-text">He restores one backup to a scratch machine and it boots. Last night&#x27;s backups and the off-machine copy all show a pass line.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-14" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 14: A fresh Windows machine, installer, step 1</div><p class="ws-text">A fresh Windows machine gets the installer, and step 1 works there without a desk helping.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-line-15" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Line 15: One full working day from NovahOS only</div><p class="ws-text">He runs one full working day from NovahOS only. Every fail he marks becomes a queue item with an owner; when the list is empty, the goal is closed.</p><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li></ul></section>
+<section class="ws-sec" id="ws-sec-rooms"><div class="ws-sech"><h2>Rooms</h2><span class="ws-count">0 passed / 9 not closed by design</span></div><p class="ws-blurb">The nine rooms line 3 names. The owner marks each pass or fail on the walk.</p><p class="ws-defs">Proof needed for every row here: The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).</p><ul class="ws-list"><li class="ws-item" id="ws-room-command-center" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Command center</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-atlas" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Atlas</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-reports" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Reports</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-approvals" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Approvals</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-prime-voice" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Prime voice</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-character-design" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Character Design</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-decompress" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Decompress</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-home-node-controls" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Home Node controls</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li><li class="ws-item" id="ws-room-documents" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Documents</div><div class="ws-meta"><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></div></div></li></ul></section>
+<section class="ws-sec" id="ws-sec-spokes"><div class="ws-sech"><h2>The 33 spokes, by two drivers</h2><span class="ws-count">0 passed / 66 not closed by design</span></div><p class="ws-blurb">Every spoke started once by an agent through the connector, and once by the local model on the local node. Not applicable counts as closed by design.</p><dl class="ws-defs"><div><dt>Agent through the connector:</dt> <dd>One real task started through the connector by an agent. It runs once and files its own report; the run file points at that report.</dd></div><div><dt>Local model on the local node:</dt> <dd>The same task started by the local model on the local node, network not required. The run file points at the filed report and the node&#x27;s own log.</dd></div></dl><div class="ws-scroll"><table class="ws-tab"><thead><tr><th scope="col">Spoke</th><th scope="col">Agent through the connector</th><th scope="col">Local model on the local node</th></tr></thead><tbody><tr id="ws-row-spokes-hub" data-statuses="not-tested"><th scope="row">hub (the brain, registry key core)<span class="ws-claim">stage (read 2026-11-21, not a run): running</span></th><td id="ws-spokes-hub-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-hub-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-mcp" data-statuses="not-tested"><th scope="row">hub connector (MCP)<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-mcp-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-mcp-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-odyssey" data-statuses="not-tested"><th scope="row">odyssey<span class="ws-claim">stage (read 2026-11-21, not a run): running</span></th><td id="ws-spokes-odyssey-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-odyssey-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-reach" data-statuses="not-tested"><th scope="row">reach<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-reach-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-reach-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-signal" data-statuses="not-tested"><th scope="row">signal<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-signal-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-signal-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-scope" data-statuses="not-tested"><th scope="row">scope<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-scope-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-scope-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-orbit" data-statuses="not-tested"><th scope="row">orbit<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-orbit-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-orbit-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-echo" data-statuses="not-tested"><th scope="row">echo<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-echo-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-echo-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-lucid" data-statuses="not-tested"><th scope="row">lucid<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-lucid-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-lucid-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-inbound" data-statuses="not-tested"><th scope="row">Inbound Response Engine (attention)<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-inbound-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-inbound-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-scout" data-statuses="not-tested"><th scope="row">Scout (prospect finder)<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-scout-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-scout-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-qbo" data-statuses="not-tested"><th scope="row">QBO sensor (money)<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-qbo-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-qbo-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-fieldy" data-statuses="not-tested"><th scope="row">Fieldy<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-fieldy-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-fieldy-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-self" data-statuses="not-tested"><th scope="row">Self engine<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-self-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-self-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-prime" data-statuses="not-tested"><th scope="row">NovahPrime (goal planner)<span class="ws-claim">stage (read 2026-11-21, not a run): deployed, running unknown</span></th><td id="ws-spokes-prime-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-prime-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-sensors" data-statuses="not-tested"><th scope="row">Sensors (36 sources, 46 sensors)<span class="ws-claim">stage (read 2026-11-21, not a run): running</span></th><td id="ws-spokes-sensors-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-sensors-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-homenode" data-statuses="not-tested"><th scope="row">Home node, NovahOS app, local AI<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-homenode-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-homenode-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-phone" data-statuses="not-tested"><th scope="row">Phone app (leadfuel-ios)<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-phone-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-phone-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-quest" data-statuses="not-tested"><th scope="row">Quest<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-quest-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-quest-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-market" data-statuses="not-tested"><th scope="row">Market<span class="ws-claim">stage (read 2026-11-21, not a run): planned</span></th><td id="ws-spokes-market-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-market-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-ledger" data-statuses="not-tested"><th scope="row">Ledger (working name Books)<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-ledger-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-ledger-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-vital" data-statuses="not-tested"><th scope="row">Vital<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-vital-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-vital-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-kin" data-statuses="not-tested"><th scope="row">Kin<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-kin-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-kin-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-hearth" data-statuses="not-tested"><th scope="row">Hearth<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-hearth-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-hearth-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-atlas-travel" data-statuses="not-tested"><th scope="row">Atlas, travel (working name Voyage)<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-atlas-travel-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-atlas-travel-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-muse" data-statuses="not-tested"><th scope="row">Muse<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-muse-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-muse-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-steward" data-statuses="not-tested"><th scope="row">Steward<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-steward-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-steward-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-warden" data-statuses="not-tested"><th scope="row">Warden (working name Aegis)<span class="ws-claim">stage (read 2026-11-21, not a run): built not merged</span></th><td id="ws-spokes-warden-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-warden-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-world" data-statuses="not-tested"><th scope="row">World intelligence<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-world-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-world-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-chardesign" data-statuses="not-tested"><th scope="row">Character Design (video)<span class="ws-claim">stage (read 2026-11-21, not a run): partly built</span></th><td id="ws-spokes-chardesign-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-chardesign-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-apollo" data-statuses="not-tested"><th scope="row">apollo-enricher (APOLLO)<span class="ws-claim">stage (read 2026-11-21, not a run): retired</span></th><td id="ws-spokes-apollo-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-apollo-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-jobhunter" data-statuses="not-tested"><th scope="row">JobHunter (retired job-search project)<span class="ws-claim">stage (read 2026-11-21, not a run): retired</span></th><td id="ws-spokes-jobhunter-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-jobhunter-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-spokes-other-suggested" data-statuses="not-tested"><th scope="row">Other suggested lanes (Self and Prophecy, Hero Council and Oracle, Files, New friends, Household)<span class="ws-claim">stage (read 2026-11-21, not a run): planned</span></th><td id="ws-spokes-other-suggested-agent"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-spokes-other-suggested-local"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr></tbody></table></div></section>
+<section class="ws-sec" id="ws-sec-machines"><div class="ws-sech"><h2>Machine grid</h2><span class="ws-count">0 passed / 12 not closed by design</span></div><p class="ws-blurb">Each machine must take one job from the job router and answer one model call, or be closed by design.</p><dl class="ws-defs"><div><dt>Job placed:</dt> <dd>The job router places one job on this machine and the window shows where it ran.</dd></div><div><dt>Model answered:</dt> <dd>One model call is answered by the model service on this machine and the window shows where it ran.</dd></div></dl><div class="ws-scroll"><table class="ws-tab"><thead><tr><th scope="col">Machine</th><th scope="col">Job placed</th><th scope="col">Model answered</th></tr></thead><tbody><tr id="ws-row-machines-greywolf" data-statuses="not-tested"><th scope="row">GREYWOLF</th><td id="ws-machines-greywolf-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-greywolf-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-machines-overlord" data-statuses="not-tested"><th scope="row">overlord</th><td id="ws-machines-overlord-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-overlord-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-machines-r710" data-statuses="not-tested"><th scope="row">R710</th><td id="ws-machines-r710-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-r710-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-machines-r620" data-statuses="not-tested"><th scope="row">R620</th><td id="ws-machines-r620-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-r620-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-machines-surface" data-statuses="not-tested"><th scope="row">Surface</th><td id="ws-machines-surface-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-surface-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr><tr id="ws-row-machines-msi" data-statuses="not-tested"><th scope="row">MSI</th><td id="ws-machines-msi-job"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td><td id="ws-machines-msi-model"><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span><span class="ws-when"><a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">proof needed</a></span></td></tr></tbody></table></div></section>
+<section class="ws-sec" id="ws-sec-protect"><div class="ws-sech"><h2>Protect lines</h2><span class="ws-count">0 passed / 6 not closed by design</span></div><p class="ws-blurb">The nightly jobs that keep the estate recoverable. A result older than its limit reads unknown.</p><ul class="ws-list"><li class="ws-item" id="ws-protect-backup-1" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Backup 1: Proxmox nightly backup of the vault VM</div><div class="ws-meta"><span>Proof needed: Proxmox job vault-nightly, 02:15 Pacific. Read the job&#x27;s task log: finished OK, size recorded. (<a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">where this is defined</a>)</span><span>Source: from queue item P07 (planning notes, not re-checked here)</span></div></div></li><li class="ws-item" id="ws-protect-backup-2" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Backup 2: vault-sync on overlord</div><div class="ws-meta"><span>Proof needed: Cron vault-sync on overlord, 02:45 on its clock. Read its status line after the run: OK with a file count. (<a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">where this is defined</a>)</span><span>Source: from the Stage 1 exit test and the devices inventory of 2026-11-21 (planning notes, not re-checked here)</span></div></div></li><li class="ws-item" id="ws-protect-state-pull" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">State pull: greywolf-state-pull</div><div class="ws-meta"><span>Proof needed: Cron on overlord, 04:10 Pacific. Read /var/log/greywolf-state.status: an OK line with a tar newer than the last one. (<a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">where this is defined</a>)</span><span>Source: from queue item machines-7 (planning notes, not re-checked here)</span></div></div></li><li class="ws-item" id="ws-protect-off-machine" data-statuses="fail"><div><span class="ws-chip ws-s-fail"><i aria-hidden="true">✕</i>fail</span><time class="ws-when" datetime="2026-11-23T22:17:08Z">checked Nov 23, 2:17 PM PST (evidence from Nov 23, 3:52 AM PST)</time></div><div><div class="ws-lab">Off-machine copy: VAULT private sync from this PC</div><div class="ws-meta"><span>Why: reader state failed: exit 3: an excluded path or a big blob survived the filter; nothing pushed</span><span>Run by: WATCH desk, watch/vault_sync_status.py read through walk_scoreboard.py probe</span><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/evidence/protect-off-machine__20261123T221708Z__vault_sync_status.json" target="_blank" rel="noopener">protect-off-machine__20261123T221708Z__vault_sync_status.json</a></span><span>Source: from queue item sooner-4; reader watch/vault_sync_status.py (planning notes, not re-checked here)</span></div></div></li><li class="ws-item" id="ws-protect-restore" data-statuses="not-tested"><div><span class="ws-chip ws-s-not-tested"><i aria-hidden="true">○</i>not tested</span></div><div><div class="ws-lab">Restore: one backup restored to a scratch machine boots</div><div class="ws-meta"><span>Proof needed: Restore a small VM backup to a scratch id, boot it, record the result. (<a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json" target="_blank" rel="noopener">where this is defined</a>)</span><span>Source: from queue item desks-1-9 (planning notes, not re-checked here)</span></div></div></li><li class="ws-item" id="ws-protect-nightly-full-run" data-statuses="unknown"><div><span class="ws-chip ws-s-unknown"><i aria-hidden="true">?</i>unknown</span><time class="ws-when" datetime="2026-11-23T22:17:09Z">checked Nov 23, 2:17 PM PST (evidence from Nov 23, 9:01 AM PST)</time></div><div><div class="ws-lab">Nightly full run: a verdict on hub main</div><div class="ws-meta"><span>Why: last verdict line says UNKNOWN</span><span>Run by: WATCH desk, last verdict line of the nightly full run read through walk_scoreboard.py probe</span><span>Proof: <a href="https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/evidence/protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json" target="_blank" rel="noopener">protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json</a></span><span>Source: from queue item U02; runner watch/nightly_full_run.py (planning notes, not re-checked here)</span></div></div></li></ul></section>
+<div class="ws-foot"><p>Two backups: the planning notes name vzdump and vault-sync as the backups in the Stage 1 exit test. That pairing is a reading of those notes, not something the owner confirmed.</p><p>Closed by design lowers the number a cell is counted against, so a run file may close a cell only on the owner&#x27;s own decision and must say where he made it.</p><p>Built from:</p><ul><li>GOAL-NOVAHOS done_when, lines 1 to 15, copied word for word on 2026-11-23 from QUEUE-v2.json (NODE novah estate part 13 handoff folder, item GOAL-NOVAHOS)</li><li>33 spokes from spokes.json (SPOKES.md, written 2026-11-21 by a read-only analyst; a code read, not a run)</li><li>machine grid from queue item fold-c-proof; spoke matrix from queue item fold-s-local-run</li><li>protect lines from queue item p16-1 and the Stage 1 and Stage 2 exit tests in QUEUE-v2.md</li></ul></div>
+</main>
+<script type="application/json" id="ws-data">{
+ "schema": "watch.walk_scoreboard/1",
+ "generated_at": "2026-11-23T22:23:56Z",
+ "ref": "main",
+ "source": {
+  "grid": "watch/walk/walk_grid.json",
+  "runs_dir": "watch/walk/runs",
+  "run_files_read": 2,
+  "problems": []
+ },
+ "headline": {
+  "passed": 0,
+  "not_closed_by_design": 108,
+  "total": 108,
+  "closed_by_design": 0,
+  "text": "0 / 108"
+ },
+ "counts": {
+  "not tested": 106,
+  "pass": 0,
+  "fail": 1,
+  "unknown": 1,
+  "closed by design": 0
+ },
+ "sections": [
+  {
+   "id": "lines",
+   "title": "The 15 lines of the root goal",
+   "blurb": "GOAL-NOVAHOS is done when the owner has walked all fifteen lines himself. Each line is one cell.",
+   "kind": "list",
+   "row_label": "",
+   "columns": [],
+   "rows": [],
+   "cells": [
+    {
+     "id": "line-01",
+     "label": "Line 1: One icon, one window",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "On GREYWOLF he opens one NovahOS icon. One window opens. No other program has to be started first.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-02",
+     "label": "Line 2: Sign in once, same rooms on the Surface",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He signs in once. He signs in again on the Surface with the same account and sees the same rooms and the same history.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-03",
+     "label": "Line 3: Walk every room and mark it",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He walks every room in the window (command center, Atlas, reports, approvals, Prime voice, Character Design, Decompress, Home Node controls, documents) and marks each pass or fail on one checklist page.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-04",
+     "label": "Line 4: Three questions only his own data can answer",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He asks the brain three questions only his own data can answer (something said on Fieldy last week, a number from QuickBooks, a person from his mail). Each answer names where it came from.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-05",
+     "label": "Line 5: Network cable out, the local brain answers",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He pulls the network cable and asks one of them again. The local model answers from the local brain. Nothing leaves the machine.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-06",
+     "label": "Line 6: Every spoke runs one real task on the local node",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "For each spoke on the list (hub, odyssey, reach, signal, scope, orbit, echo, lucid, inbound, scout, money, Fieldy, self, Prime) he starts one real task from the window. It runs once on the local node and files its own report. The grid shows pass, fail or 'closed by design' in every cell.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-07",
+     "label": "Line 7: An odyssey pursuit that is not a job",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He gives odyssey a pursuit that is not a job (one person, one client). It plans, drafts and stops for his approval before anything is sent.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-08",
+     "label": "Line 8: Approve one action, reject one",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "An action that would send, post or spend shows up as one approval in the window. He approves one and rejects one. Nothing went out before his click, and the rejected one never goes out.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-09",
+     "label": "Line 9: The iPhone away from home answers a card",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He opens NovahOS on the iPhone away from home. He sees the same rooms, answers one question card, and the desk that asked gets his answer.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-10",
+     "label": "Line 10: Level 1, a side quest, a mission and a boss",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He plays level 1, one side quest, one mission and one boss in the window. Each records an outcome in the brain.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-11",
+     "label": "Line 11: One job and one model call placed on another machine",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "From the window he starts one job and one model call. The job router places the job on another machine and the one model service answers. The window shows where each ran.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-12",
+     "label": "Line 12: GREYWOLF off for a day",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He switches GREYWOLF off for a day. Every timed job still runs, the brain still answers from the phone and the Surface, and nothing is lost.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-13",
+     "label": "Line 13: Restore one backup; backups and off-machine copy pass",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He restores one backup to a scratch machine and it boots. Last night's backups and the off-machine copy all show a pass line.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-14",
+     "label": "Line 14: A fresh Windows machine, installer, step 1",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "A fresh Windows machine gets the installer, and step 1 works there without a desk helping.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "line-15",
+     "label": "Line 15: One full working day from NovahOS only",
+     "needs": "The owner walks this line himself. A desk records his result with his own words as the source and one evidence file.",
+     "text": "He runs one full working day from NovahOS only. Every fail he marks becomes a queue item with an owner; when the list is empty, the goal is closed.",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    }
+   ],
+   "counts": {
+    "not tested": 15,
+    "pass": 0,
+    "fail": 0,
+    "unknown": 0,
+    "closed by design": 0
+   },
+   "passed": 0,
+   "not_closed": 15
+  },
+  {
+   "id": "rooms",
+   "title": "Rooms",
+   "blurb": "The nine rooms line 3 names. The owner marks each pass or fail on the walk.",
+   "kind": "list",
+   "row_label": "",
+   "columns": [],
+   "rows": [],
+   "cells": [
+    {
+     "id": "room-command-center",
+     "label": "Command center",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-atlas",
+     "label": "Atlas",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-reports",
+     "label": "Reports",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-approvals",
+     "label": "Approvals",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-prime-voice",
+     "label": "Prime voice",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-character-design",
+     "label": "Character Design",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-decompress",
+     "label": "Decompress",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-home-node-controls",
+     "label": "Home Node controls",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "room-documents",
+     "label": "Documents",
+     "needs": "The owner opens this room in the NovahOS window and marks it pass or fail. A desk records his mark with his words and one evidence file (a screenshot or a note).",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    }
+   ],
+   "counts": {
+    "not tested": 9,
+    "pass": 0,
+    "fail": 0,
+    "unknown": 0,
+    "closed by design": 0
+   },
+   "passed": 0,
+   "not_closed": 9
+  },
+  {
+   "id": "spokes",
+   "title": "The 33 spokes, by two drivers",
+   "blurb": "Every spoke started once by an agent through the connector, and once by the local model on the local node. Not applicable counts as closed by design.",
+   "kind": "matrix",
+   "row_label": "Spoke",
+   "columns": [
+    {
+     "id": "agent",
+     "label": "Agent through the connector",
+     "needs": "One real task started through the connector by an agent. It runs once and files its own report; the run file points at that report."
+    },
+    {
+     "id": "local",
+     "label": "Local model on the local node",
+     "needs": "The same task started by the local model on the local node, network not required. The run file points at the filed report and the node's own log."
+    }
+   ],
+   "rows": [
+    {
+     "id": "hub",
+     "label": "hub (the brain, registry key core)",
+     "claim": "stage (read 2026-11-21, not a run): running"
+    },
+    {
+     "id": "mcp",
+     "label": "hub connector (MCP)",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "odyssey",
+     "label": "odyssey",
+     "claim": "stage (read 2026-11-21, not a run): running"
+    },
+    {
+     "id": "reach",
+     "label": "reach",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "signal",
+     "label": "signal",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "scope",
+     "label": "scope",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "orbit",
+     "label": "orbit",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "echo",
+     "label": "echo",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "lucid",
+     "label": "lucid",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "inbound",
+     "label": "Inbound Response Engine (attention)",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "scout",
+     "label": "Scout (prospect finder)",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "qbo",
+     "label": "QBO sensor (money)",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "fieldy",
+     "label": "Fieldy",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "self",
+     "label": "Self engine",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "prime",
+     "label": "NovahPrime (goal planner)",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown"
+    },
+    {
+     "id": "sensors",
+     "label": "Sensors (36 sources, 46 sensors)",
+     "claim": "stage (read 2026-11-21, not a run): running"
+    },
+    {
+     "id": "homenode",
+     "label": "Home node, NovahOS app, local AI",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "phone",
+     "label": "Phone app (leadfuel-ios)",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "quest",
+     "label": "Quest",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "market",
+     "label": "Market",
+     "claim": "stage (read 2026-11-21, not a run): planned"
+    },
+    {
+     "id": "ledger",
+     "label": "Ledger (working name Books)",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "vital",
+     "label": "Vital",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "kin",
+     "label": "Kin",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "hearth",
+     "label": "Hearth",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "atlas-travel",
+     "label": "Atlas, travel (working name Voyage)",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "muse",
+     "label": "Muse",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "steward",
+     "label": "Steward",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "warden",
+     "label": "Warden (working name Aegis)",
+     "claim": "stage (read 2026-11-21, not a run): built not merged"
+    },
+    {
+     "id": "world",
+     "label": "World intelligence",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "chardesign",
+     "label": "Character Design (video)",
+     "claim": "stage (read 2026-11-21, not a run): partly built"
+    },
+    {
+     "id": "apollo",
+     "label": "apollo-enricher (APOLLO)",
+     "claim": "stage (read 2026-11-21, not a run): retired"
+    },
+    {
+     "id": "jobhunter",
+     "label": "JobHunter (retired job-search project)",
+     "claim": "stage (read 2026-11-21, not a run): retired"
+    },
+    {
+     "id": "other-suggested",
+     "label": "Other suggested lanes (Self and Prophecy, Hero Council and Oracle, Files, New friends, Household)",
+     "claim": "stage (read 2026-11-21, not a run): planned"
+    }
+   ],
+   "cells": [
+    {
+     "id": "spokes-hub-agent",
+     "label": "hub (the brain, registry key core): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "hub",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-hub-local",
+     "label": "hub (the brain, registry key core): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "hub",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-mcp-agent",
+     "label": "hub connector (MCP): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "mcp",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-mcp-local",
+     "label": "hub connector (MCP): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "mcp",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-odyssey-agent",
+     "label": "odyssey: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "odyssey",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-odyssey-local",
+     "label": "odyssey: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "odyssey",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-reach-agent",
+     "label": "reach: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "reach",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-reach-local",
+     "label": "reach: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "reach",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-signal-agent",
+     "label": "signal: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "signal",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-signal-local",
+     "label": "signal: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "signal",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-scope-agent",
+     "label": "scope: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "scope",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-scope-local",
+     "label": "scope: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "scope",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-orbit-agent",
+     "label": "orbit: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "orbit",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-orbit-local",
+     "label": "orbit: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "orbit",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-echo-agent",
+     "label": "echo: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "echo",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-echo-local",
+     "label": "echo: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "echo",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-lucid-agent",
+     "label": "lucid: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "lucid",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-lucid-local",
+     "label": "lucid: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "lucid",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-inbound-agent",
+     "label": "Inbound Response Engine (attention): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "inbound",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-inbound-local",
+     "label": "Inbound Response Engine (attention): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "inbound",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-scout-agent",
+     "label": "Scout (prospect finder): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "scout",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-scout-local",
+     "label": "Scout (prospect finder): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "scout",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-qbo-agent",
+     "label": "QBO sensor (money): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "qbo",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-qbo-local",
+     "label": "QBO sensor (money): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "qbo",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-fieldy-agent",
+     "label": "Fieldy: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "fieldy",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-fieldy-local",
+     "label": "Fieldy: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "fieldy",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-self-agent",
+     "label": "Self engine: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "self",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-self-local",
+     "label": "Self engine: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "self",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-prime-agent",
+     "label": "NovahPrime (goal planner): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "prime",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-prime-local",
+     "label": "NovahPrime (goal planner): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): deployed, running unknown",
+     "row": "prime",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-sensors-agent",
+     "label": "Sensors (36 sources, 46 sensors): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "sensors",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-sensors-local",
+     "label": "Sensors (36 sources, 46 sensors): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): running",
+     "row": "sensors",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-homenode-agent",
+     "label": "Home node, NovahOS app, local AI: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "homenode",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-homenode-local",
+     "label": "Home node, NovahOS app, local AI: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "homenode",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-phone-agent",
+     "label": "Phone app (leadfuel-ios): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "phone",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-phone-local",
+     "label": "Phone app (leadfuel-ios): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "phone",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-quest-agent",
+     "label": "Quest: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "quest",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-quest-local",
+     "label": "Quest: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "quest",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-market-agent",
+     "label": "Market: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): planned",
+     "row": "market",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-market-local",
+     "label": "Market: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): planned",
+     "row": "market",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-ledger-agent",
+     "label": "Ledger (working name Books): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "ledger",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-ledger-local",
+     "label": "Ledger (working name Books): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "ledger",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-vital-agent",
+     "label": "Vital: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "vital",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-vital-local",
+     "label": "Vital: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "vital",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-kin-agent",
+     "label": "Kin: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "kin",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-kin-local",
+     "label": "Kin: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "kin",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-hearth-agent",
+     "label": "Hearth: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "hearth",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-hearth-local",
+     "label": "Hearth: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "hearth",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-atlas-travel-agent",
+     "label": "Atlas, travel (working name Voyage): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "atlas-travel",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-atlas-travel-local",
+     "label": "Atlas, travel (working name Voyage): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "atlas-travel",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-muse-agent",
+     "label": "Muse: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "muse",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-muse-local",
+     "label": "Muse: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "muse",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-steward-agent",
+     "label": "Steward: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "steward",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-steward-local",
+     "label": "Steward: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "steward",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-warden-agent",
+     "label": "Warden (working name Aegis): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "warden",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-warden-local",
+     "label": "Warden (working name Aegis): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): built not merged",
+     "row": "warden",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-world-agent",
+     "label": "World intelligence: Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "world",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-world-local",
+     "label": "World intelligence: Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "world",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-chardesign-agent",
+     "label": "Character Design (video): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "chardesign",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-chardesign-local",
+     "label": "Character Design (video): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): partly built",
+     "row": "chardesign",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-apollo-agent",
+     "label": "apollo-enricher (APOLLO): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): retired",
+     "row": "apollo",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-apollo-local",
+     "label": "apollo-enricher (APOLLO): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): retired",
+     "row": "apollo",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-jobhunter-agent",
+     "label": "JobHunter (retired job-search project): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): retired",
+     "row": "jobhunter",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-jobhunter-local",
+     "label": "JobHunter (retired job-search project): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): retired",
+     "row": "jobhunter",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-other-suggested-agent",
+     "label": "Other suggested lanes (Self and Prophecy, Hero Council and Oracle, Files, New friends, Household): Agent through the connector",
+     "claim": "stage (read 2026-11-21, not a run): planned",
+     "row": "other-suggested",
+     "col": "agent",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "spokes-other-suggested-local",
+     "label": "Other suggested lanes (Self and Prophecy, Hero Council and Oracle, Files, New friends, Household): Local model on the local node",
+     "claim": "stage (read 2026-11-21, not a run): planned",
+     "row": "other-suggested",
+     "col": "local",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    }
+   ],
+   "counts": {
+    "not tested": 66,
+    "pass": 0,
+    "fail": 0,
+    "unknown": 0,
+    "closed by design": 0
+   },
+   "passed": 0,
+   "not_closed": 66
+  },
+  {
+   "id": "machines",
+   "title": "Machine grid",
+   "blurb": "Each machine must take one job from the job router and answer one model call, or be closed by design.",
+   "kind": "matrix",
+   "row_label": "Machine",
+   "columns": [
+    {
+     "id": "job",
+     "label": "Job placed",
+     "needs": "The job router places one job on this machine and the window shows where it ran."
+    },
+    {
+     "id": "model",
+     "label": "Model answered",
+     "needs": "One model call is answered by the model service on this machine and the window shows where it ran."
+    }
+   ],
+   "rows": [
+    {
+     "id": "greywolf",
+     "label": "GREYWOLF"
+    },
+    {
+     "id": "overlord",
+     "label": "overlord"
+    },
+    {
+     "id": "r710",
+     "label": "R710"
+    },
+    {
+     "id": "r620",
+     "label": "R620"
+    },
+    {
+     "id": "surface",
+     "label": "Surface"
+    },
+    {
+     "id": "msi",
+     "label": "MSI"
+    }
+   ],
+   "cells": [
+    {
+     "id": "machines-greywolf-job",
+     "label": "GREYWOLF: Job placed",
+     "row": "greywolf",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-greywolf-model",
+     "label": "GREYWOLF: Model answered",
+     "row": "greywolf",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-overlord-job",
+     "label": "overlord: Job placed",
+     "row": "overlord",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-overlord-model",
+     "label": "overlord: Model answered",
+     "row": "overlord",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-r710-job",
+     "label": "R710: Job placed",
+     "row": "r710",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-r710-model",
+     "label": "R710: Model answered",
+     "row": "r710",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-r620-job",
+     "label": "R620: Job placed",
+     "row": "r620",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-r620-model",
+     "label": "R620: Model answered",
+     "row": "r620",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-surface-job",
+     "label": "Surface: Job placed",
+     "row": "surface",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-surface-model",
+     "label": "Surface: Model answered",
+     "row": "surface",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-msi-job",
+     "label": "MSI: Job placed",
+     "row": "msi",
+     "col": "job",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "machines-msi-model",
+     "label": "MSI: Model answered",
+     "row": "msi",
+     "col": "model",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    }
+   ],
+   "counts": {
+    "not tested": 12,
+    "pass": 0,
+    "fail": 0,
+    "unknown": 0,
+    "closed by design": 0
+   },
+   "passed": 0,
+   "not_closed": 12
+  },
+  {
+   "id": "protect",
+   "title": "Protect lines",
+   "blurb": "The nightly jobs that keep the estate recoverable. A result older than its limit reads unknown.",
+   "kind": "list",
+   "row_label": "",
+   "columns": [],
+   "rows": [],
+   "cells": [
+    {
+     "id": "protect-backup-1",
+     "label": "Backup 1: Proxmox nightly backup of the vault VM",
+     "needs": "Proxmox job vault-nightly, 02:15 Pacific. Read the job's task log: finished OK, size recorded.",
+     "claim": "from queue item P07 (planning notes, not re-checked here)",
+     "max_age_hours": 30,
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "protect-backup-2",
+     "label": "Backup 2: vault-sync on overlord",
+     "needs": "Cron vault-sync on overlord, 02:45 on its clock. Read its status line after the run: OK with a file count.",
+     "claim": "from the Stage 1 exit test and the devices inventory of 2026-11-21 (planning notes, not re-checked here)",
+     "max_age_hours": 30,
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "protect-state-pull",
+     "label": "State pull: greywolf-state-pull",
+     "needs": "Cron on overlord, 04:10 Pacific. Read /var/log/greywolf-state.status: an OK line with a tar newer than the last one.",
+     "claim": "from queue item machines-7 (planning notes, not re-checked here)",
+     "max_age_hours": 30,
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "protect-off-machine",
+     "label": "Off-machine copy: VAULT private sync from this PC",
+     "needs": "Task VAULT private sync, 04:30 Pacific. Run python watch/walk_scoreboard.py probe off-machine, which reads the sync log with watch/vault_sync_status.py: ok means exit 0 and a verified push of every target.",
+     "claim": "from queue item sooner-4; reader watch/vault_sync_status.py (planning notes, not re-checked here)",
+     "max_age_hours": 30,
+     "status": "fail",
+     "status_reason": "reader state failed: exit 3: an excluded path or a big blob survived the filter; nothing pushed",
+     "run": {
+      "file": "protect-off-machine__20261123T221708Z.json",
+      "ran_at": "2026-11-23T22:17:08Z",
+      "ran_by": "WATCH desk, watch/vault_sync_status.py read through walk_scoreboard.py probe",
+      "how": "Ran the reader over the VAULT private sync log. The evidence is the reader's own output with the log path removed.",
+      "result": "fail",
+      "subject_at": "2026-11-23T11:52:18Z",
+      "decision": null
+     },
+     "evidence": [
+      "watch/walk/evidence/protect-off-machine__20261123T221708Z__vault_sync_status.json"
+     ],
+     "runs_seen": 1,
+     "proof": {
+      "kind": "evidence",
+      "label": "protect-off-machine__20261123T221708Z__vault_sync_status.json",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/evidence/protect-off-machine__20261123T221708Z__vault_sync_status.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "protect-restore",
+     "label": "Restore: one backup restored to a scratch machine boots",
+     "needs": "Restore a small VM backup to a scratch id, boot it, record the result.",
+     "claim": "from queue item desks-1-9 (planning notes, not re-checked here)",
+     "status": "not tested",
+     "status_reason": "no run file exists for this cell",
+     "run": null,
+     "evidence": [],
+     "runs_seen": 0,
+     "proof": {
+      "kind": "needed",
+      "label": "proof needed",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/walk_grid.json"
+     },
+     "warnings": [],
+     "degraded": false
+    },
+    {
+     "id": "protect-nightly-full-run",
+     "label": "Nightly full run: a verdict on hub main",
+     "needs": "The nightly full serial run writes PASS or FAIL. UNKNOWN or SKIPPED-BUSY is not a pass. Run python watch/walk_scoreboard.py probe nightly-full-run, which reads the last line of its log.",
+     "claim": "from queue item U02; runner watch/nightly_full_run.py (planning notes, not re-checked here)",
+     "max_age_hours": 36,
+     "status": "unknown",
+     "status_reason": "last verdict line says UNKNOWN",
+     "run": {
+      "file": "protect-nightly-full-run__20261123T221709Z.json",
+      "ran_at": "2026-11-23T22:17:09Z",
+      "ran_by": "WATCH desk, last verdict line of the nightly full run read through walk_scoreboard.py probe",
+      "how": "Read the last verdict line of the nightly full run log. PASS and FAIL pass through; UNKNOWN and SKIPPED-BUSY read unknown.",
+      "result": "unknown",
+      "subject_at": "2026-11-23T17:01:38Z",
+      "decision": null
+     },
+     "evidence": [
+      "watch/walk/evidence/protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json"
+     ],
+     "runs_seen": 1,
+     "proof": {
+      "kind": "evidence",
+      "label": "protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json",
+      "url": "https://github.com/NOVAHGREYWOLF/leadfuel-core/blob/main/watch/walk/evidence/protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json"
+     },
+     "warnings": [],
+     "degraded": false
+    }
+   ],
+   "counts": {
+    "not tested": 4,
+    "pass": 0,
+    "fail": 1,
+    "unknown": 1,
+    "closed by design": 0
+   },
+   "passed": 0,
+   "not_closed": 6
+  }
+ ],
+ "notes": [
+  "Two backups: the planning notes name vzdump and vault-sync as the backups in the Stage 1 exit test. That pairing is a reading of those notes, not something the owner confirmed.",
+  "Closed by design lowers the number a cell is counted against, so a run file may close a cell only on the owner's own decision and must say where he made it."
+ ],
+ "built_from": [
+  "GOAL-NOVAHOS done_when, lines 1 to 15, copied word for word on 2026-11-23 from QUEUE-v2.json (NODE novah estate part 13 handoff folder, item GOAL-NOVAHOS)",
+  "33 spokes from spokes.json (SPOKES.md, written 2026-11-21 by a read-only analyst; a code read, not a run)",
+  "machine grid from queue item fold-c-proof; spoke matrix from queue item fold-s-local-run",
+  "protect lines from queue item p16-1 and the Stage 1 and Stage 2 exit tests in QUEUE-v2.md"
+ ],
+ "link": {
+  "repo": "NOVAHGREYWOLF/leadfuel-core",
+  "ref_default": "main",
+  "grid_file": "watch/walk/walk_grid.json",
+  "runs_dir": "watch/walk/runs",
+  "evidence_dir": "watch/walk/evidence"
+ }
+}</script>
+<script>
+(function(){
+  var root=document.getElementById('walk-scoreboard');
+  if(!root){return;}
+  var tiles=root.querySelectorAll('[data-filter]');
+  var current='all';
+  function apply(f){
+    current=f;
+    root.querySelectorAll('[data-statuses]').forEach(function(el){
+      var s=el.getAttribute('data-statuses').split(' ');
+      el.hidden=!(f==='all'||s.indexOf(f)>=0);
+    });
+    tiles.forEach(function(t){t.setAttribute('aria-pressed',String(t.getAttribute('data-filter')===f));});
+  }
+  tiles.forEach(function(t){
+    t.addEventListener('click',function(){var f=t.getAttribute('data-filter');apply(current===f?'all':f);});
+  });
+})();
+</script>
