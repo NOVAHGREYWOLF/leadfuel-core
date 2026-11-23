@@ -43,6 +43,7 @@ import urllib.parse
 import urllib.request
 
 SCHEMA_RESULTS = "firstwalk.results/1"
+SCHEMA_CELL = "firstwalk.cell/1"
 SCHEMA_MARKS = "firstwalk.marks/1"
 PASS, FAIL, UNKNOWN, NOT_RUN = "pass", "fail", "unknown", "not_run"
 CHECK_STATES = (PASS, FAIL, UNKNOWN)
@@ -197,9 +198,7 @@ def _get(env, url, method="GET", body=None, timeout=5.0):
 def visible_text(page):
     """The words a person can read on a template: comments, Jinja tags, scripts and styles removed;
     the text of title, placeholder, aria-label and alt attributes kept (they are read on hover)."""
-    t = re.sub(r"\{#.*?#\}", " ", page, flags=re.S)
-    t = re.sub(r"<!--.*?-->", " ", t, flags=re.S)
-    t = re.sub(r"<(script|style)\b.*?</\1\s*>", " ", t, flags=re.S | re.I)
+    t = without_comments_and_scripts(page)
     attrs = " ".join(re.findall(r'\b(?:title|placeholder|aria-label|alt)="([^"]*)"', t, flags=re.I))
     t = re.sub(r"\{%.*?%\}|\{\{.*?\}\}", " ", t, flags=re.S)
     t = re.sub(r"<[^>]+>", " ", t)
@@ -214,7 +213,7 @@ DOC04_REGIONS = (
     ("centre_character", "Centre: Character", {"ids": ["char"], "menu": "character"}),
     ("left_action_feed", "Left: Action Feed", {"ids": ["afeed"], "menu": "feed"}),
     ("right_mission_board", "Right: Mission Board", {"ids": ["board"], "menu": "board"}),
-    ("bottom_crews", "Bottom: Crews", {"ids": ["party", "regions"], "menu": "crew"}),
+    ("bottom_crews", "Bottom: Crews", {"ids": ["party", "regions"], "menu": "party"}),
     ("top_resources", "Top: Resources", {"id_prefixes": ["res-"], "menu": "credits"}),
     ("edge_radar", "Edge: Radar", {"ids": ["radar"], "menu": None}),
     ("overlay_contracts", "Overlay: Contracts", {"ids": [], "menu": "contracts"}),
@@ -222,8 +221,16 @@ DOC04_REGIONS = (
 )
 
 
+def without_comments_and_scripts(page):
+    """The template with Jinja comments, HTML comments, scripts and styles removed, tags kept.
+    An id that only a comment or a script string mentions is not on the page."""
+    t = re.sub(r"\{#.*?#\}", " ", page, flags=re.S)
+    t = re.sub(r"<!--.*?-->", " ", t, flags=re.S)
+    return re.sub(r"<(script|style)\b.*?</\1\s*>", " ", t, flags=re.S | re.I)
+
+
 def template_ids(page):
-    return set(re.findall(r'\bid="([^"]+)"', page))
+    return set(re.findall(r'\bid="([^"]+)"', without_comments_and_scripts(page)))
 
 
 def region_status(ids, spec, menu_entries):
@@ -478,18 +485,35 @@ def _hub_file(env, ctx, rel):
     return env.read_text(os.path.join(root, *rel.split("/")))
 
 
+def _start_menu(env, ctx):
+    """{key: entry} from the page's own Start menu data, or {} when it cannot be read."""
+    raw = _hub_file(env, ctx, "static/command/start.json")
+    if not raw:
+        return {}
+    try:
+        return {e.get("key"): e for e in json.loads(raw).get("entries", []) if isinstance(e, dict)}
+    except (ValueError, AttributeError):
+        return {}
+
+
+@check("source.command.region.action_feed", "doc 04's Action Feed region (left) is on the /command page (template source)")
+def c_region_feed(env, ctx):
+    page = _hub_file(env, ctx, "templates/command_screen.html")
+    if page is None:
+        return UNKNOWN, "the page source was not readable (pass --hub-root)"
+    key, name, spec = next(r for r in DOC04_REGIONS if r[0] == "left_action_feed")
+    st = region_status(template_ids(page), spec, _start_menu(env, ctx))
+    if st == "present":
+        return PASS, "%s has its template id; that it shows cards is not read" % name
+    return FAIL, "%s is %s in the template" % (name, st.replace("_", " "))
+
+
 @check("source.command.regions", "doc 04's eight regions are on the /command page (template source)")
 def c_regions(env, ctx):
     page = _hub_file(env, ctx, "templates/command_screen.html")
     if page is None:
         return UNKNOWN, "the page source was not readable (pass --hub-root)"
-    menu = {}
-    raw = _hub_file(env, ctx, "static/command/start.json")
-    if raw:
-        try:
-            menu = {e.get("key"): e for e in json.loads(raw).get("entries", []) if isinstance(e, dict)}
-        except ValueError:
-            menu = {}
+    menu = _start_menu(env, ctx)
     ids = template_ids(page)
     got = {key: region_status(ids, spec, menu) for key, _, spec in DOC04_REGIONS}
     names = {key: name for key, name, _ in DOC04_REGIONS}
@@ -690,7 +714,8 @@ def run_one(env, ctx, cid):
 # ----------------------------------------------------------------------------- positive controls
 
 class _Fake:
-    """An environment for the controls. mode 'ok200' answers 200 JSON to everything; 'absent'
+    """An environment for the controls. mode 'ok200' answers 200 JSON to everything; 'refuse401'
+    answers 401 to everything; 'redirect' sends every path to a production sign-in page; 'absent'
     answers nothing; 'raise' raises on every call."""
 
     def __init__(self, mode):
@@ -704,6 +729,12 @@ class _Fake:
             raise RuntimeError("boom")
         if self.mode == "absent":
             raise Refused("refused")
+        if self.mode == "refuse401":
+            return Reply(401, {"content-type": "application/json"}, b'{"error": "sign in"}')
+        if self.mode == "redirect":
+            if url.endswith("/login"):
+                return Reply(503, {"content-type": "application/json"}, b'{"error": "login not enabled"}')
+            return Reply(302, {"location": "https://example.invalid/login"}, b"")
         return Reply(200, {"content-type": "application/json"}, b'{"ok": true, "status": "ok", "models": [], "system": {}}')
 
     def tcp(self, host, port, timeout=4.0):
@@ -741,6 +772,18 @@ def run_controls(check_ids):
     r = run_one(_Fake("ok200"), {}, "local.hub.api_requires_login")
     if r["state"] != FAIL:
         problems.append("api_requires_login read %s against a server that serves everything" % r["state"])
+    #    and a server that refuses everything must read as refused: the check can see both ways
+    r = run_one(_Fake("refuse401"), {}, "local.hub.api_requires_login")
+    if r["state"] != PASS:
+        problems.append("api_requires_login read %s against a server that refuses every request" % r["state"])
+    # 1b. a /command that sends the browser off this machine must NOT read as opening locally,
+    #     and a server that answers 200 to an id that cannot exist must NOT read as the lease route
+    r = run_one(_Fake("redirect"), {}, "local.hub.command_opens_locally")
+    if r["state"] != FAIL:
+        problems.append("command_opens_locally read %s when /command redirects off this machine" % r["state"])
+    r = run_one(_Fake("ok200"), {}, "local.window.route")
+    if r["state"] == PASS:
+        problems.append("window.route read pass against a server that answers 200 to an unknown lease id")
     # 2. a server that answers nothing must NOT read as up
     for cid in ("local.hub.healthz", "local.mcp.health", "local.ollama.up", "local.comfyui.up"):
         r = run_one(_Fake("absent"), {}, cid)
@@ -833,13 +876,15 @@ def build_results(walk, check_results, marks, ctx_inputs, controls, evidence_fil
         cstates = [by_id[cid]["state"] for cid in c.get("checks", []) if cid in by_id]
         cells.append({
             "id": c["id"], "kind": kind, "title": c["title"],
+            "scoreboard_cell": (walk.get("scoreboard_cells") or {}).get(c["id"]),
             "walk_state": wstate,
             "walk_steps": {"total": len(sids), "marked": marked},
             "walk_evidence": (marks_info or {}).get("path") if marks else None,
             "walk_evidence_date": (marks_info or {}).get("date") if marks else None,
             "smoke_result": smoke_rollup(cstates) if controls["ok"] else UNKNOWN,
             "smoke_checks": list(c.get("checks", [])),
-            "smoke_note": "A preflight about what answers on this machine today. It does not move walk_state.",
+            "smoke_note": ("A preflight about what answers on this machine today. It does not move walk_state, and a "
+                           "pass here covers only what each check's detail says, never the whole cell."),
             "evidence_file": evidence_file, "evidence_date": now[:10],
             "owner_step": "Walk %s (%d steps) and mark each in the checklist page." % (c["id"], len(sids)),
             "queue": list(c.get("queue", [])),
@@ -872,6 +917,30 @@ def build_results(walk, check_results, marks, ctx_inputs, controls, evidence_fil
         "named": named,
         "mockups": walk.get("mockups", []),
     }
+
+
+def cell_files(results, walk, marks):
+    """One small file per cell for a reader that wants a single room (the walk scoreboard), named by the
+    scoreboard's cell id: {file name: object}. The same facts as results.json for that cell, plus each
+    step's words and the full result of each of its checks."""
+    by_id = {r["id"]: r for r in results["checks"]}
+    src = {c["id"]: c for _, c in walk_cells(walk)}
+    out = {}
+    for cell in results["cells"]:
+        name = (cell.get("scoreboard_cell") or cell["id"]) + ".json"
+        steps = [{"id": s["id"], "do": s["do"], "expect": s["expect"], "proof_wanted": s["proof"],
+                  "walk_state": (marks or {}).get(s["id"], "not_tested")} for s in src[cell["id"]]["steps"]]
+        out[name] = {
+            "schema": SCHEMA_CELL,
+            "generated_utc": results["generated_utc"],
+            "controls_ok": results["controls_ok"],
+            "cell": cell,
+            "steps": steps,
+            "checks": [by_id[cid] for cid in cell["smoke_checks"] if cid in by_id],
+            "reading_it": ("walk_state is the owner's alone and stays not_tested until his exported marks are passed in. "
+                           "smoke_result is a preflight, never a walk result."),
+        }
+    return out
 
 
 def exit_code(results):
@@ -920,6 +989,12 @@ def cmd_run(a, env=None):
     if a.marks:
         mt = env.read_text(a.marks)
         marks = load_marks(mt) if mt else {}
+        if not marks:
+            # A file the owner handed over that reads as nothing is an error to say out loud: a quiet
+            # "not tested" everywhere would look like he had marked nothing.
+            print("firstwalk smoke: %s is unreadable, is not a %s file, or holds no marked step. Nothing was written."
+                  % (a.marks, SCHEMA_MARKS), file=sys.stderr)
+            return 3
         minfo = {"path": a.marks, "date": utc_iso(env.now())[:10]}
         described["marks"] = {"path": a.marks, "steps_marked": len(marks)}
     controls = {"ok": controls_ok, "problems": problems}
@@ -936,6 +1011,11 @@ def cmd_run(a, env=None):
         os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
         with open(a.out, "w", encoding="utf-8", newline="\n") as f:
             f.write(text + "\n")
+    if a.cells_dir:
+        os.makedirs(a.cells_dir, exist_ok=True)
+        for name, obj in cell_files(results, walk, marks).items():
+            with open(os.path.join(a.cells_dir, name), "w", encoding="utf-8", newline="\n") as f:
+                f.write(json.dumps(obj, indent=1, ensure_ascii=False) + "\n")
     s = results["summary"]
     print("firstwalk smoke: %d cells; checks pass %d, fail %d, unknown %d; controls %s" % (
         s["cells"], s["checks"][PASS], s["checks"][FAIL], s["checks"][UNKNOWN], "ok" if controls_ok else "FAILED"))
@@ -952,6 +1032,7 @@ def main(argv=None):
     r = sub.add_parser("run")
     r.add_argument("--walk", default=os.path.join(here, "walk.json"))
     r.add_argument("--out")
+    r.add_argument("--cells-dir", help="also write one <scoreboard cell id>.json per cell into this folder")
     r.add_argument("--hub-root", help="a checkout or export holding templates/ and static/command/")
     r.add_argument("--hub-rev", help="the commit that checkout is, as the caller states it (not verified here)")
     r.add_argument("--artifacts-root")
