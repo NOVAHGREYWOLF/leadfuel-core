@@ -14,6 +14,10 @@ Held, owner words: arm reads orbit 41, lucid 131, odyssey 62, hub 1028 (go on /c
 ## Owner-step list (collected from reports; attach to the work it blocks)
 From #134 (verified by it): Surface ssh host key (machines-1); R710 vma verify line (desks-1-15); 710 firewall rule, type 'add the rule' in fleet part 3 desk (W02, U08).
 Wave 3 steps arrive in agent reports; the router appends them here as they land.
+- chats-11 (leadfuel-core PR 90, DONE, agent a0a601e0): owner go/no-go on docs/CHATS-11_CREDENTIAL_HANDLES_DESIGN.md section 5 | blocks: Windows Credential Manager backend, real type-into-field step, credential screen and approval card, KeePassXC bridge plug-in.
+
+## Refills started after wave 3
+- mail2-38 multi-model side by side chat (SURFACE), started 14:0x PT after chats-11 reported.
 
 ## Open from #134
 Archive #131 local_57ef280a once NODE 19 local_d9677cd1 cwd leaves router-131. Cards open: q9445 q9597 q9564 q9423 q9319 q9640 q9641 q9646 and q9650. Conductor rows for #134 results not marked.
