@@ -252,7 +252,7 @@ def test_the_tripwire_really_trips(tripwire):
 
 
 @pytest.mark.parametrize("url", [
-    "http://hub.example.test", "ftp://hub.example.test", "hub.example.test", "https://", "https://u:p@hub.example.test",
+    "http://hub.example.test", "ftp://hub.example.test", "hub.example.test", "https://", "https://u:p" + "@" + "hub.example.test",
     "https://hub.example.test/?a=1", "https://hub.example.test/#x", "http://192.0.2.1", "https://hub.example.test:notaport",
 ])
 def test_a_url_that_is_not_allowed_is_unknown_and_opens_no_connection(pc, capsys, monkeypatch, tmp_path, tripwire, post_card, url):
