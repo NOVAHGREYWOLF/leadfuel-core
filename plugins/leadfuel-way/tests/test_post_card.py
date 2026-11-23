@@ -121,3 +121,72 @@ def test_the_router_and_handoff_skills_teach_the_pinned_router_current_rewrite()
     for text in (router, handoff):
         assert "router/current" in text and "if_version" in text and "session_id" in text and "q9126" in text
     assert "Rewrite `router/current`" in router and "rewrites the Build Board `router/current` on every rotation" in handoff
+
+
+# ---- 0.1.25 (G39): an option may carry a verdict, so the owner's phone can answer a refusal -------------------------
+# The hub counts an option as approving unless its key is X, the card is a step card, or the desk marked it reject or
+# neutral (default-deny, the label is never read). So the desk that posts "No, leave it" marks it here.
+
+def test_no_verdict_is_the_default_and_leaves_no_verdict_key_at_all(pc):
+    c = build(pc)
+    assert all("verdict" not in o for o in c["options"])
+    assert c["options"] == [{"key": "A", "label": "Yes"}, {"key": "B", "label": "No"}, {"key": "X", "label": c["options"][-1]["label"]}]
+
+
+def test_a_verdict_is_written_on_that_option_only(pc):
+    c = build(pc, verdicts={"B": "reject"})
+    assert c["options"][1] == {"key": "B", "label": "No", "verdict": "reject"}
+    assert "verdict" not in c["options"][0] and "verdict" not in c["options"][2]
+    assert set(c) == LIVE_FIELDS  # a verdict adds no field to the card, only to an option
+
+
+@pytest.mark.parametrize("verdict", ["approve", "reject", "neutral"])
+def test_each_of_the_three_verdicts_is_accepted(pc, verdict):
+    assert build(pc, verdicts={"A": verdict})["options"][0]["verdict"] == verdict
+
+
+def test_a_verdict_key_and_value_are_normalised(pc):
+    c = build(pc, verdicts=[("b", " Reject "), ("a", "NEUTRAL")])
+    assert c["options"][0]["verdict"] == "neutral" and c["options"][1]["verdict"] == "reject"
+
+
+@pytest.mark.parametrize("verdicts", [
+    {"C": "reject"},                 # no such option
+    {"X": "reject"},                 # X never gets one, whatever it is
+    {"x": "neutral"},
+    {"B": "no"}, {"B": ""}, {"B": "rejected"}, {"B": None},   # not one of the three
+    [("B", "reject"), ("b", "neutral")],   # the same option twice
+])
+def test_a_verdict_that_breaks_a_rule_is_refused(pc, verdicts):
+    with pytest.raises(pc.CardError):
+        build(pc, verdicts=verdicts)
+
+
+def test_a_verdict_does_not_change_what_the_wake_pass_reads(pc):
+    plain, marked = build(pc), build(pc, verdicts={"B": "reject"})
+    for key in ("id", "n", "kind", "title", "asker", "asker_session", "default", "answer", "routed"):
+        assert plain[key] == marked[key]
+    assert [(o["key"], o["label"]) for o in plain["options"]] == [(o["key"], o["label"]) for o in marked["options"]]
+
+
+def test_cli_takes_repeated_verdicts_and_writes_them(tmp_path):
+    out = tmp_path / "card.json"
+    run = _run("--n", 9124, "--asker", "NODE · x part · 4", "--asker-session", ME, "--title", "T", "--say", "S", "--why", "W",
+               "--check", "verified: me", "--option", "A=Yes", "--option", "B=No", "--option", "C=Not now", "--default", "A",
+               "--default-reason", "R", "--verdict", "B=reject", "--verdict", "C=neutral", "--out", out)
+    assert run.returncode == 0, run.stdout + run.stderr
+    opts = json.loads(out.read_text(encoding="utf-8"))["options"]
+    assert [o.get("verdict") for o in opts] == [None, "reject", "neutral", None]
+
+
+@pytest.mark.parametrize("bad", ["B", "B=maybe", "Z=reject", "X=reject"])
+def test_cli_refuses_a_bad_verdict_with_a_clear_line_and_writes_nothing(tmp_path, bad):
+    out = tmp_path / "card.json"
+    run = _run("--n", 1, "--asker", "a", "--asker-session", ME, "--title", "T", "--say", "S", "--why", "W", "--check", "c",
+               "--option", "A=Yes", "--option", "B=No", "--default", "A", "--default-reason", "R", "--verdict", bad, "--out", out)
+    assert run.returncode == 2 and run.stdout.startswith("CARD-NOT-BUILT") and not out.exists()
+
+
+def test_a_step_card_may_carry_a_verdict_and_the_hub_ignores_it(pc):
+    """Written as asked; the hub reads the card kind before the verdict, so a step option is never approving."""
+    assert build(pc, kind="step", verdicts={"A": "neutral"})["options"][0]["verdict"] == "neutral"
