@@ -16,6 +16,12 @@ else (write it in the note)", is always present; the default is never X; every c
 verified, and by whom, or `unverified:`) and a `default_reason`. A step card (`--kind step`, the owner does a thing
 and says done) may carry `--guide` lines and `--link LABEL=URL`. The fields are those of the live cards (q9013,
 q9123); `answer` and `routed` start null. Nothing here touches the network or the page: it writes a file.
+
+Since 0.1.25 (G39, the owner's phone) an option may carry a verdict, `--verdict B=reject`: `approve`, `reject` or
+`neutral`, written as `options[i].verdict`. The hub counts an option as APPROVING unless its key is X, the card is a
+step card, or the desk marked it `reject` or `neutral`, so a refusal ("No, leave it") or a neutral statement ("Not
+now") takes a verdict if the owner may answer it from his phone without the approve switch; an option with no verdict
+counts as approving and waits for the desktop. Default: none, and no `verdict` key at all. X never gets one.
 """
 from __future__ import annotations
 
@@ -29,6 +35,7 @@ from pathlib import Path
 SID = re.compile(r"local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 X_LABEL = "None of these: something else (write it in the note)"
 KINDS = ("choice", "step")
+VERDICTS = ("approve", "reject", "neutral")
 MAX_TITLE = 140
 MAX_OPTIONS = 6  # A..F, with X on top
 
@@ -42,8 +49,11 @@ def _clean(text) -> str:
 
 
 def build_card(n, asker, asker_session, title, say, why, check, options, default, default_reason, kind="choice",
-               effects=None, guide=None, links=None, posted=None, now=None) -> dict:
-    """The document for `questions/q<n>`. options is [(key, label)] without X; X is added (or kept if given)."""
+               effects=None, guide=None, links=None, posted=None, now=None, verdicts=None) -> dict:
+    """The document for `questions/q<n>`. options is [(key, label)] without X; X is added (or kept if given).
+
+    verdicts is {key: approve|reject|neutral} (or [(key, verdict)]): written as `options[i].verdict`, only for the
+    keys given. An unknown key, a verdict that is not one of the three, a key given twice, or X is a CardError."""
     if not isinstance(n, int) or isinstance(n, bool) or n < 1:
         raise CardError("n must be a positive integer")
     if kind not in KINDS:
@@ -74,6 +84,21 @@ def build_card(n, asker, asker_session, title, say, why, check, options, default
     default = _clean(default).upper()
     if default == "X" or default not in {o["key"] for o in opts}:
         raise CardError("default must be one of the real options, never X")
+    chosen = {}
+    for vkey, verdict in (verdicts.items() if isinstance(verdicts, dict) else (verdicts or [])):
+        vkey, verdict = _clean(vkey).upper(), _clean(verdict).lower()
+        if vkey == "X":
+            raise CardError("option X never carries a verdict: it is the owner's 'something else' and the hub decides how it counts")
+        if vkey not in seen_keys:
+            raise CardError(f"verdict for option {vkey!r}: the card has no such option")
+        if verdict not in VERDICTS:
+            raise CardError(f"verdict for option {vkey} is {verdict!r}: it is one of {', '.join(VERDICTS)}")
+        if vkey in chosen:
+            raise CardError(f"a verdict for option {vkey} is given twice")
+        chosen[vkey] = verdict
+    for opt in opts:
+        if opt["key"] in chosen:
+            opt["verdict"] = chosen[opt["key"]]
     opts.append({"key": "X", "label": x_label})
     stamp = (now or datetime.now().astimezone()).strftime("%Y-%m-%d")
     card = {"id": f"q{n}", "n": n, "kind": kind, "title": title, "asker": asker, "asker_session": asker_session,
@@ -117,6 +142,9 @@ def main(argv=None) -> int:
     ap.add_argument("--check", required=True, help="what was verified, by whom; or `unverified: ...`")
     ap.add_argument("--option", action="append", default=[], help="KEY=label, repeated; X is added for you")
     ap.add_argument("--effect", action="append", default=[], help="KEY=what that choice does, repeated (optional)")
+    ap.add_argument("--verdict", action="append", default=[],
+                    help="KEY=approve|reject|neutral, repeated (optional): mark an option that refuses or is neutral so the "
+                         "owner's phone may answer it; no verdict counts as approving. Never on X")
     ap.add_argument("--default", required=True)
     ap.add_argument("--default-reason", required=True)
     ap.add_argument("--kind", default="choice", choices=KINDS)
@@ -128,7 +156,7 @@ def main(argv=None) -> int:
         card = build_card(args.n, args.asker, args.asker_session, args.title, args.say, args.why, args.check,
                           _pairs(args.option, "--option"), args.default, args.default_reason, kind=args.kind,
                           effects=dict(_pairs(args.effect, "--effect")), guide=args.guide,
-                          links=_pairs(args.link, "--link"))
+                          links=_pairs(args.link, "--link"), verdicts=_pairs(args.verdict, "--verdict"))
     except CardError as exc:
         print(f"CARD-NOT-BUILT: {exc}")
         return 2
