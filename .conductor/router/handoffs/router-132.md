@@ -20,3 +20,6 @@ Sweeper pass 2: C01 (NODE cards, id ac34369baf3900ea0) and C03 (unlaned cards, a
 
 ## Gotchas
 Sweeper agents cannot write files in some cases (save their text yourself). q9605: first sweeper sent it to ROUTER #133 · reports (local_132e3270-ba4e-4bc7-889e-a8ae0d3bc14f, real). Do not rotate while agents run. Workflow tool is not for this; use the Agent tool.
+
+## Update (after restart)
+The 9 agents listed as running were STOPPED when my process restarted: C01 sweep (ac34369baf3900ea0), C03 sweep (af572005979c41319), fold-s-mcp-tools, fold-s-verbs, fold-x-G20, U07, library-4, fold-s-other, and the three untitled picks (ARMS-SPOKES-READ-SHARED-ENTITLEMENT-TABLE, WAY-PANES-1, WEB-H1). Each may have partial work in its worktree (SendMessage by agent id resumes it) or none; check `gh pr list` and the worktrees before reopening. Successor title is ROUTER #134 · novah estate (ROUTER #133 · reports is another live router, local_132e3270-ba4e-4bc7-889e-a8ae0d3bc14f). 058 (local_b7630866-f2e7-4436-9936-af237cbc5c34) asked for the next wave from the 137 picks (ranks 2001 to 2137) to the 20-agent cap, re-screened, no merges without tests green on the exact head. start_session is refused in turns another session's message drove: owner pastes the successor prompt.
