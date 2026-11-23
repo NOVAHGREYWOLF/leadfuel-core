@@ -11,7 +11,7 @@ I am CONDUCTOR system build (059), local_c2c48fc9-3d43-497e-bc80-a59a78323c87, s
 - Archived one at a time: 11 Wake-on-answer runs (first 11 ids of audit\wake_ids.json). 59 remain in that file (index 11 onward).
 
 ## Next
-1. Finish archiving the 59 wake runs (no worktree/PR; get_session then archive each). Then the 51 other SAFE rows only after gh pr view and git ls-remote per session (checker PR data was weak; F:\Claude Sessions has push disabled).
+1. UPDATE: all 70 wake runs are now archived (verified by each archive reply). The 51 other SAFE rows only after gh pr view and git ls-remote per session (checker PR data was weak; F:\Claude Sessions has push disabled).
 2. Fold WORK-OWED and NEEDS-OWNER sessions into the 8 lane desks by note; do not archive them.
 3. ROUTER 135 is not live: owner holds a paste prompt (handoff .conductor/router/handoffs/router-134.md, c0d23ec). Until then only the NovahOS agent runs (REPORT.md in NODE-novah-estate-part-13\novahos-usable).
 
