@@ -1,7 +1,7 @@
 # SURFACE mail2-38 handoff 001 (ROUTER #135 background desk, 2026-11-23)
 
 Item: one prompt sent across several LOCAL models, answers side by side, in the NovahOS chat.
-Branch: `surface/mail2-38-model-compare` (this repo, leadfuel-core). Draft PR: see the PR for this branch.
+Branch: `surface/mail2-38-model-compare` (this repo, leadfuel-core). Draft PR: https://github.com/NOVAHGREYWOLF/leadfuel-core/pull/97 (already open; step 5 below is only the final body update).
 Queue row: `QV2-mail2-38` in `F:\Claude Sessions\handoff\NODE-novah-estate-part-13\QUEUE-v2.json`. Rules: `F:\Claude Sessions\handoff\ROUTER-135\RULES.md` (no sub-agents, draft PR only, no merge).
 
 ## Where the code has to live, and why it is here
