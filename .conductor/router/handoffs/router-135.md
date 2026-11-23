@@ -20,3 +20,6 @@ Archive #131 local_57ef280a once NODE 19 local_d9677cd1 cwd leaves router-131. C
 
 ## Rotation rule for me
 Do not rotate while agents run. At the cap: stop refilling, wait for the running agents to report, then hand off with none running.
+
+## Addendum (13:5x PT): ROUTER #134 stays open
+#134 addendum bd0ca84 is on origin (verified with ls-remote, newest handoff: old-cards audit from NODE 19, NovahOS desk). A NovahOS-usable background Opus agent a79a6007c03162362 runs inside #134's process and dies if #134 is archived. Its report path F:\Claude Sessions\handoff\NODE-novah-estate-part-13\novahos-usable\REPORT.md does not exist yet (checked). Do NOT archive #134 (local_1e60df5f) until that report exists or the owner accepts the loss.
