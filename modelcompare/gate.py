@@ -31,6 +31,7 @@ from .core import (LOCAL_ENGINES, MAX_MODELS, MIN_MODELS, Comparer, Refused)
 _SCRIPTED_ENGINES = frozenset({"fake"})
 
 NO_SUCH_CONVERSATION = "no_such_conversation"
+RETRY_SAME_ANSWER = "retry_same_answer"
 
 
 class CompareDesk:
@@ -52,6 +53,8 @@ class CompareDesk:
     def compare_start(self, text: str, models=None, conv_id: str | None = None) -> dict:
         text = str(text or "").strip()
         conv_id = str(conv_id) if conv_id else ""
+        if isinstance(models, (str, bytes)):   # one name, not a list of characters
+            models = [models.decode("utf-8", "replace") if isinstance(models, bytes) else models]
         try:
             if conv_id and self.store.get(conv_id) is None:
                 return {"ok": False, "refused": NO_SUCH_CONVERSATION, "error": "no such conversation"}
@@ -69,7 +72,11 @@ class CompareDesk:
             run = self.comparer.get(run_id)
         except Refused as r:
             return _refused(r)
-        out = run.snapshot(None if since is None else int(since))
+        try:
+            seen = None if since is None else int(since)
+        except (TypeError, ValueError):
+            seen = None                        # a version we cannot read: send everything, never less
+        out = run.snapshot(seen)
         out["ok"] = True
         return out
 
@@ -94,7 +101,17 @@ class CompareDesk:
         """Write the message and the chosen answer into the chat, once."""
         try:
             run = self.comparer.get(run_id)
-            lane = self.comparer.mark_picked(run, str(model or ""))
+            model = str(model or "")
+            if (run.picked is None and run.assistant_msg_id is not None
+                    and run.assistant_model != model):
+                # (Only while no answer is claimed: a kept answer says `already_picked`, below.)
+                # An earlier try began the answer row for another model and then failed. That row's
+                # model label cannot be changed from here, and writing this model's words under the
+                # other model's name would be a false record. Same answer again, or discard.
+                return {"ok": False, "refused": RETRY_SAME_ANSWER,
+                        "error": "Saving %s failed part-way. Try that answer again, or discard this "
+                                 "comparison." % run.assistant_model}
+            lane = self.comparer.mark_picked(run, model)
         except Refused as r:
             return _refused(r)
         try:
@@ -105,6 +122,7 @@ class CompareDesk:
                 run.user_written = True
             if run.assistant_msg_id is None:   # a retry finishes the row it began, not a second one
                 run.assistant_msg_id = self.store.start_assistant(conv_id, lane.model)
+                run.assistant_model = lane.model
             msg_id = run.assistant_msg_id
             self.store.finish_assistant(msg_id, lane.text, tokens_in=lane.tokens_in,
                                         tokens_out=lane.tokens_out,
@@ -164,13 +182,18 @@ def build_gate(api, scripted: bool) -> CompareDesk:
             return "A chat turn is running. Wait for it, or stop it, then compare."
         return None
 
-    panes = getattr(api, "panes", None)       # the GPU lease broker (assistant/panesgate.py)
-    on_start = getattr(panes, "turn_started", None)
-    on_end = getattr(panes, "turn_finished", None)
+    def lease(method: str) -> Callable[[str], None]:
+        # The GPU lease broker (assistant/panesgate.py) is looked up at the moment a lane starts or
+        # ends, not when the gate is built: gates are built in a list and `api.panes` may not exist
+        # yet. A broker that is absent is simply not told (a normal turn does the same).
+        def tell(token: str) -> None:
+            fn = getattr(getattr(api, "panes", None), method, None)
+            if callable(fn):
+                fn(token)
+        return tell
 
     context = getattr(api, "_chat_prompt_context", None)   # this chat's own system prompt
     allowed = LOCAL_ENGINES | (_SCRIPTED_ENGINES if scripted else frozenset())
     comparer = Comparer(engines, local_engines=allowed, blocker=blocker,
-                        on_lane_start=on_start if callable(on_start) else None,
-                        on_lane_end=on_end if callable(on_end) else None)
+                        on_lane_start=lease("turn_started"), on_lane_end=lease("turn_finished"))
     return CompareDesk(comparer, store, context_fn=context if callable(context) else None)

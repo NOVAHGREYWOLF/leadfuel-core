@@ -162,6 +162,7 @@ class CompareRun:
         self.picked: str | None = None          # the model id whose answer was kept
         self.user_written = False               # the host has written the question to the chat
         self.assistant_msg_id: str | None = None   # ...and begun the answer row (retry-safe pick)
+        self.assistant_model: str | None = None    # the model that row was begun for
         self.version = 0
         self._lock = threading.RLock()          # guards lanes, state, version
         self._done = threading.Event()
