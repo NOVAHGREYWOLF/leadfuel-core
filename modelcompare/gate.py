@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .core import (LOCAL_ENGINES, MAX_MODELS, MIN_MODELS, Comparer, Refused)
+from .core import (LOCAL_ENGINES, MIN_MODELS, Comparer, Refused)
 
 # The scripted window (--selftest, --engine fake) registers a test double under this key, and the
 # self-test needs something to compare. It is allowed ONLY when `scripted` is true.

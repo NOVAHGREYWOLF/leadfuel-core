@@ -1,5 +1,12 @@
 # SURFACE mail2-38 handoff 001 (ROUTER #135 background desk, 2026-11-23)
 
+> **CLOSED by the continuation desk (same day).** Steps 1 to 4 below are done: `tests/test_modelcompare.py`
+> (115 tests, passing), `docs/NOVAHOS_MODEL_COMPARE.md`, and the package committed. Two hardenings came out of
+> writing the tests (a retry after a part-way failed pick is refused for a different model; the GPU-lease broker is
+> looked up when a lane starts). Step 5 (PR body, WIP dropped from the title) is done in PR 97. Nothing remains on
+> this branch except NODE's integration, which is the OWNER-STEP at the end of this note. The text below is the
+> original note, kept as the record of what was asked.
+
 Item: one prompt sent across several LOCAL models, answers side by side, in the NovahOS chat.
 Branch: `surface/mail2-38-model-compare` (this repo, leadfuel-core). Draft PR: https://github.com/NOVAHGREYWOLF/leadfuel-core/pull/97 (already open; step 5 below is only the final body update).
 Queue row: `QV2-mail2-38` in `F:\Claude Sessions\handoff\NODE-novah-estate-part-13\QUEUE-v2.json`. Rules: `F:\Claude Sessions\handoff\ROUTER-135\RULES.md` (no sub-agents, draft PR only, no merge).
