@@ -1,0 +1,280 @@
+{
+  "schema": "firstwalk.walk/1",
+  "goal": "GOAL-NOVAHOS",
+  "written": "2026-11-23",
+  "by": "SURFACE desk for ROUTER #135 (queue items fold-a-firstwalk and chats-2)",
+  "source_of_the_lines": "PRIORITY-AND-DUPLICATES.md Part 3 (the 15 lines of the root goal, proposed by NODE part 16); line 3 is split into nine rooms below. The wording of each line is the proposal's, not yet the owner's final text.",
+  "how_to_use": "Walk one line or one room at a time. For every step write pass, fail or closed by design, and put one proof (a file name, a screenshot name or one sentence) in its proof field. A step you could not reach is not a pass: leave it not tested. The page `checklist.html` saves your marks in this browser and exports them as one file.",
+  "lines": [
+    {
+      "id": "L01", "n": 1, "title": "One icon, one window",
+      "you_do": "On GREYWOLF you open one NovahOS icon. One window opens. Nothing else has to be started first.",
+      "queue": ["W04", "W11", "fold-a-game-build"],
+      "checks": ["node.shell.one_ai_entry", "node.shell.one_startup_window", "local.window.route"],
+      "steps": [
+        {"id": "L01.1", "do": "Look at the desktop and the Start menu for AI program icons.", "expect": "Exactly one entry, NovahOS. No separate Prime, Decompress, Hermes, Open WebUI, Ollama, LM Studio or Character Design icon.", "proof": "Screenshot name of the desktop and of a Start search for each old name."},
+        {"id": "L01.2", "do": "Restart GREYWOLF, sign in to Windows, wait two minutes, then click the one NovahOS icon. Start nothing else by hand.", "expect": "One window opens and shows a working state (not a spinner, not an error). No second window or console appears.", "proof": "Seconds from click to usable window; screenshot name."},
+        {"id": "L01.3", "do": "Open Task Manager, Startup apps.", "expect": "Only NovahOS and its supervisor start at logon.", "proof": "Screenshot name of the Startup list."}
+      ]
+    },
+    {
+      "id": "L02", "n": 2, "title": "Sign in once, same account on the Surface",
+      "you_do": "You sign in once. You sign in on the Surface with the same account and see the same rooms and history.",
+      "queue": ["chats-5", "W04"],
+      "checks": [],
+      "steps": [
+        {"id": "L02.1", "do": "Sign in on GREYWOLF once. Close and reopen the window.", "expect": "You are not asked to sign in again.", "proof": "One sentence: asked again yes or no."},
+        {"id": "L02.2", "do": "On the Surface, open NovahOS and sign in with the same account. Compare the room list.", "expect": "The same rooms appear, in the same order.", "proof": "Two room lists, one line each."},
+        {"id": "L02.3", "do": "On both machines open chat history and read the three newest items.", "expect": "The same three items on both.", "proof": "The three titles."}
+      ]
+    },
+    {
+      "id": "L03", "n": 3, "title": "Walk every room, mark each one",
+      "you_do": "You walk every room (command center, Atlas, reports, approvals, Prime voice, Character Design, Decompress, Home Node controls, documents) and mark each pass or fail on one page.",
+      "queue": ["chats-2", "p16-1"],
+      "checks": [],
+      "steps": [
+        {"id": "L03.1", "do": "Walk rooms R01 to R09 below, one at a time, and mark every step.", "expect": "Every room has a mark on every step: pass, fail or closed by design. Nothing is left blank by accident.", "proof": "Export the marks file from the checklist page and name it here."}
+      ]
+    },
+    {
+      "id": "L04", "n": 4, "title": "Three questions only your own data can answer",
+      "you_do": "You ask the brain three questions only your own data can answer. Each answer names where it came from.",
+      "queue": ["fold-c-G13", "W06", "U10"],
+      "checks": ["local.hub.healthz", "local.brain.postgres_tcp", "local.mcp.health"],
+      "steps": [
+        {"id": "L04.1", "do": "Ask three questions whose answers exist only in your own records (a person, a date, a number you know the true answer to).", "expect": "Each answer is correct, or says it does not know. Never an invented answer.", "proof": "The three questions and a right/wrong mark for each."},
+        {"id": "L04.2", "do": "For each answer, open its source.", "expect": "Each answer names a document, row or date, and the source opens and says what the answer says.", "proof": "The three source names."}
+      ]
+    },
+    {
+      "id": "L05", "n": 5, "title": "Network off, the local model answers",
+      "you_do": "You pull the network cable and ask one again. The local model answers from the local brain.",
+      "queue": ["fold-c-G13", "fold-s-local-run"],
+      "checks": ["local.ollama.up", "local.ollama.chat_model_installed", "local.ollama.chat_roundtrip", "local.brain.postgres_tcp"],
+      "steps": [
+        {"id": "L05.1", "do": "Unplug the network cable and switch off Wi-Fi and Tailscale. Confirm a web page does not load.", "expect": "The machine is offline.", "proof": "Screenshot name of the failed page load."},
+        {"id": "L05.2", "do": "In the NovahOS window ask one of the three questions from line 4 again.", "expect": "An answer arrives from the local model, naming the same source. No error about the network.", "proof": "The answer and the model name the window shows."}
+      ]
+    },
+    {
+      "id": "L06", "n": 6, "title": "Every spoke runs one real task locally",
+      "you_do": "For each spoke you start one real task from the window. It runs once locally and files its own report. Every cell of the grid is pass, fail or closed by design.",
+      "queue": ["fold-s-local-run", "fold-s-reports", "fold-s-orderplane"],
+      "checks": ["local.mcp.health"],
+      "steps": [
+        {"id": "L06.1", "do": "Open the spoke grid. For one spoke start one real task from the window.", "expect": "The task runs on this machine once and files a report you can open.", "proof": "Spoke name and report file name."},
+        {"id": "L06.2", "do": "Repeat for each spoke and mark its grid cell.", "expect": "Every cell is pass, fail or closed by design. No cell is left unknown.", "proof": "Count of cells by result."}
+      ]
+    },
+    {
+      "id": "L07", "n": 7, "title": "Odyssey: a pursuit that is not a job",
+      "you_do": "You give odyssey a pursuit that is not a job. It plans, drafts and stops for your approval.",
+      "queue": ["fold-s-odyssey-engine"],
+      "checks": [],
+      "steps": [
+        {"id": "L07.1", "do": "Give odyssey a pursuit that is not a job application (for example, learn a skill by a date).", "expect": "It produces a plan and drafts, then stops and asks for your approval. Nothing is sent.", "proof": "The pursuit text and the approval card name."}
+      ]
+    },
+    {
+      "id": "L08", "n": 8, "title": "One approval in the window, approve one, reject one",
+      "you_do": "A send, post or spend shows as one approval in the window. You approve one and reject one. Nothing went out before your click.",
+      "queue": ["fold-a-G40", "redline-2"],
+      "checks": ["local.hub.api_requires_login"],
+      "steps": [
+        {"id": "L08.1", "do": "Cause one local action that would send or spend (a test action, not a real send).", "expect": "It appears as one approval card in the window with the draft and the price shown before you decide.", "proof": "Card name."},
+        {"id": "L08.2", "do": "Approve one card and reject another.", "expect": "The approved one runs once; the rejected one does nothing. The decision is recorded.", "proof": "The two decision log lines."},
+        {"id": "L08.3", "do": "Before step 2, check the outgoing log or the recipient's inbox.", "expect": "Nothing went out before your click.", "proof": "Log line or empty-inbox screenshot name."}
+      ]
+    },
+    {
+      "id": "L09", "n": 9, "title": "The phone, away from home",
+      "you_do": "You open NovahOS on the iPhone away from home, answer one card, and the desk that asked gets it.",
+      "queue": ["fold-a-phone", "W11", "fold-a-G39"],
+      "checks": ["local.phone.listener"],
+      "steps": [
+        {"id": "L09.1", "do": "Leave home Wi-Fi (use cellular). Open NovahOS on the iPhone.", "expect": "It opens and shows today's state from the local node over the tailnet.", "proof": "Screenshot name from the phone."},
+        {"id": "L09.2", "do": "Answer one card on the phone.", "expect": "The desk that asked receives the answer; the card shows delivered.", "proof": "Card name and the desk's receipt line."},
+        {"id": "L09.3", "do": "Compare the phone's room list with the desktop's.", "expect": "Same rooms (read-only is fine; say which rooms the phone may approve in).", "proof": "Two room lists."}
+      ]
+    },
+    {
+      "id": "L10", "n": 10, "title": "The game: level 1, a side quest, a mission, a boss",
+      "you_do": "You play level 1, one side quest, one mission and one boss. Each records an outcome in the brain.",
+      "queue": ["fold-a-G36", "fold-a-game-build"],
+      "checks": [],
+      "steps": [
+        {"id": "L10.1", "do": "Play level 1, then one side quest, one mission and one boss.", "expect": "Each finishes with an outcome (won, lost or skipped) shown on screen.", "proof": "Four outcome lines."},
+        {"id": "L10.2", "do": "Ask the brain what happened in each.", "expect": "The brain returns all four outcomes with dates.", "proof": "The brain's answer."}
+      ]
+    },
+    {
+      "id": "L11", "n": 11, "title": "Job router and the one model service",
+      "you_do": "You start one job and one model call. The router places the job on another machine and the one model service answers.",
+      "queue": ["fold-c-jobrouter-build", "fold-c-proof"],
+      "checks": ["local.ollama.up", "local.comfyui.up"],
+      "steps": [
+        {"id": "L11.1", "do": "Start one job from the window that is allowed to run elsewhere.", "expect": "The cluster grid shows it placed on another machine and finished.", "proof": "Machine name and job id."},
+        {"id": "L11.2", "do": "Start one model call.", "expect": "The one model service answers and the grid names which machine answered.", "proof": "Model name and machine name."}
+      ]
+    },
+    {
+      "id": "L12", "n": 12, "title": "GREYWOLF off for a day",
+      "you_do": "You switch GREYWOLF off for a day. Every timed job still runs and nothing is lost.",
+      "queue": ["chats-5", "fold-c-proof"],
+      "checks": [],
+      "steps": [
+        {"id": "L12.1", "do": "Shut GREYWOLF down for a full day. Do not touch it.", "expect": "Every timed job still ran during the day (on another machine) and wrote its output.", "proof": "The list of timed jobs and a ran/missed mark for each."},
+        {"id": "L12.2", "do": "Turn GREYWOLF back on and compare.", "expect": "Nothing is lost: no gap in the logs, no failed jobs left unexplained.", "proof": "One sentence."}
+      ]
+    },
+    {
+      "id": "L13", "n": 13, "title": "Restore a backup; the backups show a pass line",
+      "you_do": "You restore one backup to a scratch machine and it boots. Last night's backups and the off-machine copy show a pass line.",
+      "queue": ["desks-1-9", "sooner-4", "P01"],
+      "checks": ["watch.vault_sync_status"],
+      "steps": [
+        {"id": "L13.1", "do": "Read the proof file for last night.", "expect": "The two backups, the state pull and the off-machine copy each show a pass line with last night's date.", "proof": "The four lines."},
+        {"id": "L13.2", "do": "Restore one backup to a scratch machine.", "expect": "The restored machine boots and shows its data.", "proof": "Backup name and a boot screenshot name."}
+      ]
+    },
+    {
+      "id": "L14", "n": 14, "title": "A fresh Windows machine installs it",
+      "you_do": "A fresh Windows machine gets the installer, and step 1 works there with no desk helping.",
+      "queue": ["W04", "fold-a-G32"],
+      "checks": [],
+      "steps": [
+        {"id": "L14.1", "do": "On a fresh Windows machine run the installer yourself, with no desk helping.", "expect": "It installs, and line 1 (one icon, one window) works there.", "proof": "Machine name and the minutes it took."}
+      ]
+    },
+    {
+      "id": "L15", "n": 15, "title": "One full working day from NovahOS only",
+      "you_do": "You run one full working day from NovahOS only. Every fail becomes an item; when that list is empty, the goal is closed.",
+      "queue": ["GOAL-ONEAPP", "GOAL-CLUSTER", "GOAL-NOVAHOS"],
+      "checks": [],
+      "steps": [
+        {"id": "L15.1", "do": "Do one whole working day using only NovahOS. Note every time you had to leave it.", "expect": "You never had to leave it, or each exit is written down as a fail.", "proof": "The list of exits."},
+        {"id": "L15.2", "do": "Turn each fail from any step in this page into one queue item.", "expect": "The fail list is empty when the goal closes.", "proof": "Count of open fails."}
+      ]
+    }
+  ],
+  "rooms": [
+    {
+      "id": "R01", "title": "Command center", "where": "/command (hub); doc 04 layout; the world view opened from it",
+      "mockups": ["M3", "M2"], "queue": ["C07", "W03", "C02", "chats-2"],
+      "checks": ["source.command.regions", "source.command.dead_strings", "source.command.world_controls", "source.command.phone_layout", "local.hub.command_opens_locally", "local.hub.api_requires_login", "local.hub.healthz"],
+      "steps": [
+        {"id": "R01.1", "do": "Open the command center from the NovahOS window.", "expect": "It is the home screen, it shows your own data (not zeros), and it reaches idle (the page finishes loading).", "proof": "Screenshot name; seconds to usable."},
+        {"id": "R01.2", "do": "Centre: read the Character.", "expect": "Name, level, completeness and trust rings are real readings or a sentence saying why not. No invented number.", "proof": "The level and one ring value as shown."},
+        {"id": "R01.3", "do": "Left: read the Action Feed.", "expect": "Pending actions are cards with spoke, draft, evidence, price and trust step. An empty queue says 'nothing waiting' only after it looked.", "proof": "Count of cards and one card's name."},
+        {"id": "R01.4", "do": "Right: read the Mission Board.", "expect": "Today's plan, active goals and quests, each with where it was read from.", "proof": "Plan item count and one goal name."},
+        {"id": "R01.5", "do": "Bottom: read the Crews (one station per arm).", "expect": "One station each for hub, signal, scope, reach, orbit and odyssey with a status; roles light when they work.", "proof": "Station count."},
+        {"id": "R01.6", "do": "Top: read Resources.", "expect": "Credits, cash, queue size and runway are real readings or say 'unknown'. Credits are named for which ledger.", "proof": "The five values as shown."},
+        {"id": "R01.7", "do": "Edge: read the Radar.", "expect": "Sensors as a ring with last delivery and health; a sensor that is silent says so.", "proof": "Number of sensors and the oldest delivery shown."},
+        {"id": "R01.8", "do": "Open the Contracts overlay and the Log overlay, then close them.", "expect": "Both open and close. Contracts may say 'not built' if the Market spoke is not built; say which.", "proof": "Opened yes/no for each."},
+        {"id": "R01.9", "do": "Turn, tilt and zoom the 3D crystal and the world with the mouse (wheel and drag), then use reset.", "expect": "It rotates smoothly and zooms through the depths; reset returns it.", "proof": "Deepest zoom depth you reached."},
+        {"id": "R01.10", "do": "Look at every menu item, strip cell and pane for the words 'stage' and 'not wired yet'.", "expect": "None are visible. A dark cell says why (off, no reader, owner-only, no budget).", "proof": "Count of dead words; screenshot name of any."},
+        {"id": "R01.11", "do": "Narrow the window to phone width (375 px) or open it on the phone.", "expect": "The Action Feed is the screen; every other region is a tab; nothing overflows.", "proof": "Screenshot name."}
+      ]
+    },
+    {
+      "id": "R02", "title": "Atlas", "where": "Atlas inside the command center (world view), Atlas Live, and the saved original",
+      "mockups": ["M1", "M2"], "queue": ["W15", "K03", "C02", "W03"],
+      "checks": ["files.artifacts.original_atlas", "files.artifacts.mockups", "source.command.world_controls"],
+      "steps": [
+        {"id": "R02.1", "do": "Open the Atlas from the command center (key W or the world control).", "expect": "A 3D, rotating spatial view with several ways to look at it that change in real time.", "proof": "Screenshot name; the names of the views offered."},
+        {"id": "R02.2", "do": "Open the layers list and the views list.", "expect": "Each layer and view says built, off, later or unknown with a reason. Count how many are live.", "proof": "Live / total for layers and for views."},
+        {"id": "R02.3", "do": "Open Atlas Live once.", "expect": "Real connector calls run and each layer says whether it came back live.", "proof": "Which layers came back live."},
+        {"id": "R02.4", "do": "Open the saved original Atlas from the artifacts folder.", "expect": "It opens and is the one you liked ('the original Atlas').", "proof": "Folder name and yes/no that it is the one you meant."}
+      ]
+    },
+    {
+      "id": "R03", "title": "Reports", "where": "the reports room (hub reports, local reports)",
+      "mockups": [], "queue": ["fold-s-reports", "W07"],
+      "checks": [],
+      "steps": [
+        {"id": "R03.1", "do": "Open the reports room and open yesterday's report.", "expect": "It exists, says when it was made, and its figures are real.", "proof": "Report name and its timestamp."},
+        {"id": "R03.2", "do": "Open one report that should be stale or off.", "expect": "It says stale or off by choice, not green.", "proof": "Report name and the word shown."}
+      ]
+    },
+    {
+      "id": "R04", "title": "Approvals", "where": "the Action Feed on the command center and the approval pages",
+      "mockups": ["M3"], "queue": ["fold-a-G40", "redline-2", "webchat-14"],
+      "checks": ["local.hub.api_requires_login", "source.command.regions"],
+      "steps": [
+        {"id": "R04.1", "do": "Open one pending approval.", "expect": "Spoke, draft, evidence and price are shown before any button.", "proof": "Card name."},
+        {"id": "R04.2", "do": "Edit the draft, then approve.", "expect": "The edited text is what runs, once. The decision records that it was edited.", "proof": "Decision log line."},
+        {"id": "R04.3", "do": "Reject one with a reason.", "expect": "Nothing runs; the reason is kept.", "proof": "Decision log line."},
+        {"id": "R04.4", "do": "Click approve twice quickly on a test card.", "expect": "It runs once only.", "proof": "Count of runs."}
+      ]
+    },
+    {
+      "id": "R05", "title": "Prime voice", "where": "the voice host inside the window",
+      "mockups": [], "queue": ["fold-s-prime", "desks-1-11"],
+      "checks": ["node.prime.cloud_tts_off", "node.prime.voice_in_app", "node.prime.voice_interpreter", "local.prime.dashboard"],
+      "steps": [
+        {"id": "R05.1", "do": "Turn voice on and speak one question.", "expect": "It hears you and answers aloud in the local voice. No cloud speech service is used.", "proof": "The question and what you heard."},
+        {"id": "R05.2", "do": "Turn voice off.", "expect": "The microphone stops; the window shows it is off.", "proof": "Screenshot name."}
+      ]
+    },
+    {
+      "id": "R06", "title": "Character Design", "where": "the Character Design pane (its engine runs on this machine)",
+      "mockups": [], "queue": ["L-LAB", "fold-c-proof"],
+      "checks": ["node.chardesign.service_entry", "node.chardesign.api", "local.chardesign.page", "local.comfyui.up"],
+      "steps": [
+        {"id": "R06.1", "do": "Open Character Design from the pane.", "expect": "Its page opens inside the window and says it is ready. The app is named Character Design, not Backlot.", "proof": "Screenshot name."},
+        {"id": "R06.2", "do": "Open one existing character.", "expect": "The character and its pictures show.", "proof": "Character name."},
+        {"id": "R06.3", "do": "Start a render.", "expect": "The window asks before it takes the graphics card (the yield prompt); nothing renders until you say yes.", "proof": "Prompt shown yes/no."}
+      ]
+    },
+    {
+      "id": "R07", "title": "Decompress", "where": "the Decompress pane (the archive)",
+      "mockups": [], "queue": ["W04"],
+      "checks": ["node.decompress.archive_db", "node.decompress.owner_data_moved"],
+      "steps": [
+        {"id": "R07.1", "do": "Open Decompress and search for a word you know is in your archive.", "expect": "Results come from your own archive with counts, on this machine.", "proof": "The word and the number of results."},
+        {"id": "R07.2", "do": "Open one result.", "expect": "It shows the source and opens.", "proof": "Result name."}
+      ]
+    },
+    {
+      "id": "R08", "title": "Home Node controls", "where": "the Home Node window: services, models, modes",
+      "mockups": [], "queue": ["W04", "fold-a-G32"],
+      "checks": ["node.shell.local_cold_start", "node.shell.doors_closed", "node.ollama.up", "node.ollama.one_owner", "node.ollama.policy", "node.gpu.lease_route", "local.window.route", "local.ollama.up"],
+      "steps": [
+        {"id": "R08.1", "do": "Open the controls and read the services list.", "expect": "Each service says up, down or unknown with a reason. Busy never reads as down.", "proof": "Service count and any not up."},
+        {"id": "R08.2", "do": "Read the mode: local, cloud or hybrid.", "expect": "It says which, and local means no cloud path is used.", "proof": "The mode shown."},
+        {"id": "R08.3", "do": "Open the model list.", "expect": "The installed local models are listed, with one marked as the chat model.", "proof": "Model count."},
+        {"id": "R08.4", "do": "Open the permission modes.", "expect": "The same four modes Claude offers are shown, with the safest as default.", "proof": "Mode names."}
+      ]
+    },
+    {
+      "id": "R09", "title": "Documents", "where": "the documents room (the Document Library)",
+      "mockups": [], "queue": ["library-1", "library-2"],
+      "checks": ["files.documents.library_present", "files.documents.doc04"],
+      "steps": [
+        {"id": "R09.1", "do": "Open the documents room and search for 'command center'.", "expect": "Doc 04 and the command-center mockups are found, each with its date.", "proof": "The first three results."},
+        {"id": "R09.2", "do": "Open doc 04, mockup 3 and the original Atlas from the room.", "expect": "All three open from the window.", "proof": "Opened yes/no for each."}
+      ]
+    }
+  ],
+  "named": [
+    {"id": "N01", "title": "The command center is the home screen with doc 04's regions", "asked": "2026-09-23 to 2026-11-19, about 13 days", "mockups": ["M3", "M2"], "queue": ["C07", "W03", "C02"], "built": "partial", "evidence": "Source at the hub's main: six of doc 04's eight regions are in the page (Character, Action Feed, Mission Board, Crews as the party and regions pane, Resources, Radar). Contracts and Log are not in it. Rendering and live data are not read by this desk (production read: docs/CC-01_COMMAND_PRODUCTION_READ.md, taken on trust)."},
+    {"id": "N02", "title": "Turn and zoom the 3D crystal and the world", "asked": "2026-10-08 and later", "mockups": ["M2"], "queue": ["C07", "K03"], "built": "partial", "evidence": "The page has the 3D, orbit, rotate and reset controls and a crystal script. Whether it runs smoothly is not read: the production read in docs/CC-01_COMMAND_PRODUCTION_READ.md found /command never reached idle in the browser (cause unknown)."},
+    {"id": "N03", "title": "Real characters, managers and the oracle with real images", "asked": "2026-10-18", "mockups": ["M3"], "queue": ["W03", "K03"], "built": "partial", "evidence": "The Character panel exists. The likeness is 'not made' per docs/COMMAND_COMPLETION_PLAN.md (2026-10-14); nothing newer was found."},
+    {"id": "N04", "title": "The oracle room (teller, numerology, astrology)", "asked": "2026-10-13 and 2026-10-19", "mockups": [], "queue": ["W03"], "built": "partial", "evidence": "An owner-only entry tab is in the page when the oracle address is configured; the room itself and the engines are listed as not built in docs/COMMAND_COMPLETION_PLAN.md section 3 point 9."},
+    {"id": "N05", "title": "World data (weather, quakes) on the globe", "asked": "2026-10-02 and later", "mockups": ["M1"], "queue": ["K03", "W15"], "built": "partial", "evidence": "Production read (docs/CC-01_COMMAND_PRODUCTION_READ.md): 16 of 18 layers built; the weather layer (L14) is 'later'. Whether quakes are a layer is not read here."},
+    {"id": "N06", "title": "The Atlas: several live views, 55 layers and views", "asked": "2026-10-02 to 2026-11-19", "mockups": ["M1"], "queue": ["W15", "K03"], "built": "partial", "evidence": "Production read: 16 of 37 views built, 21 'later'; 62 of 90 Atlas parts read 'unknown'. Taken on trust from the DOORS desk; not re-read."},
+    {"id": "N07", "title": "Side quests, missions and bosses (the game)", "asked": "2026-11-19", "mockups": [], "queue": ["fold-a-G36", "fold-a-game-build"], "built": "partial", "evidence": "Quest progression levels 1 to 4 and credits are on the hub (docs/COMMAND_COMPLETION_PLAN.md, 2026-10-14). Bosses and side-quest play in the shell are not built (queue item fold-a-game-build)."},
+    {"id": "N08", "title": "novahos.com shows the NovahOS screen", "asked": "2026-10-18", "mockups": ["M3"], "queue": ["W14"], "built": "unknown", "evidence": "A public site; reading it would leave the machine, so this desk did not."},
+    {"id": "N09", "title": "The original Atlas saved in a folder", "asked": "2026-10-29", "mockups": ["M1"], "queue": ["chats-2"], "built": "built", "evidence": "The artifacts folder holds a copy of the LeadFuel Flow Atlas and of Atlas Live (files read by the smoke pass). Which one the owner means by 'the original' is his to confirm (step R02.4)."},
+    {"id": "N10", "title": "A build page for the command center", "asked": "2026-10-18 and 2026-10-30", "mockups": [], "queue": ["chats-2"], "built": "built", "evidence": "An artifact named Command Center Build is in the artifacts folder. Whether it is current is not read."},
+    {"id": "N11", "title": "The command center on the phone", "asked": "2026-10-02", "mockups": ["M3"], "queue": ["fold-a-phone", "W11"], "built": "partial", "evidence": "The hub has a phone stylesheet and script for the command page, and the phone chat host listens on the tailnet address (smoke pass). The phone showing the same rooms is not read."},
+    {"id": "N12", "title": "The command center on the home node itself", "asked": "2026-10-20", "mockups": [], "queue": ["W04"], "built": "not built", "evidence": "The local hub on this machine sends /command to the production sign-in page and its own login is off (smoke pass, 2026-11-23). The earlier note that a local twin was merged is not what a browser sees today."}
+  ],
+  "mockups": [
+    {"id": "M1", "title": "LeadFuel Flow Atlas (the original Atlas)", "artifact_id": "UCCG9zfCDWeveQMuT1MFZ5", "role": "the original Atlas the owner asked to keep (2026-10-29)", "confidence": "candidate: the earliest Atlas artifact; Atlas Live is 6LEvF7K9u9qnSxh68VWsfA", "folder": "leadfuel-flow-atlas__UCCG9zfCDWeveQMuT1MFZ5"},
+    {"id": "M2", "title": "The One Place, world (version 8)", "artifact_id": "TL21cZ8Bh5GnKixuQFjwaM", "role": "the in-depth command mock the owner approved on 2026-10-07", "confidence": "best match named by a session on 2026-10-15; the owner did not confirm it in the lines read", "folder": "the-one-place-world__TL21cZ8Bh5GnKixuQFjwaM"},
+    {"id": "M3", "title": "NovahOS (called mockup 3)", "artifact_id": "6ye3qLYh8LDhDT4CX3WVGL", "role": "the mock the owner approved on 2026-10-27 ('I like the mockup 3')", "confidence": "named by an assistant in the session that day from other sessions' wording; the owner approved after that message", "folder": "NovahOS__6ye3qLYh8LDhDT4CX3WVGL"}
+  ],
+  "checks_catalogue_note": "Check ids used in `checks` are defined in firstwalk/smoke.py. A smoke result is a preflight about what answers on this machine today. It is never a walk result: only the owner's marks change a cell's walk state."
+}
