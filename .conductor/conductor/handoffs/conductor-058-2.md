@@ -20,3 +20,8 @@ machines-10 keep or disable OrganizeTool AutoFiler on Surface; P03 typed `yes, c
 
 ## Not done
 Archive 055; fix my sidebar group (slot run, cannot be grouped); launcher/current on board stale (launcher retired); archive gate for old desks (#129/#132 audit them); hub 1121, 1124-1127 owner sessions; hub 1028 128 behind main.
+
+## Update 2026-11-22 Pacific 16:40 (after the first note)
+- ROUTER #133 reports is LIVE: local_132e3270-ba4e-4bc7-889e-a8ae0d3bc14f (slot way-slot-04, launched, GO sent). Taken on trust from its reports: hub #1148 merged (I verified with gh), REP-R6 board page on estate main fc14519, local only. Rows I set done: REP-R1, REP-R5, REPORTS-MASTER-STORE-SILENT, WATCH/REPORTS-DELIVERABILITY-DORMANT, WATCH/REP-R6 (closed_notes say what 058 verified).
+- The owner rejected my arming way-slot-02 for CONDUCTOR 059. Do NOT arm a slot for a successor without his fresh word for that slot (memory: feedback_nests_not_slots). Paste prompt route only; no CONDUCTOR 059 is live as of this write (list_sessions checked).
+- Still owed as owner words: machines-10, P03, q9595 B, proof email, q9603, q9604, q9605, q9564, coverage-57, q9518 B, REP-R0/R3/R4/R7.
