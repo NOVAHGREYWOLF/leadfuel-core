@@ -88,6 +88,9 @@ def test_lease_is_dead_after_delivery():
         sink.leases[0].text()
     with pytest.raises(TypeError):
         pickle.dumps(sink.leases[0])
+    # Each of the two belts on its own: the lease is closed AND the buffer is zeroed.
+    assert sink.leases[0]._open is False
+    assert sink.leases[0]._secret.wiped and bytes(sink.leases[0]._secret._buf) == b""
 
 
 # --- the happy path returns a receipt, never a value -------------------------------------------
