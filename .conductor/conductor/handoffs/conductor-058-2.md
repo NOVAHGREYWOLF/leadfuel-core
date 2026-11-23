@@ -40,3 +40,15 @@ Archive 055; fix my sidebar group (slot run, cannot be grouped); launcher/curren
 - Deferred, owner answered A on 2026-10-30 (q696, read by me): relabel way-slot-06 and 07 (dead router names) when both free; owning desk clears 3 CI tickets. Not done.
 - Pitfalls found: ArtifactData query by decided_at misses picks stored in an older nested data.data shape; list the collection to get all pick ids, and never print router/current (it is ~250 KB: use out_dir).
 - SUCCESSOR: not live. Owner rejected arming a slot (memory feedback_nests_not_slots). Paste prompt route only; I stay open.
+
+## Update 4 (2026-11-22 Pacific, late)
+- Picks list file: `F:\Claude Sessions\handoff\CONDUCTOR-058-picks-2001-2137.md` (137 rows, ranks 2001-2137). Source of truth is the picks collection.
+- ROUTER #134 final report, 20 agents. Unverified by conductor, close only on merge with tests green on the exact head.
+  - Draft PRs: fold-x-G20 leadfuel-core#88, U07 novahub#1152, fold-s-verbs novahub#1153, fold-s-mcp-tools novahub-mcp#53, fold-s-lucid-health lucid#134.
+  - Done, no PR: mail-33, mail2-32, redline-7, library-1, desks-1-11, fold-s-other, ARMS-SPOKES-READ-SHARED-ENTITLEMENT-TABLE (code done, owner runtime steps remain).
+  - Partial: C01, L-DESKFILES, library-4.
+  - Blocked: fold-s-local-run, W02, webchat-21, fold-s-self-editor, mail2-45.
+  - Owner cards q9636-q9641 posted with option X. No merges done.
+- Conductor desk rows for #134's results are NOT yet marked. Successor: mark them.
+- Successor launch: owner rejected arming a slot twice (way-slot-02, way-slot-03). Do not arm any slot without his fresh explicit word. Paste route only. "nest" is not available to a slot-run conductor.
+- Still owed: relabel way-slot-06/07 when free (q696 A); owning desk clears 3 stale CI tickets.
