@@ -1002,7 +1002,9 @@ def main(argv=None) -> int:
                 break
             time.sleep(60)
         if state != "granted":
-            print(f"WAIT: heavy lock {state}; set HEAVY_LOCK_PY or --heavy-lock to scripts/heavy_lock.py")
+            print(f"WAIT: heavy lock {state}; " + (
+                "another heavy job or hub CI holds it, try again later (--wait-lock queues)" if state == "refused"
+                else "set HEAVY_LOCK_PY or --heavy-lock to scripts/heavy_lock.py"))
             return 3
     sc = connect_smart(smart_db)
     params = {k: v for k, v in vars(a).items() if k not in ("cmd",)}
