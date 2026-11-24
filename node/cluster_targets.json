@@ -1,0 +1,12 @@
+{
+  "schema": "cluster-targets-1",
+  "about": "Targets for node/cluster_route.py, in order of preference. Named by ssh alias only: no addresses, keys or credentials belong in this file. vm102 is the CI runner VM (runner containers, so a heavy job waits while a CI job runs there). r620 and r710 are Proxmox hosts with no docker: a job runs in a mktemp directory as nobody and is removed after. They ship disabled; enabling one is a local override file (CLUSTER_ROUTE_TARGETS) after the staged ssh alias exists, see node/ci/stage_cluster_targets.ps1.",
+  "targets": [
+    {"id": "vm102", "ssh": "ci-vm", "exec": "docker", "image": "python:3.12-slim", "python": "python",
+     "enabled": true, "counts_runners": true, "cpus": 8, "memory_gb": 8, "max_load_frac": 0.5},
+    {"id": "r620", "ssh": "pve-r620", "exec": "plain", "python": "python3",
+     "enabled": false, "counts_runners": false, "max_load_frac": 0.5},
+    {"id": "r710", "ssh": "pve-ng", "exec": "plain", "python": "python3",
+     "enabled": false, "counts_runners": false, "max_load_frac": 0.5}
+  ]
+}
