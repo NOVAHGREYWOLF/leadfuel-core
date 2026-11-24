@@ -1,0 +1,14 @@
+{
+  "schema": "watch.vault_sync_status/1",
+  "state": "failed",
+  "reason": "exit 3: an excluded path or a big blob survived the filter; nothing pushed",
+  "last_start": "2026-11-23T11:30:02Z",
+  "last_end": "2026-11-23T11:52:18Z",
+  "exit_code": 3,
+  "age_hours": 10.79,
+  "targets_verified": [],
+  "runs_seen": 42,
+  "checked_at": "2026-11-23T22:17:08Z",
+  "log_present": true,
+  "controls_ok": true
+}
