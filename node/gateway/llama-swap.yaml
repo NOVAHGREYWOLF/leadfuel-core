@@ -1,0 +1,14 @@
+# llama-swap model list for the overlord GPU service (queue item oss-3). A PROPOSAL, not installed.
+# Start line (the owner's step, not run by any script here):
+#   llama-swap --config node/gateway/llama-swap.yaml --listen 0.0.0.0:8080   (inside CT 105, W09)
+# llama-swap serves an OpenAI-compatible /v1 and starts or stops one llama-server per model on demand.
+# Model files are placeholders until the owner picks them (see oss-7, llmfit vs the manifest tiers):
+# the capability ladder has ONE copy, home-node/installer/node-manifest.json, and is not typed here.
+healthCheckTimeout: 120
+models:
+  "local-small":
+    cmd: llama-server --port ${PORT} -m /models/qwen2.5-7b-instruct-q4_k_m.gguf -ngl 99 -c 8192
+    ttl: 300
+  "local-code":
+    cmd: llama-server --port ${PORT} -m /models/qwen2.5-coder-7b-instruct-q4_k_m.gguf -ngl 99 -c 8192
+    ttl: 300

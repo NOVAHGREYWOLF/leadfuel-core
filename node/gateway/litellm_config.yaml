@@ -1,0 +1,21 @@
+# LiteLLM proxy config, LOCAL ENDPOINTS ONLY (queue item oss-3). A PROPOSAL, not installed.
+# One client address in front of the one model service. Every route points at llama-swap on the
+# private network. There is NO cloud provider here and NO fallback list: a cloud route is a named
+# decision behind the approval gate, never an entry in this file. node/gateway_guard.py fails the
+# tests if one appears.
+model_list:
+  - model_name: local-small
+    litellm_params:
+      model: openai/local-small
+      api_base: http://overlord:8080/v1
+      api_key: none
+  - model_name: local-code
+    litellm_params:
+      model: openai/local-code
+      api_base: http://overlord:8080/v1
+      api_key: none
+litellm_settings:
+  telemetry: false
+  num_retries: 0
+  drop_params: true
+general_settings: {}
