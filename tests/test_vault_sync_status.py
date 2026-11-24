@@ -44,6 +44,22 @@ def test_nonzero_exit_is_failed(code):
     assert f"exit {code}" in out["reason"]
 
 
+def test_failed_run_names_every_failed_target_not_only_the_worst():
+    # The real 2026-11-23 shape: exit=3 is claude-sessions; leadfuel-estate's exit 2 must not hide.
+    extra = ("[claude-sessions] FAIL(3): blobs >= 52428800 bytes remain: ['a.sqlite']\n"
+             "[leadfuel-estate] UNREVIEWED email fp=0123abcd in ['x.md']\n"
+             "[leadfuel-estate] FAIL(2): leadfuel-estate: scan found unreviewed findings; nothing pushed\n")
+    out = state(run_block(5, exit_code=3, pushed=(), extra=extra))
+    assert out["state"] == "failed", out
+    assert out["reason"].startswith("exit 3: ")
+    assert out["targets_failed"] == {"claude-sessions": 3, "leadfuel-estate": 2}
+    assert "claude-sessions exit 3" in out["reason"] and "leadfuel-estate exit 2" in out["reason"]
+
+
+def test_clean_run_has_no_failed_targets():
+    assert state(run_block(5))["targets_failed"] == {}
+
+
 def test_missing_log_is_unknown_never_ok():
     assert state(None)["state"] == "unknown"
 

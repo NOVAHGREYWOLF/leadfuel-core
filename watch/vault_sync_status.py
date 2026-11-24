@@ -39,6 +39,10 @@ STATUS_FILE_MAX_AGE_HOURS = 26.0
 START_RX = re.compile(r"^=== vault_private_sync start (\S+)\s*$")
 END_RX = re.compile(r"^=== vault_private_sync end (\S+) exit=(-?\d+)\s*$")
 PUSHED_RX = re.compile(r"^\[([\w.\-]+)\] pushed \d+ ref\(s\) .*ls-remote verified\s*$")
+# One line per failed target. The end line's exit= is only the WORST target, so without these the
+# reason named one target's failure and hid the other's: 2026-11-06..11-23 claude-sessions exit 3
+# (big blobs) masked leadfuel-estate's standing exit 2 (unreviewed findings).
+FAIL_RX = re.compile(r"^\[([\w.\-]+)\] FAIL\((-?\d+)\):")
 
 EXIT_MEANING = {
     1: "a git/gh command failed or ls-remote disagreed",
@@ -77,7 +81,8 @@ def parse_runs(text):
         m = START_RX.match(line)
         if m:
             try:
-                runs.append({"start": _utc(m.group(1)), "end": None, "exit": None, "verified": set()})
+                runs.append({"start": _utc(m.group(1)), "end": None, "exit": None, "verified": set(),
+                             "failed": {}})
             except ValueError:
                 pass
             continue
@@ -94,13 +99,18 @@ def parse_runs(text):
         m = PUSHED_RX.match(line)
         if m and cur["end"] is None:
             cur["verified"].add(m.group(1))
+            continue
+        m = FAIL_RX.match(line)
+        if m and cur["end"] is None:
+            cur["failed"][m.group(1)] = int(m.group(2))
     return runs
 
 
 def classify(text, now, targets=EXPECTED_TARGETS, stale_after=STALE_AFTER_HOURS):
     """Pure verdict over the log text (None = no log). Returns a dict without controls."""
     out = {"state": "unknown", "reason": "", "last_start": None, "last_end": None,
-           "exit_code": None, "age_hours": None, "targets_verified": [], "runs_seen": 0}
+           "exit_code": None, "age_hours": None, "targets_verified": [], "targets_failed": {},
+           "runs_seen": 0}
     if text is None:
         out["reason"] = "no log file: the sync has not run, or logs elsewhere"
         return out
@@ -112,7 +122,8 @@ def classify(text, now, targets=EXPECTED_TARGETS, stale_after=STALE_AFTER_HOURS)
     run = runs[-1]
     age = (now - run["start"]).total_seconds() / 3600
     out.update(last_start=_iso(run["start"]), last_end=_iso(run["end"]), exit_code=run["exit"],
-               age_hours=round(age, 2), targets_verified=sorted(run["verified"]))
+               age_hours=round(age, 2), targets_verified=sorted(run["verified"]),
+               targets_failed=dict(sorted(run["failed"].items())))
     if age < -0.1:
         out["reason"] = "last run starts in the future: clock or log is wrong"
         return out
@@ -126,6 +137,10 @@ def classify(text, now, targets=EXPECTED_TARGETS, stale_after=STALE_AFTER_HOURS)
     if run["exit"] != 0:
         out["state"] = "failed"
         out["reason"] = f"exit {run['exit']}: {EXIT_MEANING.get(run['exit'], 'unrecognised exit code')}"
+        if run["failed"]:
+            out["reason"] += "; per target: " + ", ".join(
+                f"{t} exit {c} ({EXIT_MEANING.get(c, 'unrecognised exit code')})"
+                for t, c in sorted(run["failed"].items()))
         return out
     if age > stale_after:
         out["reason"] = f"last clean run is {age:.1f} h old (stale after {stale_after:g} h)"
