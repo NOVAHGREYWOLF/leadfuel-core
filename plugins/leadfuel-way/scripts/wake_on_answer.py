@@ -26,7 +26,11 @@ Four states, and only one of them is a pass:
     HELD         the send was queued behind a turn, or held for approval, and the token is not in the
                  target's transcript yet. Rechecked on the next pass, never resent.
     UNDELIVERED  the send failed, or it stayed HELD/UNKNOWN past HOLD_LIMIT_MIN. A durable note goes
-                 on the Build Board (router/wake_undelivered) so the next router finds it.
+                 on the Build Board (router/wake_undelivered) so the next router finds it. Since 0.1.26 it is
+                 not final: it is sent again (at most MAX_ATTEMPTS tries in all), never to a target known to
+                 be gone (archived in the store, or a send said archived / not found), so an archived asker's
+                 answer reaches its live successor: the live router of its project, the live conductor, or
+                 router/current.
     UNKNOWN      the pass could not establish either (no send result, no readable search).
 The card never carries the token: a router reading the card would otherwise put it in its own
 transcript and a message that never arrived would read as delivered.
@@ -51,6 +55,13 @@ MAX_SENDS = 5          # messaging pauses after 10 sends until the owner types: 
 MAX_CARDS_PER_SEND = 10    # the rest wait for the next pass; one huge message cannot be relayed unchanged
 MAX_MESSAGE_CHARS = 7000
 MAX_AGE_HOURS = 48     # an answer older than this was relayed by hand long ago: list it, never send it
+# 0.1.26: UNDELIVERED is no longer final. Measured 2026-11-23 on the Router desk: 84 unrouted cards were UNDELIVERED,
+# 39 of them because the asker was archived or never existed when the send went out, and the rest because a send
+# that was queued or "gave no sign of starting within 20s" was never looked at again after HOLD_LIMIT_MIN. Such a
+# card is sent again, at most MAX_ATTEMPTS times in all, to a target that is not known to be gone.
+MAX_ATTEMPTS = 3
+RETRY_AFTER_MIN = 60   # a held-then-undelivered card waits this long before its next attempt; a gone target does not
+RETRY_MAX_AGE_HOURS = 30 * 24  # a retry is still a retry of an answer the owner gave; older than this it is left
 BY = "wake-on-answer"
 
 SID = re.compile(r"(?<![\w-])local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\w-])")
@@ -81,6 +92,17 @@ def parse_send(text) -> dict:
         out["delivery"] = "held"
         if notice and re.search(r"\bexpired\b|\brefused\b|\brejected\b", low):
             out["delivery"] = "undelivered"
+        return out
+    # Measured 2026-11-06..23 (wake pass sent/*.txt): "session <id> is archived; unarchive it first" and
+    # "session <id> not found". The target cannot ever read it: the next pass sends the answer somewhere else.
+    if re.search(r"\bis archived\b|\bnot found\b", low):
+        out["delivery"] = "undelivered"
+        out["gone"] = True
+        return out
+    # Measured: "that session gave no sign of starting on it within 20s (it may be waiting for approval there, or
+    # slow to start); it can still pick it up later". Some wordings of it carry `delivery: undelivered`; it is a hold.
+    if "no sign of starting" in low:
+        out["delivery"] = "held"
         return out
     m = DELIVERY.search(text)
     word = m.group(1).lower() if m else ""
@@ -135,28 +157,62 @@ def valid_sid(value) -> bool:
     return bool(value) and bool(SID.fullmatch(str(value).strip()))
 
 
-def resolve_target(card: dict, router_id, sessions=None) -> tuple:
-    """(session id or None, why). A row id like `intelligence/local_8e471cfd-1` is not a session."""
+def known_gone(sid, sessions, gone=()) -> bool:
+    """True only when it is established that `sid` cannot read a message: the session store marks it archived,
+    or an earlier send to it came back "archived" or "not found" (`gone`). A session missing from the store is
+    not established gone (the store holds only this machine's sessions), so it is still tried."""
+    if sid in set(gone or ()):
+        return True
+    for s in sessions or ():
+        if s.get("id") == sid:
+            return bool(s.get("archived"))
+    return False
+
+
+def resolve_target(card: dict, router_id, sessions=None, gone=()) -> tuple:
+    """(session id or None, why). A row id like `intelligence/local_8e471cfd-1` is not a session.
+
+    0.1.26: an asker that is known gone (archived in the store, or an earlier send said archived / not found)
+    is passed over, and the card goes to the asker's live successor: the live router of the project its title
+    names, the one live conductor for a conductor's card, else the live router (router/current)."""
+    passed = []
     own = card.get("asker_session")
     if valid_sid(own):
-        return str(own).strip(), "asker_session"
+        own = str(own).strip()
+        if not known_gone(own, sessions, gone):
+            return own, "asker_session"
+        passed.append(own)
     m = SID.search(str(card.get("asker") or ""))
-    if m:
-        return m.group(0), "the asker text names this session"
+    if m and m.group(0) not in passed:
+        if not known_gone(m.group(0), sessions, gone):
+            return m.group(0), "the asker text names this session"
+        passed.append(m.group(0))
+    lead = f"the asker {passed[0]} is gone, so " if passed else ""
     by_title, why = router_by_title(card.get("asker"), sessions)
-    if by_title:
-        return by_title, why
+    if by_title and not known_gone(by_title, sessions, gone):
+        return by_title, lead + why if lead else why
     by_title, why = session_by_title(card.get("asker"), sessions)
-    if by_title:
-        return by_title, why
+    if by_title and not known_gone(by_title, sessions, gone):
+        return by_title, lead + why if lead else why
+    by_title, why = router_by_project(card.get("asker"), sessions)
+    if by_title and not known_gone(by_title, sessions, gone):
+        return by_title, lead + why if lead else why
+    by_title, why = live_conductor(card.get("asker"), sessions)
+    if by_title and not known_gone(by_title, sessions, gone):
+        return by_title, lead + why if lead else why
     named = router_numbers(card.get("asker"))
-    if named and sessions:
+    if named and sessions and not passed:
         # Measured 2026-10-31: a card posted by a router that has since retired went to router/current, which named
         # an unrelated retired router. The asker names a router and none is live: say so, do not guess another.
         return None, f"the asker names ROUTER #{named[-1]} and no live router has that number or project"
     if valid_sid(router_id):
-        return str(router_id).strip(), "the asker names no session, so the live router (router/current)"
-    return None, "the asker names no session and router/current has no session id"
+        router_id = str(router_id).strip()
+        if known_gone(router_id, sessions, gone):
+            return None, lead + "router/current names a router that is gone (archived, or a send said so)"
+        if passed:
+            return router_id, lead + "the live router (router/current)"
+        return router_id, "the asker names no session, so the live router (router/current)"
+    return None, lead + "the asker names no session and router/current has no session id"
 
 
 def load_sessions(root):
@@ -191,11 +247,7 @@ def router_by_title(asker, sessions):
     if not m or not sessions:
         return None, ""
     n, project = int(m.group(1)), _norm(m.group(2))
-    live = []
-    for s in sessions:
-        t = None if s["archived"] else ROUTER_TITLE.match(s["title"])
-        if t:
-            live.append((int(t.group(1)), _norm(t.group(2)), s["id"]))
+    live = _live_routers(sessions)
     same = sorted(x for x in live if project and x[1] == project)
     if same:
         num, _, sid = same[-1]
@@ -204,11 +256,63 @@ def router_by_title(asker, sessions):
     exact = [x for x in live if x[0] == n]
     if exact:
         return exact[0][2], f"router title: ROUTER #{n}"
+    if not project:
+        # A bare `ROUTER #102` whose router has rotated: the store still holds the archived #102 and its title
+        # names the project, so its live successor is found the same way (measured 2026-11-23: q742).
+        for s in sessions:
+            t = ROUTER_TITLE.match(s["title"]) if s["archived"] else None
+            if t and int(t.group(1)) == n:
+                same = [x for x in live if x[1] == _norm(t.group(2))]
+                if same:
+                    num, _, sid = same[-1]
+                    return sid, f"router title: ROUTER #{num}, the live router of ROUTER #{n}'s project"
     # `relayed by ROUTER #63, posted by ROUTER #64`: the first number is not always the poster. Try the others, last first.
     for other in reversed(router_numbers(asker)):
         hit = [x for x in live if x[0] == other]
         if hit:
             return hit[0][2], f"router title: ROUTER #{other}"
+    return None, ""
+
+
+# `LANE · project part · n`; the page mangles the dot to U+FFFD or to `Â·` (a mojibake whose first half is a letter).
+DESK_PROJECT = re.compile(r"^\s*[A-Z][A-Z-]+\s*Â?[^\w\s]\s*(.+?)\s+part\b", re.I)
+
+
+def _live_routers(sessions) -> list:
+    out = []
+    for s in sessions or ():
+        t = None if s["archived"] else ROUTER_TITLE.match(s["title"])
+        if t:
+            out.append((int(t.group(1)), _norm(t.group(2)), s["id"]))
+    return sorted(out)
+
+
+def router_by_project(asker, sessions):
+    """(session id or None, why) for a desk asker `NODE · novah estate part · 10 (via ROUTER #122)`: the
+    highest-numbered live router of the project the desk title names (measured 2026-11-23: 26 cards whose
+    desk or router had been archived went undelivered while ROUTER #139 · novah estate was live)."""
+    m = DESK_PROJECT.match(str(asker or ""))
+    if not m or not sessions or ROUTER_TITLE.match(str(asker or "")):
+        return None, ""
+    project = _norm(m.group(1))
+    same = [x for x in _live_routers(sessions) if x[1] == project]
+    if not same:
+        return None, ""
+    num, _, sid = same[-1]
+    return sid, f"router title: ROUTER #{num}, the live router of the asker's project"
+
+
+def live_conductor(asker, sessions):
+    """(session id or None, why) for an asker that is a conductor (`CONDUCTOR · system build (058)`): exactly
+    one conductor is live estate-wide, and it holds its predecessors' cards. Two live ones is no answer."""
+    # Upper case only: the tier word is upper case (the hooks read it so), and a session titled "Conductor and
+    # report delivery" is not a conductor.
+    if not re.match(r"^\s*CONDUCTOR\b", str(asker or "")) or not sessions:
+        return None, ""
+    live = [s for s in sessions if not s["archived"] and s.get("task") != BY
+            and re.match(r"^\s*CONDUCTOR\b", s["title"])]
+    if len(live) == 1:
+        return live[0]["id"], "conductor title: " + live[0]["title"] + ", the one live conductor"
     return None, ""
 
 
@@ -251,8 +355,33 @@ def same_answer(card: dict, wake: dict) -> bool:
     return wake.get("answered_at") == card.get("answered_at") and wake.get("note_at") == card.get("note_at")
 
 
-def pending(cards: dict, only=None) -> list:
-    """[(card id, 'send' | 'recheck')] in card-id order."""
+def attempts(wake: dict) -> int:
+    """How many times this answer has been tried (sent, or judged with no target). Older cards carry only `sends`."""
+    for key in ("attempts", "sends"):
+        if wake.get(key) is None:
+            continue
+        try:
+            return int(wake[key])
+        except (TypeError, ValueError):
+            continue
+    return 0
+
+
+def retry_due(wake: dict, now=None, max_attempts: int = MAX_ATTEMPTS, after_min: int = RETRY_AFTER_MIN) -> bool:
+    """An UNDELIVERED answer is tried again while it has attempts left and its last attempt is old enough. A target
+    the send tool called gone is retried at once (it goes elsewhere); a hold that timed out waits `after_min`.
+    When the time of the last attempt cannot be read, it is not retried: a check that cannot establish a state
+    does not act on one."""
+    if wake.get("state") != UNDELIVERED or attempts(wake) >= max_attempts:
+        return False
+    waited = minutes_between(wake.get("at"), now or iso_now())
+    if waited is None:
+        return False
+    return bool(wake.get("gone")) or waited >= after_min
+
+
+def pending(cards: dict, only=None, now=None, max_attempts: int = MAX_ATTEMPTS) -> list:
+    """[(card id, 'send' | 'recheck' | 'retry')] in card-id order."""
     out = []
     for cid in sorted(cards):
         card = cards[cid] or {}
@@ -266,7 +395,9 @@ def pending(cards: dict, only=None) -> list:
         if wake.get("state") and same_answer(card, wake):
             if wake["state"] in (HELD, UNKNOWN):
                 out.append((cid, "recheck"))
-            continue  # DELIVERED or UNDELIVERED for this very answer: finished
+            elif retry_due(wake, now, max_attempts):
+                out.append((cid, "retry"))
+            continue  # DELIVERED, or UNDELIVERED with no attempt due, for this very answer: finished for now
         out.append((cid, "send"))
     return out
 
@@ -288,16 +419,19 @@ def _short(text, n: int) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-def compose(items: list, to_router: bool, named_router: bool = False) -> str:
+def compose(items: list, to_router: bool, named_router: bool = False, retried=()) -> str:
     """One message for one target. items: [(card id, card, token)]."""
     pairs = ", ".join(f"{cid} = {card.get('answer')}" for cid, card, _ in items)
     if named_router:
         who = "You are the router these cards were posted by, or its live successor in the same project."
     elif to_router:
-        who = "You get these as the live router: the asker text names no session."
+        who = "You get these as the live router: the asker text names no session, or the session that asked is gone."
     else:
         who = "You are the session that asked."
     lines = [f"WAKE-ON-ANSWER: the owner answered {len(items)} card(s) on the Router desk page: {pairs}. {who}"]
+    if retried:
+        lines.append(f"Sent again ({', '.join(retried)}): an earlier send never arrived, often because the asker was "
+                     "archived. Check the card's answered_at and routed.note before acting: it may already be done.")
     for cid, card, token in items:
         label = _label(card)
         head = f"- {cid} = {card.get('answer')}" + (f" ({_short(label, 80)})" if label else "")
@@ -317,8 +451,25 @@ def compose(items: list, to_router: bool, named_router: bool = False) -> str:
 def _card_view(card: dict) -> dict:
     keep = ("answer", "answered_at", "note_at", "title", "asker", "kind", "by_default")
     view = {k: card.get(k) for k in keep}
-    view["prior_sends"] = (card.get("wake") or {}).get("sends", 0) if isinstance(card.get("wake"), dict) else 0
+    wake = card.get("wake") if isinstance(card.get("wake"), dict) else {}
+    view["prior_sends"] = wake.get("sends", 0)
+    view["prior_attempts"] = attempts(wake)
+    view["gone_to"] = sorted({str(x) for x in (wake.get("gone_to") or []) if x})
     return view
+
+
+def gone_for_retry(card: dict, sessions) -> list:
+    """The targets an UNDELIVERED card must not be sent to again: every target a send called gone, and the last
+    target when its send came back undelivered and a readable session store does not hold it (cards judged before
+    0.1.26 carry no `gone` flag; measured 2026-11-23: 17 cards went to a session id no store row has)."""
+    wake = card.get("wake") if isinstance(card.get("wake"), dict) else {}
+    out = {str(x) for x in (wake.get("gone_to") or []) if x}
+    to = wake.get("to")
+    if to and wake.get("gone"):
+        out.add(str(to))
+    if to and sessions and wake.get("delivery") == "undelivered" and not any(s.get("id") == to for s in sessions):
+        out.add(str(to))
+    return sorted(out)
 
 
 def age_hours(card: dict, now):
@@ -335,14 +486,37 @@ def age_hours(card: dict, now):
 
 def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = MAX_SENDS, now=None,
               sessions=None, max_age_hours=MAX_AGE_HOURS, max_cards=MAX_CARDS_PER_SEND,
-              max_chars=MAX_MESSAGE_CHARS) -> dict:
+              max_chars=MAX_MESSAGE_CHARS, max_attempts: int = MAX_ATTEMPTS,
+              retry_max_age_hours=RETRY_MAX_AGE_HOURS) -> dict:
     now = now or iso_now()
     plan = {"at": now, "router_id": router_id, "self_id": self_id, "sends": [], "rechecks": [],
-            "deferred": [], "stale": [], "self": [], "no_target": [], "cards": {}, "why": {}}
+            "deferred": [], "stale": [], "self": [], "no_target": [], "retries": [], "retry_too_old": [],
+            "cards": {}, "why": {}}
     groups: dict = {}
-    for cid, action in pending(cards, only=only):
+    for cid, action in pending(cards, only=only, now=now, max_attempts=max_attempts):
         card = cards[cid]
         plan["cards"][cid] = _card_view(card)
+        gone = ()
+        if action == "retry":
+            # The answer was already tried and never arrived. The 48-hour rule is for answers nobody tried; a
+            # retry has its own, longer limit, and goes nowhere a send has called gone.
+            age = age_hours(card, now)
+            if not only and retry_max_age_hours and age is not None and age > retry_max_age_hours:
+                plan["retry_too_old"].append(cid)
+                del plan["cards"][cid]
+                continue
+            gone = gone_for_retry(card, sessions)
+            plan["cards"][cid]["gone_to"] = gone
+            plan["retries"].append(cid)
+            target, why = resolve_target(card, router_id, sessions, gone=gone)
+            plan["why"][cid] = f"retry {plan['cards'][cid]['prior_attempts'] + 1} of {max_attempts}: {why}"
+            if target is None:
+                plan["no_target"].append(cid)
+            elif self_id and target == self_id:
+                plan["self"].append(cid)
+            else:
+                groups.setdefault(target, []).append(cid)
+            continue
         if action == "recheck":
             wake = card["wake"]
             to = wake.get("to")
@@ -377,11 +551,12 @@ def make_plan(cards: dict, router_id, self_id=None, only=None, max_sends: int = 
                 chosen.append(cid)
         items = [(cid, cards[cid], card_token(cid, cards[cid], target)) for cid in chosen]
         whys = [plan["why"][c] for c in chosen]
-        as_router = all(w.startswith("the asker names no session") for w in whys)
-        named = all(w.startswith("router title") for w in whys)
+        as_router = all("router/current" in w for w in whys)
+        named = all("router title" in w or "conductor title" in w for w in whys)
+        retried = [c for c in chosen if c in plan["retries"]]
         plan["sends"].append({"to": target, "why": whys[0], "cards": chosen,
                               "search_token": items[0][2], "tokens": {cid: tok for cid, _, tok in items},
-                              "text": compose(items, to_router=as_router, named_router=named)})
+                              "text": compose(items, to_router=as_router, named_router=named, retried=retried)})
     return plan
 
 
@@ -420,24 +595,33 @@ def judge(plan: dict, send_results: dict, seen_raw: dict, now=None, versions=Non
         parsed = parse_send(send_results.get(tok))
         was_seen = seen(seen_raw.get(tok), to)
         minutes = minutes_between(plan.get("at"), now)
+        gone = bool(parsed.get("gone")) and was_seen is not True
         for cid in send["cards"]:
+            view = plan["cards"][cid]
             state = verdict(parsed["delivery"], was_seen, minutes)
             states[cid] = state
             wakes[cid] = {"state": state, "at": now, "to": to, "why": send.get("why"),
                           "delivery": parsed["delivery"], "message_id": parsed["message_id"],
-                          "first_sent_at": plan.get("at"), "sends": int(plan["cards"][cid].get("prior_sends") or 0) + 1}
+                          "first_sent_at": plan.get("at"), "sends": int(view.get("prior_sends") or 0) + 1,
+                          "attempts": int(view.get("prior_attempts") or 0) + 1, "gone": gone,
+                          "gone_to": sorted(set(view.get("gone_to") or []) | ({to} if gone else set()))}
     for rc in plan.get("rechecks", []):
         cid, to = rc["card"], rc["to"]
+        view = plan["cards"][cid]
         was_seen = seen(seen_raw.get(rc["search_token"]), str(to))
         state = verdict(rc.get("delivery"), was_seen, minutes_between(rc.get("first_sent_at"), now))
         states[cid] = state
         wakes[cid] = {"state": state, "at": now, "to": to, "why": rc.get("why"), "delivery": rc.get("delivery"),
                       "message_id": rc.get("message_id"), "first_sent_at": rc.get("first_sent_at"),
-                      "sends": rc.get("sends", 1)}
+                      "sends": rc.get("sends", 1), "attempts": max(int(view.get("prior_attempts") or 0), 1),
+                      "gone": False, "gone_to": view.get("gone_to") or []}
     for cid in plan.get("no_target", []):
+        view = plan["cards"][cid]
         states[cid] = UNDELIVERED
         wakes[cid] = {"state": UNDELIVERED, "at": now, "to": None, "why": plan.get("why", {}).get(cid),
-                      "delivery": None, "message_id": None, "first_sent_at": None, "sends": 0}
+                      "delivery": None, "message_id": None, "first_sent_at": None,
+                      "sends": int(view.get("prior_sends") or 0), "attempts": int(view.get("prior_attempts") or 0) + 1,
+                      "gone": False, "gone_to": view.get("gone_to") or []}
 
     writes, fallback, unpinned = [], {}, []
     for cid in sorted(wakes):
@@ -452,7 +636,11 @@ def judge(plan: dict, send_results: dict, seen_raw: dict, now=None, versions=Non
             fallback[cid] = {"card": cid, "title": _short(view.get("title"), 140), "answer": view.get("answer"),
                              "answered_at": view.get("answered_at"), "to": wake["to"], "state": UNDELIVERED,
                              "at": now, "delivery": wake["delivery"], "why": wake.get("why"),
-                             "next": "the live router reads this card and acts on it; the watcher will not resend this answer"}
+                             "attempts": wake.get("attempts"),
+                             "next": (f"the watcher sends this answer again (attempt {wake.get('attempts', 0) + 1} of "
+                                      f"{MAX_ATTEMPTS}), to the asker's live successor when the asker is gone"
+                                      if wake.get("attempts", 0) < MAX_ATTEMPTS else
+                                      "the live router reads this card and acts on it; the watcher has no attempt left")}
         if cid in versions:
             writes.append({"op": "update", "collection": "questions", "doc_id": cid, "data": data,
                            "if_version": int(versions[cid])})
@@ -461,7 +649,7 @@ def judge(plan: dict, send_results: dict, seen_raw: dict, now=None, versions=Non
     counts = {s: sum(1 for v in states.values() if v == s) for s in STATES}
     summary = (f"WAKE-PASS DELIVERED={counts[DELIVERED]} HELD={counts[HELD]} UNDELIVERED={counts[UNDELIVERED]} "
                f"UNKNOWN={counts[UNKNOWN]} self={len(plan.get('self', []))} deferred={len(plan.get('deferred', []))} "
-               f"unpinned={len(unpinned)}")
+               f"unpinned={len(unpinned)} retried={len(plan.get('retries', []))}")
     return {"states": states, "writes": writes, "fallback": fallback, "unpinned": unpinned, "summary": summary}
 
 
@@ -500,7 +688,8 @@ def cmd_plan(args) -> int:
     only = {c.strip() for c in args.only.split(",") if c.strip()} if args.only else None
     sessions = load_sessions(args.sessions_dir)
     plan = make_plan(cards, router_id, self_id=args.self_id, only=only, max_sends=args.max_sends, now=args.now,
-                     sessions=sessions, max_age_hours=args.max_age_hours)
+                     sessions=sessions, max_age_hours=args.max_age_hours, max_attempts=args.max_attempts,
+                     retry_max_age_hours=args.retry_max_age_hours)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -525,7 +714,8 @@ def cmd_plan(args) -> int:
         return 0
     print(f"plan: {len(plan['sends'])} send(s), {len(plan['rechecks'])} recheck(s), self {plan['self'] or 'none'}, "
           f"no target {plan['no_target'] or 'none'}, deferred {len(plan['deferred'])}, "
-          f"stale (answered over {args.max_age_hours}h ago, not sent) {len(plan['stale'])}")
+          f"stale (answered over {args.max_age_hours}h ago, not sent) {len(plan['stale'])}, "
+          f"retries {len(plan['retries'])}, too old to retry {len(plan['retry_too_old'])}")
     return 0
 
 
@@ -587,6 +777,10 @@ def main(argv=None) -> int:
     p.add_argument("--max-sends", type=int, default=MAX_SENDS)
     p.add_argument("--max-age-hours", type=float, default=MAX_AGE_HOURS,
                    help="an answer older than this is listed as stale and not sent; 0 turns the limit off")
+    p.add_argument("--max-attempts", type=int, default=MAX_ATTEMPTS,
+                   help="an UNDELIVERED answer is tried at most this many times in all (1 turns retries off)")
+    p.add_argument("--retry-max-age-hours", type=float, default=RETRY_MAX_AGE_HOURS,
+                   help="an UNDELIVERED answer older than this is not retried; 0 turns the limit off")
     p.add_argument("--sessions-dir", default=None,
                    help="the desktop app's session store, %%APPDATA%%/Claude/claude-code-sessions (passed in, "
                         "not read from the environment: this script imports no os)")
