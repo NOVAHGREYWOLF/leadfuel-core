@@ -66,6 +66,10 @@ class FakeIO:
         self.gh_calls.append(tuple(args))
         for k, v in self.gh_answers.items():
             if tuple(args[:len(k)]) == k:
+                # the real gh (2.98.0) refuses to print a response that holds terminal escape sequences unless
+                # --allow-escape-sequences is passed, and exits 1: a fake that never refuses hid this for a whole build
+                if args[0] == "api" and "\x1b" in str(v[1]) and "--allow-escape-sequences" not in args:
+                    return 1, "the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway"
                 return v
         return 1, "no canned answer for %r" % (args,)
 
@@ -250,6 +254,19 @@ def test_library_lines_ignore_dry_runs_and_check_the_error_count():
     assert "proof counts disagree" in rows[2].detail
 
 
+def test_library_real_success_line_has_no_errors_field_and_is_ok():
+    # Read from the real NIGHTLY-LOG on 2026-11-23 and from the writer (nightly_capture.py log_line): the errors=
+    # counter exists only when an error was recorded, so every real success lacks it. The first version of the
+    # reader demanded errors=0 and so could never read a real success as OK.
+    real_ok = ("2026-11-24T00:31:57Z status=ok dry=False secs=85 proof.content_files_not_in_any_manifest=0 "
+               "proof.items=4960 proof.manifest_paths_missing_on_disk=0 view.index_items=4960 view.projects=31")
+    real_err = ("2026-11-23T10:30:01Z status=errors dry=False secs=61 errors=1 files_written=52 "
+                'errors_text=["proof counts disagree (see STATS-337.json)"]')
+    assert [r.state for r in mp.parse_library(real_ok)] == ["ok"]
+    assert [r.state for r in mp.parse_library(real_err)] == ["fail"]
+    assert [r.state for r in mp.parse_library("2026-11-24T00:31:57Z status=ok dry=False")] == ["unknown"]   # cut off: no secs
+
+
 # ---------------------------------------------------------------- sources that live on another machine
 
 OVERLORD = [("vzdump-vm103", "vzdump_mirror"), ("vault-sync", "vault_sync_mirror"),
@@ -322,7 +339,8 @@ def test_a_mirror_older_than_tonights_run_cannot_pass(wid, key):
 def test_vault_private_sync_passes_through_its_own_reader_and_survives_its_crash():
     ctx = make_ctx()
     ctx.io.vault = {"state": "ok", "reason": "pushed and verified 2 target(s) 3.0 h ago", "last_start": "2026-11-23T09:00:00Z"}
-    assert watcher("vault-private-sync")(ctx).status == "OK"
+    f = watcher("vault-private-sync")(ctx)
+    assert f.status == "OK" and "last run started Nov 23, 1:00 AM PST" in f.evidence      # the subject's time, in Pacific
     ctx.io.vault = {"state": "failed", "reason": "exit 2: scan found unreviewed findings"}
     assert watcher("vault-private-sync")(ctx).status == "FAIL"
     ctx.io.vault = {"state": "unknown", "reason": "no log file"}
@@ -358,7 +376,7 @@ def test_library_nightly_failed_slot_run_is_fail_even_after_a_manual_ok():
     ctx = make_ctx(now=utc("2026-11-24T01:00:00Z"))   # 5 PM PST on the 23rd
     put(ctx, "library_log", "\n".join([
         z(utc("2026-11-23T10:30:01Z")) + ' status=errors dry=False secs=61 errors=1 errors_text=["proof counts disagree"]',
-        z(utc("2026-11-24T00:31:57Z")) + " status=ok dry=False secs=85 errors=0",
+        z(utc("2026-11-24T00:31:57Z")) + " status=ok dry=False secs=85 proof.items=4960",
     ]))
     f = watcher("library-nightly")(ctx)
     assert f.status == "FAIL" and "later off-schedule" in f.evidence
@@ -367,7 +385,7 @@ def test_library_nightly_failed_slot_run_is_fail_even_after_a_manual_ok():
 def test_library_nightly_ok_and_missing():
     ctx = make_ctx()
     assert watcher("library-nightly")(ctx).status == "UNKNOWN"
-    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 errors=0")
+    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 files_written=3")
     assert watcher("library-nightly")(ctx).status == "OK"
 
 
@@ -433,7 +451,20 @@ def test_cards_snapshot_that_is_old_or_unreadable_is_unknown():
     assert watcher("cards-unrouted")(ctx).status == "UNKNOWN"          # the export's own stamp wins over the file's
 
 
-NOTES = "# Nightly desk-archival review, run 2026-11-23 ~02:00-02:20 PT\nResult: %d PASS, 132 CHECK FIRST, 144 KEEP, 7 LIVE (Remote Control) of 283 unarchived (list_sessions limit 1000).\n"
+NOTES_FMT = "# Nightly desk-archival review, run 2026-11-23 ~02:00-02:20 PT\nResult: %d PASS, %d CHECK FIRST, 144 KEEP, 7 LIVE (Remote Control) of 283 unarchived (list_sessions limit 1000).\n"
+
+
+class _Notes:
+    """NOTES % passes -> the real 2026-11-23 shape with 132 CHECK FIRST; NOTES.zero_check_first for none."""
+    def __mod__(self, passes):
+        return NOTES_FMT % (passes, 132)
+
+    @staticmethod
+    def check_first(passes, c):
+        return NOTES_FMT % (passes, c)
+
+
+NOTES = _Notes()
 
 
 def put_notes(ctx, text, name="NOTES-2026-11-23.md", mtime=None):
@@ -447,7 +478,13 @@ def test_finished_desks_not_archived():
     assert watcher("done-desks-unarchived")(ctx).status == "UNKNOWN"
     put_notes(ctx, NOTES % 0)
     f = watcher("done-desks-unarchived")(ctx)
-    assert f.status == "OK" and "132 check first" in f.evidence
+    # the real 2026-11-23 review: 0 PASS beside 132 CHECK FIRST. The review could not prove either way for those
+    # 132, so "no done desk is unarchived" is not a thing it can say: UNKNOWN, with the count named.
+    assert f.status == "UNKNOWN" and "132 check first" in f.evidence and "cannot say" in f.evidence
+    ctx = make_ctx()
+    put_notes(ctx, NOTES.check_first(0, 0))
+    f = watcher("done-desks-unarchived")(ctx)
+    assert f.status == "OK" and "0 check first" in f.evidence
     ctx = make_ctx()
     put_notes(ctx, NOTES % 4)
     f = watcher("done-desks-unarchived")(ctx)
@@ -456,7 +493,7 @@ def test_finished_desks_not_archived():
     put_notes(ctx, "the format changed\n")
     assert watcher("done-desks-unarchived")(ctx).status == "UNKNOWN"
     ctx = make_ctx()
-    put_notes(ctx, NOTES % 0, name="NOTES-2026-11-21.md", mtime=utc("2026-11-21T10:05:00Z"))
+    put_notes(ctx, NOTES.check_first(0, 0), name="NOTES-2026-11-21.md", mtime=utc("2026-11-21T10:05:00Z"))
     assert watcher("done-desks-unarchived")(ctx).status == "UNKNOWN"   # the 11-23 review did not run
 
 
@@ -484,6 +521,23 @@ def test_hub_tests_success_with_the_count_is_ok():
     gh_hub(ctx, runs(run_row(5)))
     f = watcher("hub-tests-main")(ctx)
     assert f.status == "OK" and "16415" in f.evidence and "aaaaaaa" in f.evidence
+
+
+def test_hub_job_log_with_colour_codes_and_timestamps_is_read_with_the_flag_gh_needs():
+    # The real job log (read 2026-11-23, run 45299714027): a timestamp in front of every line and colour codes in
+    # it. gh refuses such a log without --allow-escape-sequences, which made this line permanently UNKNOWN.
+    ctx = make_ctx()
+    log = "2026-11-24T00:51:05.0229039Z \x1b[1mCI COUNT GUARD\x1b[0m\n2026-11-24T00:51:05.0267920Z \x1b[32mOK: ran 16708 == collected 16708\x1b[0m\n"
+    gh_hub(ctx, runs(run_row(5)), log=log)
+    f = watcher("hub-tests-main")(ctx)
+    assert f.status == "OK" and "16708" in f.evidence, f.evidence
+    api = [c for c in ctx.io.gh_calls if c[0] == "api"]
+    assert api and "--allow-escape-sequences" in api[0]
+    mp.assert_read_only_gh(list(api[0]))                       # and the flag is still a read
+    # the fake really does refuse without the flag, so the test above proves the flag is what made it pass
+    assert ctx.io.gh(["api", "x"])[0] == 1
+    ctx.io.gh_answers[("api",)] = (0, "\x1b[31mOK: ran 3 == collected 3")
+    assert ctx.io.gh(["api", "x"])[0] == 1 and ctx.io.gh(["api", "--allow-escape-sequences", "x"])[0] == 0
 
 
 def test_hub_tests_failure_is_fail_and_cancelled_runs_say_nothing():
@@ -624,7 +678,7 @@ def test_a_reader_that_always_says_ok_is_caught_by_its_own_controls(monkeypatch)
 
 def test_text_file_has_one_line_per_watcher_and_a_dated_name(tmp_path):
     ctx = make_ctx(now=utc("2026-11-24T00:50:00Z"))   # 4:50 PM PST on the 23rd
-    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 errors=0",
+    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 files_written=3",
         mtime=utc("2026-11-24T00:40:00Z"))
     rep = mp.build_report(ctx)
     txt_path, json_path = mp.write_report(rep, str(tmp_path))
@@ -643,7 +697,7 @@ def test_a_second_read_the_same_day_replaces_the_file(tmp_path):
     rep = mp.build_report(make_ctx())
     mp.write_report(rep, str(tmp_path))
     ctx = make_ctx()
-    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 errors=0")
+    put(ctx, "library_log", z(utc("2026-11-23T10:30:01Z")) + " status=ok dry=False secs=61 files_written=3")
     path, _ = mp.write_report(mp.build_report(ctx), str(tmp_path))
     assert " | OK | " in open(path, encoding="utf-8").read()
 

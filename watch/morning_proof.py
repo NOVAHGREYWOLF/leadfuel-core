@@ -46,6 +46,19 @@ on this PC is taken as the moment the source was read, so write it fresh, do not
                                                  by card id (a desk with ArtifactData writes it; an optional
                                                  top-level "exported_at" is used as its time)
 Times are shown in Pacific; every machine field is UTC.
+
+SCHEDULE: watch/Register-MorningProof.ps1 (a dry run unless -Apply is given: registering a standing task is the
+owner's yes). It copies this file and vault_sync_status.py to %LOCALAPPDATA%\\morning-proof and runs the copy at 04:50.
+
+FIRST REAL READ, 2026-11-23 (read-only, on this PC), found three ways the first build could never say OK, each of
+them quiet because the fixtures had been written to the guess and not to the real source; all three are fixed and
+tested against the real shape:
+  * library-nightly: a real success line has no `errors=` field (the writer adds the counter only on an error), and
+    the reader demanded errors=0, so a real success read UNKNOWN for ever.
+  * hub-tests-main: gh refuses to print a job log that holds colour codes unless given --allow-escape-sequences, so
+    the count-guard line was unreadable on every run and the line read UNKNOWN for ever.
+  * done-desks-unarchived: it read OK from "0 PASS" while the same review listed 132 CHECK FIRST. A review that
+    could not tell for 132 desks cannot say none is done and unarchived: UNKNOWN until that count is zero.
 """
 import argparse
 import datetime as dt
@@ -322,7 +335,13 @@ def parse_nightly_full(text):
 
 
 def parse_library(text):
-    """The library's NIGHTLY-LOG. Dry runs are skipped. ok needs status=ok, dry=False and errors=0."""
+    """The library's NIGHTLY-LOG. Dry runs are skipped.
+
+    The writer (Document Library/tools/nightly_capture.py, log_line) gives the line `status=ok` only when the run
+    recorded no error, and it creates the `errors=N` counter only when an error is recorded. So a real success
+    line carries NO `errors=` field (read from the writer and from all 7 real success lines on 2026-11-23: the
+    first version of this reader required `errors=0`, so a real success could never read OK). ok therefore needs
+    status=ok, dry=False and secs=<n> (a cut-off line has no secs) and no errors counter above 0."""
     out = []
     for line in (text or "").splitlines():
         m = _LB.match(line)
@@ -341,12 +360,13 @@ def parse_library(text):
                 why = " (%s)" % "; ".join(str(x) for x in json.loads(text_m.group(1)))
             except ValueError:
                 why = " (%s)" % text_m.group(1)[:120]
-        if status == "ok" and n == 0 and dry:
-            out.append(Result(ts, "ok", "library nightly status=ok errors=0"))
-        elif status == "ok" and n is not None and n > 0:
+        complete = bool(dry) and bool(re.search(r"\bsecs=\d+\b", rest))
+        if status == "ok" and n is not None and n > 0:
             out.append(Result(ts, "fail", "library nightly status=ok but errors=%d%s" % (n, why)))
+        elif status == "ok" and complete:
+            out.append(Result(ts, "ok", "library nightly status=ok, no errors recorded"))
         elif status == "ok":
-            out.append(Result(ts, "unknown", "library nightly status=ok without dry= and errors= fields: the log format changed"))
+            out.append(Result(ts, "unknown", "library nightly status=ok without dry= and secs= fields: the line is cut off or the log format changed"))
         else:
             out.append(Result(ts, "fail", "library nightly status=%s errors=%s%s" % (status, n if n is not None else "?", why)))
     return out
@@ -455,7 +475,8 @@ def w_vault_private(ctx):
     if not isinstance(st, dict) or st.get("state") not in ("ok", "failed", "unknown"):
         return Finding(wid, UNKNOWN, "the VAULT private sync reader gave no recognised state")
     at = parse_ts(st.get("last_start") or "")
-    return Finding(wid, {"ok": OK, "failed": FAIL}.get(st["state"], UNKNOWN), "VAULT private sync: %s" % st.get("reason", st["state"]), at)
+    return Finding(wid, {"ok": OK, "failed": FAIL}.get(st["state"], UNKNOWN),
+                   "VAULT private sync: %s%s" % (st.get("reason", st["state"]), " [last run started %s]" % fmt_pt(at) if at else ""), at)
 
 
 def w_utilization(ctx):
@@ -589,7 +610,15 @@ def w_done_desks(ctx):
             continue
         p, c, k, live, tot = (int(x) for x in m.groups())
         detail = "%d pass the gate, %d check first, %d keep, %d live of %d unarchived" % (p, c, k, live, tot)
-        rows.append(Result(rd.mtime, "fail" if p else "ok", detail + (" and are not archived" if p else "")))
+        # PASS means the review proved the desk is done and nothing is owed: those are the FAIL. CHECK FIRST means
+        # the review could not prove either way, so "none are done and unarchived" is not something it can say:
+        # ok only when both are zero (first real read, 2026-11-23: 0 PASS beside 132 CHECK FIRST must not read OK).
+        if p:
+            rows.append(Result(rd.mtime, "fail", detail + " and are not archived"))
+        elif c:
+            rows.append(Result(rd.mtime, "unknown", detail + ": the review cannot say none of the %d check-first desks is done" % c))
+        else:
+            rows.append(Result(rd.mtime, "ok", detail))
     slot, wa = SLOTS[wid]
     status, ev, at = judge_scheduled(rows, ctx.now, slot, wa, observed_at=ctx.now, name="desk-archival review")
     return Finding(wid, status, ev, at)
@@ -603,6 +632,9 @@ def _gh_json(ctx, args):
         return json.loads(out), None
     except ValueError:
         return None, "gh %s gave output that is not JSON" % " ".join(args[:2])
+
+
+_ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
 def w_hub_tests(ctx):
@@ -636,8 +668,11 @@ def w_hub_tests(ctx):
     job = next((j for j in (jobs or {}).get("jobs", []) if j.get("name") == "pytest"), None)
     if not job or job.get("conclusion") != "success":
         return Finding(wid, UNKNOWN, "run %s succeeded on %s but its job `pytest` is not shown as success" % (rid, sha), done_at)
-    rc, log = ctx.io.gh(["api", "repos/{owner}/{repo}/actions/jobs/%s/logs" % job.get("databaseId")])
-    m = re.search(r"OK: ran (\d+) == collected (\d+)", log) if rc == 0 else None
+    # gh refuses to print a log that holds terminal escape sequences unless told to (first real read, 2026-11-23:
+    # without the flag the guard line was unreadable on every run, so this line could never say OK). The log is
+    # only matched against a pattern here, never shown, and the colour codes are stripped first.
+    rc, log = ctx.io.gh(["api", "--allow-escape-sequences", "repos/{owner}/{repo}/actions/jobs/%s/logs" % job.get("databaseId")])
+    m = re.search(r"OK: ran (\d+) == collected (\d+)", _ANSI.sub("", log)) if rc == 0 else None
     if not m or m.group(1) != m.group(2):
         return Finding(wid, UNKNOWN, "run %s succeeded on %s but the count guard's `OK: ran N == collected N` line is not readable in the job log" % (rid, sha), done_at)
     return Finding(wid, OK, "run %s success on %s; count guard OK: ran %s == collected %s; finished %s%s" % (
@@ -731,6 +766,8 @@ def run_controls(now):
             "2026-11-22T14:00:00Z PASS main=a collected=9\n2026-11-22T15:00:00Z UNKNOWN main=a reason=\"x\"")], ["ok", "unknown"]),
         ("library errors and dry", [r.state for r in parse_library(
             "2026-11-23T10:30:01Z status=errors dry=False errors=1\n2026-11-23T10:31:01Z status=ok dry=True errors=0")], ["fail"]),
+        ("library real success line", [r.state for r in parse_library(
+            "2026-11-23T10:30:01Z status=ok dry=False secs=61 files_written=3\n2026-11-23T10:31:01Z status=ok")], ["ok", "unknown"]),
     ]
     bad = [name for name, got, want in cases if got != want]
     return not bad, bad
