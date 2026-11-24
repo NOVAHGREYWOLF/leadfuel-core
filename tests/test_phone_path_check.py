@@ -533,5 +533,7 @@ def test_main_reads_the_forward_from_the_environment(monkeypatch):
 
 def test_the_module_writes_no_real_address_or_identity():
     src = open(_PATH, encoding="utf-8").read()
-    for needle in ("100.98.", "100.112.", "@gmail", "novahgreywolf"):
-        assert needle not in src
+    import re
+    # any Tailscale-range address (100.x.y.z) or any mailbox: none belongs in a public repo
+    assert not re.search(r"\b100\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", src)
+    assert not re.search(r"[\w.+-]+@[\w-]+\.(com|ai|net|org)\b", src)

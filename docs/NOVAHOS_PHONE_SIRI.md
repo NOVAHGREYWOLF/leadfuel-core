@@ -156,6 +156,7 @@ Variable** **Last**. In the body of the ask call add a second Text field: key `c
 | "misdirected request" | The address was typed differently. Use exactly `http://OVERLORD-IP:8106`, no `https` |
 | Very slow first answer | The 14B model is cold or the PC is busy. Ask again once it has loaded. A cold load can take minutes |
 | Siri cuts the shortcut off | Run it once from the Shortcuts app first, then try Siri |
+| "It cannot connect" and you do not know which end | At the PC run `python node/phone_path_check.py --forward http://OVERLORD-IP:8106` (from the leadfuel-core checkout). Its first line is `GREYWOLF-SIDE-OK`, `GREYWOLF-SIDE-DOWN`, `FORWARD-DOWN` or `UNKNOWN`, and a `next:` line names the step. On 2026-11-23 it said the PC end was fine, the iPhone answered Tailscale pings, and the host log showed pages being refused as "not paired": the fix was pairing, not the tunnel |
 
 ## If the phone is lost, or you want the key gone
 
@@ -170,6 +171,10 @@ Checked live from the PC on 2026-11-23: the phone host and the overlord forward 
 `/api/health` with 200; a request without a key to `/api/ask` or `/api/send` gets the 401 body
 quoted above; the route table and the header and status rules in this guide match the host's source
 (`phonehost.py`, `phone_guard.py`) and its spec (`PHONE.md`).
+
+`node/phone_path_check.py` was run once on 2026-11-23: it printed `GREYWOLF-SIDE-OK` with the iPhone
+peer answering 3 of 3 `tailscale ping` and the last page load refused as not paired. It cannot see the
+iPhone's own request, so it never says the phone works.
 
 **Not checked:** the taps on an iPhone (labels differ a little between iOS versions); a paired
 `/api/ask` call (pairing is approved at the PC by you, so nobody else can do it); how long iOS waits

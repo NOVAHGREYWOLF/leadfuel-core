@@ -1,6 +1,6 @@
 # Handoff: desks-3-6 (NovahOS phone, GREYWOLF CPU, Siri guide), NODE, 2026-11-23
 
-Status: CONTINUING. Router: ROUTER #135. Branch `node/desks-3-6-phone-siri-cpu`, draft PR from it. Nothing on the PC was
+Status: tools built, owner steps remain (see below). First desk: ROUTER #135; continuation: ROUTER #136, 2026-11-23. Branch `node/desks-3-6-phone-siri-cpu`, draft PR from it. Nothing on the PC was
 changed (no process stopped, no setting, no pairing, no chat sent). Every line says VERIFIED (ran today, 14:00 to 14:35
 Pacific) or TRUSTED (read from a file or a report).
 
@@ -35,28 +35,65 @@ to 4.4 s each under load. WHO polls is UNKNOWN (all 127.0.0.1); the phone host p
 Slow first replies: the host is pinned to qwen2.5:14b-instruct-q4_K_M (VERIFIED by `/api/health`; the "owner q9432 A, about
 59 percent GPU / 41 percent CPU, about 2.5 tok/s" is the source comment, TRUSTED). I did not change it; it is his decision.
 
-## What is in the PR
-- `docs/NOVAHOS_PHONE_SIRI.md`: the guide rewritten in full (key header, pairing shortcut, one call to `/api/ask`, Version B
-  fallback, error table, revoke). Public copy with placeholders for the tailnet addresses.
-- `node/windows/Stop-LeakedScans.ps1`: owner-step script; prints by default, stops only with `-Apply`. Dry-run tested.
-Not tested: the iPhone taps; a paired `/api/ask` (pairing is approved at the PC by him); whether iOS times out before 150 s.
+## What is in the PR (draft, never merged by this desk)
+- `docs/NOVAHOS_PHONE_SIRI.md`: the guide rewritten (key header, pairing shortcut, one call to `/api/ask`, Version B fallback,
+  error table, revoke) and, new, a troubleshooting row for `phone_path_check.py`. Public copy, placeholders for addresses.
+- `node/phone_path_check.py` + `tests/test_phone_path_check.py` (93 tests): read-only check of the GREYWOLF end of the phone path.
+  First line `GREYWOLF-SIDE-OK | GREYWOLF-SIDE-DOWN | FORWARD-DOWN | UNKNOWN`, then evidence (tailscale, host, forward, the phone peer
+  and `tailscale ping`, what the host log says about pairing, a device COUNT) and a `next:` line. It cannot see the iPhone's own
+  request, so it never says the phone works. A timeout says UNKNOWN, never DOWN. Run: `python node/phone_path_check.py --forward
+  http://<overlord address>:8106` (the forward address is never written in the repo; it can come from NOVAHOS_PHONE_FORWARD).
+- `node/cpu_who.py` + `tests/test_cpu_who.py` (90 tests): two process-list samples give each process NAME's share of the whole
+  machine; the machine's own busy figure comes from GetSystemTimes, and what no process explains is its own line. Lists leaked
+  `find` scans with the parent chain and prints no command line. `--clients-of 11434` names who holds connections to a port;
+  `--ollama-rate` reads Ollama's log tail for the request rate. It stops nothing (a test pins that).
+- `node/windows/Stop-LeakedScans.ps1` (re-written) + `Stop-LeakedScans.cmd` + `tests/test_stop_leaked_scans.py`: owner-run script,
+  dry run by default. Held to the same rule as `cpu_who.find_leaks` by one table of 15 command lines run through both (PowerShell
+  5.1 and 7).
+
+## Verified in the continuation (2026-11-23, 15:30 to 16:50 Pacific, all read-only)
+- `phone_path_check.py` run live: `GREYWOLF-SIDE-OK`; host and forward both answered with the host's health body; the phone peer
+  Online with 3 of 3 `tailscale ping` pongs via DERP(lax), 36 to 62 ms; pairing line `LAST-PAGE-LOAD-REFUSED` (last
+  `GET /api/boot 401` at 2026-11-19 11:03:46, no `POST /api/pair` since the last host start); devices: 1 active of 2 enrolled.
+  This reproduces the first desk's findings with a tool instead of by hand.
+- A bug in my own first draft, found by running it: `Self.Online` in `tailscale status --json` reads `false` (LastSeen year 1)
+  on this PC while Tailscale is Running and the phone answers pings, so trusting it made every run UNKNOWN. It is ignored now,
+  with a test that says why.
+- `cpu_who.py` run live (8 s interval, 16 logical CPUs): SATURATED, machine 100 percent busy, processes explain 74 percent. By
+  name: claude.exe 11.7 percent (41 processes), powershell 9, MsMpEng 8.4, python 5.9, find.exe 4.9 (the two leaks), WmiPrvSE 4.1.
+  The two leaked finds from the first note are STILL RUNNING (age 3 h 17 min and 101 min at that sample, 5,356 and 2,360
+  CPU-seconds), parents already gone (orphans). Together they hold about 5 percent of the machine.
+- Ollama request log, last 118 minutes: 1.59 requests per second, 99.96 percent status polls: `/api/tags` 0.91/s (median gap 1.0
+  s), `/api/version` 0.51/s (2.0 s), `/api/ps` 0.16/s (5.0 s), 4 POSTs. Three different periods, so at least three independent
+  timers. `--clients-of 11434` (one netstat read): NovahOS.exe holds 3 open connections, the phone host's python 1, plus 28
+  TIME_WAIT sockets whose owner Windows does not record. TRUSTED, from reading source only, not measured: `probes.py` repeats a
+  sweep every 4 s and `ui/panel.js` polls every 5 s; none of the sources found yet explains a 1 s `/api/tags` loop.
+- A fault in the previous desk's owner step, found by running it: `powershell -File Stop-LeakedScans.ps1` is REFUSED on this PC
+  ("running scripts is disabled": every execution-policy scope is Undefined, so the client default Restricted applies). The
+  `.cmd` wrapper adds `-ExecutionPolicy Bypass` for that one process and changes no setting.
+- A latent bug in the previous script, found by the table test: its pattern read `find / -name find x` as root `x` (a miss, so it
+  stopped less than it should), skipped `find -L / ...`, and would have counted a Windows `find /i "text"` in System32 as a root.
+  All three are fixed and tested. It also now says UNKNOWN for a `find` whose command line it cannot read, instead of "nothing to
+  do", and re-reads a pid's start time before it stops it.
+- Not run by me (guard): `Stop-LeakedScans -Apply`, anything that stops a process, any scan.
 
 ## Owner steps
 1. iPhone: Tailscale app Connected; open the overlord address in Safari (Add to Home Screen); if it says "Not paired", at
-   GREYWOLF double-click `Pair-Phone.cmd` and type the code on the phone. Then build the two shortcuts from the guide.
-2. GREYWOLF: `powershell -NoProfile -File Stop-LeakedScans.ps1 -Apply` (about one core back).
-Optional, his call: Defender exclusion for the worktree folders (lowers protection; benefit unmeasured).
-Router-level: cap parallel agent desks; 24 to 28 concurrent claude.exe is what keeps the box saturated.
+   GREYWOLF double-click `Pair-Phone.cmd` (home-node/app/assistant) and type the code on the phone. Then build the two
+   shortcuts from the guide. After that `python node/phone_path_check.py --forward ...` should show `LAST-PAGE-LOAD-PAIRED`.
+2. GREYWOLF: in a terminal, `node/windows/Stop-LeakedScans.cmd` (lists), then `node/windows/Stop-LeakedScans.cmd -Apply`
+   (stops the two scans, about one core back). Plain `powershell -File ...ps1` will be refused by the execution policy.
+Optional, his call: a Defender exclusion for the worktree folders (lowers protection; benefit unmeasured; MsMpEng was 8.4 percent).
+Router-level: cap parallel agent desks; 40 or so concurrent claude.exe is what keeps the box saturated.
 
-## Left to do (not built, I hit the size cap)
-1. `node/phone_path_check.py` + `tests/test_phone_path_check.py`: a read-only check that prints a verdict first line
-   (GREYWOLF-SIDE-OK / GREYWOLF-SIDE-DOWN / UNKNOWN, never "phone works", because it cannot see the phone's own request),
-   with the evidence above: tailscale status and ping, health direct and via the forward, count of active devices (never a
-   digest), whether the host log has any `POST /api/pair` since the last start. Style: `node/captive_probe.py`.
-2. `node/cpu_who.py` + tests: the per-name attribution and the leaked-`find` rule above, as pure functions over a JSON
-   process list, with a fixture from this note.
-3. Find who polls Ollama at 1.2 to 1.5 requests per second (candidates: the NovahOS window or launcher, the supervisor's
-   ollama check, Open WebUI, Hermes). Read-only: count by User-Agent is not logged, so sample connections with `netstat`.
-4. Private copy of the guide with real addresses at `F:\novah-estate\phone-siri-shortcut.md` (replace `OVERLORD-IP` and
-   `GREYWOLF-IP`), then commit it in that local repo.
-5. Re-check from the phone once he has paired: done_when "Phone chat answers from the local model".
+## Left to do
+1. Find the 1 s `/api/tags` poller. Method now exists: `python node/cpu_who.py --ollama-rate` before and after the owner closes
+   one thing at a time (the NovahOS window first: it holds 3 of the 4 open connections), then compare the median gaps. The
+   candidates are timers inside NovahOS.exe (the window's panels), not Open WebUI or Hermes, which hold no connection right now.
+   Fixing it is a code change in the NovahOS app (`home-node/app`), which is not this desk's lane: hand to the owner of that code.
+2. The private guide copy with the real addresses is committed LOCALLY in the private estate repo on branch `node/desks-3-6-guide`
+   (worktree `.claude/worktrees/desks-3-6-guide`, commit aa3e2df, not pushed). The stale 2026-11-07 file at the checkout's
+   `phone-siri-shortcut.md` (untracked, says "no keys needed") was left alone because the checkout holds other sessions' work;
+   whoever merges the branch should move the old file aside first, or git will refuse to overwrite it.
+3. Re-check from the phone once paired: done_when "Phone chat answers from the local model". Only the owner can do this.
+4. Not measured: whether iOS gives up on a request before 150 s (guide Version B covers it); the phone's 14B first-reply time.

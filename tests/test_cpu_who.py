@@ -470,6 +470,8 @@ def test_main_ollama_rate_with_a_missing_log_is_unknown(tmp_path):
 
 def test_the_module_cannot_stop_anything_and_writes_no_real_name_or_address():
     src = open(_PATH, encoding="utf-8").read()
-    for needle in ("taskkill", "Stop-Process", ".kill(", ".terminate(", "os.kill", "TerminateProcess",
-                   "novahgreywolf", "@gmail", "100.98.", "100.112."):
+    import re
+    for needle in ("taskkill", "Stop-Process", ".kill(", ".terminate(", "os.kill", "TerminateProcess"):
         assert needle not in src, needle
+    assert not re.search(r"\b100\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", src)
+    assert not re.search(r"[\w.+-]+@[\w-]+\.(com|ai|net|org)\b", src)
