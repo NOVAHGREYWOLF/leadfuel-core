@@ -1,0 +1,7 @@
+{
+  "schema": "watch.walk_probe.nightly_full_run/1",
+  "log_present": true,
+  "verdict_lines_in_log": 26,
+  "verdict_line": "2026-11-23T17:01:38Z UNKNOWN main=158c3cbc58a4 collected=- passed=- failed=- skipped=- errors=- xfail=- xpass=- wall=4h30m00s wait=0m01s py=3.12.10-venv pytest=9.1.1 host=GREYWOLF bare=16415 collect=1m30s progress=94% budget=285 reason=\"exceeded the 270 min wall cap; killed, no verdict; reached 94% (about 15430 of 16415 tests); at this pace the run needs about 287 min\"",
+  "lines_after": []
+}
