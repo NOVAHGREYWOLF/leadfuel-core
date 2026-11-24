@@ -18,8 +18,8 @@ from kit import PLUGIN, load_module
 
 SCRIPT = PLUGIN / "scripts" / "wake_on_answer.py"
 
-ROUTER = "local_76d5692d-6b97-4e58-b6bf-4cd6509f0fd6"
-DESK = "local_17329271-af57-469a-a2de-0a9fc6bf1778"
+ROUTER = "local_70070000-0000-4000-8000-000000007007"
+DESK = "local_de5c0000-0000-4000-8000-00000000de5c"
 NOBODY = "local_00000000-0000-4000-8000-000000000000"
 
 # measured, mcp__ccd_session_mgmt__send_message to a missing session
@@ -702,6 +702,13 @@ def undelivered(to, at="2026-10-14T00:00:00Z", **extra):
          "delivery": "undelivered", "sends": 1}
     w.update(extra)
     return w
+
+
+@pytest.mark.parametrize("text", ["Message not delivered: tool not found. (delivery: undelivered; message_id: 1)",
+                                  "the archive is archived somewhere (delivery: undelivered)"])
+def test_loose_not_found_text_is_not_gone(woa, text):
+    out = woa.parse_send(text)
+    assert out["delivery"] == "undelivered" and not out.get("gone")
 
 
 @pytest.mark.parametrize("text", [SEND_ARCHIVED, SEND_NOT_FOUND])

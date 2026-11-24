@@ -32,9 +32,12 @@ What a row becomes (the decision is `decide`, and it is the guard):
     refuse        a law9 item marked yes without the amber Yes, or with a stated cost that no longer matches the
                   item: nothing is sent, the row ends `held` with the reason.
 
-A row ends `done` only when the target's own transcript holds the message token (the wake pass's rule), or the
-card write came back with a version. A send that failed is `failed`. A pass that cannot see what it would
-need to call it either way says `unknown`, never `done`.
+The executor never writes `done`: that is the owning desk's word, with proof that the item's finish line
+landed. A row ends `relayed` when the target's own transcript holds the message token (the wake pass's rule),
+or the card write came back with a version. A send that failed is `failed`. A pass that cannot see what it
+would need to call it either way says `unknown`. A row whose opt or time is not what the page writes is
+refused (`held`). A `running` row of this executor with no token (a pass died) goes back to `queued` after
+HOLD_LIMIT_MIN minutes.
 
 Exit codes: 0 nothing to do or all done, 1 any failed, 2 any unknown or running, or inputs that cannot be read.
 """
@@ -61,6 +64,13 @@ MAX_ITEMS_PER_SEND = 10
 MAX_MESSAGE_CHARS = 7000
 HOLD_LIMIT_MIN = wake.HOLD_LIMIT_MIN
 DONE, FAILED, HELD, UNKNOWN, RUNNING = "done", "failed", "held", "unknown", "running"
+# The executor never writes DONE. A decision that reached its owner (the token is in the target's transcript, or
+# the answer is on the card) is RELAYED; only the owning desk writes DONE, with proof that the item's finish
+# line landed (DOORS 182 on PR 108: the page reads done as carried out).
+RELAYED = "relayed"
+QUEUED = "queued"
+PAGE_TIME = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2} PT$")   # what the page's pt() writes
+MAX_OPT_LEN = 2
 FINAL_HELD = {"price_lookup", "typed_step", "secret_step"}
 KINDS = ("carry_out", "hold", "inward_only", "law9_yes", "price_lookup", "typed_step", "secret_step")
 
@@ -95,6 +105,35 @@ def _exec(row) -> dict:
     return e if isinstance(e, dict) else {}
 
 
+def allowed_opts(item: dict) -> set:
+    """The option keys the page can write for this item: the keys of its first question, X included, or only ''
+    when it has no question."""
+    sq = (item.get("sq") or [None])[0]
+    keys = {""}
+    for o in (sq or {}).get("opts") or []:
+        m = re.match(r"^([A-Z])=", str(o))
+        if m:
+            keys.add(m.group(1))
+    return keys
+
+
+def row_problem(item: dict, row: dict):
+    """Why a row cannot be trusted as written by the page, or None. Rows are viewer-written data: `opt` must be
+    one of the item's own keys and `at` the page's own time format, so nothing crafted reaches a message or a
+    card answer."""
+    opt = row.get("opt")
+    if opt is None:
+        opt = ""
+    if not isinstance(opt, str) or len(opt) > MAX_OPT_LEN or opt not in allowed_opts(item):
+        return f"the row's option {str(opt)[:20]!r} is not one of this item's options"
+    at = row.get("at")
+    if at is not None and not (isinstance(at, str) and PAGE_TIME.match(at)):
+        return "the row's time is not in the page's format"
+    if row.get("note") is not None and not isinstance(row.get("note"), str):
+        return "the row's note is not text"
+    return None
+
+
 def decide(item: dict, row) -> dict:
     """{'kind', 'why', 'source'} or {'kind': None} when there is nothing to do for this row.
 
@@ -108,10 +147,13 @@ def decide(item: dict, row) -> dict:
         kind = "inward_only" if law9 else {"typed": "typed_step", "secret": "secret_step"}.get(cls, "carry_out")
         return {"kind": kind, "source": "pre-decided on standing words, not vetoed",
                 "why": "a veto-only item nobody vetoed: the default goes ahead"}
-    if _exec(row).get("state") != "queued":
+    if _exec(row).get("state") != QUEUED:
         return {"kind": None}
     choice = row.get("choice")
     source = "clicked on the Owner Walk page"
+    problem = row_problem(item, row)
+    if problem:
+        return {"kind": "refuse", "source": source, "why": problem}
     if choice == "veto":
         return {"kind": "hold", "source": source, "why": "the owner vetoed a pre-decided item"}
     if choice not in ("yes", "default", "other", "price_first"):
@@ -221,7 +263,7 @@ def compose(entries: list, when: str, to_router: bool = False) -> str:
         lines.append(f"  what you may do: {INSTRUCTION[dec['kind']]}")
         lines.append(f"  finished when: {wake._short(it.get('done'), 300)}")
         lines.append(f"  token {e['token']}")
-    lines.append(f"The executor marks each row on the page done once this message is in your transcript. When the "
+    lines.append(f"The executor marks each row on the page relayed (not done) once this message is in your transcript. When the "
                  f"item's finish line lands, write exec = {{state: done, proof, link, by, at}} on walk/<id> at {PAGE} "
                  "(ArtifactData update, pinned), or failed with why. Times in Pacific. No reply to the pass is needed.")
     return "\n".join(lines)
@@ -233,7 +275,7 @@ def make_plan(items: list, rows: dict, versions: dict, sessions=None, router_id=
               self_id=None, already_sent=0, max_sends=MAX_SENDS, max_defaults=MAX_DEFAULTS, now=None) -> dict:
     now = now or wake.iso_now()
     when = pacific(now)
-    plan = {"at": now, "at_pt": when, "sends": [], "rechecks": [], "cards": [], "refused": [], "no_target": [],
+    plan = {"at": now, "at_pt": when, "sends": [], "rechecks": [], "stale": [], "cards": [], "refused": [], "no_target": [],
             "deferred": [], "unpinned": [], "running": [], "decisions": {}}
     groups: dict = {}
     defaults = 0
@@ -244,6 +286,19 @@ def make_plan(items: list, rows: dict, versions: dict, sessions=None, router_id=
         if row is not None and ex.get("state") == RUNNING and ex.get("token") and ex.get("by") == BY:
             plan["rechecks"].append({"id": iid, "to": ex.get("to"), "token": ex["token"], "kind": ex.get("kind"),
                                      "started": ex.get("started_utc"), "delivery": ex.get("delivery")})
+            continue
+        if row is not None and ex.get("state") == RUNNING and ex.get("by") == BY and iid in versions:
+            # No token: a card row (or a row whose pass died before it sent). Nothing can be rechecked, so once it
+            # is older than the hold limit it goes back to queued: a card write is idempotent (the same answer on
+            # the card reads as relayed) and a row that never sent has sent nothing. Unreadable age is unknown.
+            age = wake.minutes_between(ex.get("started_utc"), now)
+            if age is None:
+                plan["stale"].append({"id": iid, "state": UNKNOWN,
+                                      "why": "running with no token and no readable start time"})
+            elif age > HOLD_LIMIT_MIN:
+                plan["stale"].append({"id": iid, "state": QUEUED,
+                                      "why": f"running for {int(age)} min with no token: the pass that started it "
+                                             "never judged it, so it is queued again"})
             continue
         dec = decide(it, row)
         kind = dec.get("kind")
@@ -262,8 +317,9 @@ def make_plan(items: list, rows: dict, versions: dict, sessions=None, router_id=
             plan["refused"].append(iid)
             continue
         if wants_card(it, row, kind):
-            plan["cards"].append({"id": iid, "card": it["card"], "opt": row.get("opt"), "note": row.get("note") or "",
-                                  "kind": kind, "at": row.get("at")})
+            plan["cards"].append({"id": iid, "card": it["card"], "opt": row.get("opt"),
+                                  "note": wake._short(row.get("note") or "", 400), "kind": kind, "at": row.get("at"),
+                                  "stated": dec.get("stated") or ""})
             continue
         target, why = resolve_target(it, sessions, router_id, project, self_id)
         plan["decisions"][iid]["target_why"] = why
@@ -350,6 +406,9 @@ def card_writes(plan: dict, cards: dict, versions: dict, now=None) -> dict:
             out["skipped"][c["id"]] = (UNKNOWN, f"no version read for card {c['card']}")
             continue
         note = (c["note"] + " " if c["note"] else "") + f"(clicked on the Owner Walk page {c.get('at') or ''}".strip() + ")"
+        if c.get("stated"):
+            # The amber Yes is limited to what it stated; an asker reading a bare answer would lose the limit.
+            note += f" The Yes states, and covers only: {wake._short(c['stated'], 400)}"
         out["writes"].append({"op": "update", "collection": "questions", "doc_id": c["card"],
                               "data": {"answer": c["opt"], "answered_at": now, "note": note, "note_at": now,
                                        "routed": None, "answered_via": "owner-walk"},
@@ -371,13 +430,15 @@ def card_written(raw) -> bool | None:
 
 def _state_for(kind: str, verdict: str) -> str:
     if verdict == wake.DELIVERED:
-        return HELD if kind in FINAL_HELD else DONE
+        return HELD if kind in FINAL_HELD else RELAYED
     if verdict == wake.UNDELIVERED:
         return FAILED
     if verdict == wake.HELD:
         return RUNNING
     return UNKNOWN
 
+
+AWAIT = "Not done yet: the owning desk writes done with its finish-line proof when the item lands"
 
 STEP = {
     "price_lookup": "priced lookup asked of {to}; waiting for the cost, then your Yes",
@@ -407,6 +468,8 @@ def judge(plan: dict, sends: dict, seen_raw: dict, card_result=None, versions=No
                      f"{'yes' if was else 'no' if was is False else 'unreadable'}")
             if state == HELD:
                 proof = STEP[kind].format(to=s["to"]) + ". " + proof
+            elif state == RELAYED:
+                proof += ". " + AWAIT
             extra = {"kind": kind}
             if state == RUNNING:
                 extra.update(to=s["to"], token=s["token"], started_utc=plan.get("at"), delivery=parsed["delivery"])
@@ -420,6 +483,8 @@ def judge(plan: dict, sends: dict, seen_raw: dict, card_result=None, versions=No
                  f"{'yes' if was else 'no' if was is False else 'unreadable'}")
         if state == HELD:
             proof = STEP[kind].format(to=rc.get("to")) + ". " + proof
+        elif state == RELAYED:
+            proof += ". " + AWAIT
         extra = {"kind": kind}
         if state == RUNNING:
             extra.update(to=rc.get("to"), token=rc["token"], started_utc=rc.get("started"), delivery=rc.get("delivery"))
@@ -437,14 +502,18 @@ def judge(plan: dict, sends: dict, seen_raw: dict, card_result=None, versions=No
             state, why = cr["skipped"][iid]
             put(iid, state, why, kind="card")
         elif iid in cr.get("same", []):
-            put(iid, DONE, f"card {c['card']} already carries answer {c['opt']}", link=ROUTER_DESK, kind="card")
+            put(iid, RELAYED, f"card {c['card']} already carries answer {c['opt']}. {AWAIT}", link=ROUTER_DESK,
+                kind="card")
         elif written is True:
-            put(iid, DONE, f"answer {c['opt']} written on card {c['card']} ({str(cr.get('raw'))[:160]})",
-                link=ROUTER_DESK, kind="card")
+            put(iid, RELAYED, f"answer {c['opt']} written on card {c['card']} ({str(cr.get('raw'))[:160]}); the wake "
+                f"pass routes it to the asker. {AWAIT}", link=ROUTER_DESK, kind="card")
         elif written is False:
             put(iid, FAILED, f"the card write was refused: {str(cr.get('raw'))[:200]}", link=ROUTER_DESK, kind="card")
         else:
             put(iid, UNKNOWN, f"no readable result for the write on card {c['card']}", link=ROUTER_DESK, kind="card")
+    for st in plan.get("stale", []):
+        extra = {"requeued": True} if st["state"] == QUEUED else {}
+        put(st["id"], st["state"], st["why"], **extra)
     writes, unpinned = [], []
     for iid in sorted(final):
         if iid in versions:
@@ -452,7 +521,8 @@ def judge(plan: dict, sends: dict, seen_raw: dict, card_result=None, versions=No
                            "if_version": int(versions[iid])})
         else:
             unpinned.append(iid)
-    counts = {k: sum(1 for e in final.values() if e["state"] == k) for k in (DONE, HELD, FAILED, UNKNOWN, RUNNING)}
+    counts = {k: sum(1 for e in final.values() if e["state"] == k)
+              for k in (RELAYED, HELD, FAILED, UNKNOWN, RUNNING, QUEUED)}
     summary = ("OWNER-WALK " + " ".join(f"{k}={v}" for k, v in counts.items())
                + f" deferred={len(plan.get('deferred', []))} unpinned={len(unpinned)}")
     return {"exec": final, "writes": writes, "unpinned": unpinned, "summary": summary, "counts": counts}
@@ -509,7 +579,9 @@ def cmd_plan(a) -> int:
         except ValueError:
             print(f"OWNER-WALK UNKNOWN: row file {f.name} is not JSON")
             return 2
-        rows[str(d.get("id") or f.stem)] = d
+        # Keyed by the document id (the file name the export chose), never by the row's own `id` field: a row is
+        # viewer-written, and one document must not speak for another item.
+        rows[f.stem] = d if isinstance(d, dict) else {}
     versions = _versions(a.versions)
     router_id = None
     if a.router_current:
@@ -538,7 +610,9 @@ def cmd_plan(a) -> int:
         print(f"RECHECK walk={rc['id']} to={rc['to']} token={rc['token']}")
     if sessions is None:
         print("WARNING: no readable session store; every item went to router/current or has no target")
-    acted = run or plan["refused"] or plan["no_target"] or plan["rechecks"] or plan["cards"]
+    for st in plan["stale"]:
+        print(f"STALE walk={st['id']} -> {st['state']}")
+    acted = run or plan["refused"] or plan["no_target"] or plan["rechecks"] or plan["cards"] or plan["stale"]
     if not acted:
         print(f"OWNER-WALK nothing to do: {len(rows)} rows read, none queued"
               + (f"; unpinned {','.join(plan['unpinned'])}" if plan["unpinned"] else ""))
