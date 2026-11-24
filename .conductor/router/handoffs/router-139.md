@@ -23,3 +23,6 @@ ARMS 107, WATCH 108 (hub 1179), SUITE 109 (hub 1177), SENSORS 110 (hub 1166), AR
 
 ## Gotchas
 The list_sessions output floods context: save and grep. ArtifactData list on `questions` floods too: do not list it; use ids q97xx for new cards (q9701, q9702 used; next q9703). The Stop hook misreads ROSTER.md under handoff\ROUTER-139\ as a handoff: harmless. Background agents refuse to Write under F:\Claude Sessions handoff paths sometimes: they report the text in the message. The way hook refused two agents' edits of desks\LAB.md and F:\Leadfuel\CLAUDE.md.
+
+## FINAL ADDENDUM (hard cap reached, 2026-11-24 about 22:30 PT)
+Successor ROUTER #140 is LIVE: local_0de18479-2e39-4158-9e01-ad4a3f7bcd90 (slot 05), router/current v709 names it (read back). It owns all new work and all relays. Only NODE 141 (a090486743196bc65, hub and arm lander) still runs in my process: do not archive #139 until it reports DONE or its lander processes have exited and ci-novahub is released. Landed by NODE 141 (its reports): hub 1089, 970, 1093, 973, 930, 974, 1177, 1183; orbit#41, lucid#131, odyssey#62 (signal#39 and hub 1000 in flight). Everything else: F:\Claude Sessions\handoff\ROUTER-139\ROSTER.md.
