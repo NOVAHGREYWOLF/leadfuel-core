@@ -5,7 +5,7 @@ exact-duplicate report. Stdlib only. All local: nothing in this file opens a net
 Read-only by construction: the scanner opens files for reading only, never writes, moves, renames or
 deletes anything it indexes. The dedupe report PROPOSES a canonical copy per group; the page records
 clicks (Keep canonical / Keep both / Decide later) and nothing else. Applying a click is a separate,
-gated step that this file does not contain.
+gated step that this file does not contain: node/dedupe_apply.py (dry-run unless --apply).
 
 Honesty rules this file keeps:
 - A directory that cannot be listed is recorded as `unreadable` and its old rows are kept, never
@@ -45,9 +45,12 @@ SCHEMA_VERSION = 1
 KNOWN_MACHINES = ("overlord", "r710", "r620", "greywolf", "surface", "msi")
 
 # Directory names never descended into, anywhere.
+# The quarantine that node/dedupe_apply.py moves copies into: never indexed, so a quarantined copy
+# does not come back as a duplicate of its canonical.
+QUARANTINE_DIRNAME = ".cluster-files-quarantine"
 SKIP_DIR_NAMES = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache",
                   ".pytest_cache", ".ruff_cache", "$recycle.bin", "system volume information",
-                  ".tox", ".gradle"}
+                  ".tox", ".gradle", QUARANTINE_DIRNAME}
 # Path fragments never descended into (lower case, os.sep normalised to "/").
 SKIP_PATH_PARTS = ("/.claude/worktrees",)
 # The book is a separate estate: never indexed as part of anything else.

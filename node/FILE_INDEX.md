@@ -67,8 +67,38 @@ I/O priority, and hashing is capped at `--mbps`.
   proposed canonical copy: inside a git repo first, then the vault-synced and estate trees, then
   ordinary folders, with downloads, tmp, scratch and cache last; ties go to the oldest modified date,
   then the shortest path. The page offers Keep canonical / Keep both / Decide later and exports the
-  clicks as a file; `decisions` stores them. Applying them is a separate, gated step (quarantine
-  first, reversible for 30 days) that does not exist yet.
+  clicks as a file; `decisions` stores them. Applying them is a separate, gated step:
+  `node/dedupe_apply.py` (see "Applying the clicks" below).
+
+## Applying the clicks (node/dedupe_apply.py)
+
+Dry-run by default; nothing moves without `--apply`, and `apply` never deletes.
+
+```
+python node/dedupe_apply.py apply --group <sha256>            # dry run: every check, nothing moved
+python node/dedupe_apply.py apply --all-keep-canonical --apply  # move the copies into quarantine
+python node/dedupe_apply.py restore --manifest <root>/<batch>/manifest.json [--apply]
+python node/dedupe_apply.py purge --root <root> [--apply]       # only batches 30+ days old
+python node/dedupe_apply.py list --root <root>
+```
+
+- Acts only on groups whose recorded decision is `keep_canonical` with a canonical path. No decision,
+  `keep_both` and `decide_later` are refused; the report's proposal is never applied on its own.
+- Refuses the whole group when a copy is on another machine, a path is in the privacy tier or the
+  book, a copy to be moved is in a repo (index `in_git`, a `.git` above it, or a `/repos/` segment),
+  a copy is the same file as the canonical, or the quarantine is on another volume.
+- Hashes the canonical immediately before and after, and every copy before its move. A changed or
+  missing file refuses the group ("re-index first"); a canonical that fails the after-check puts
+  every copy of that group back (`rolled-back`).
+- Moves are same-volume renames into `<drive>:\.cluster-files-quarantine\<batch>\files\`, with
+  `manifest.json` (original path, quarantined path, hash, size, mtime, moved_at, canonical, state)
+  written after every move, and the exact restore command. The scanner skips that folder.
+- `restore` never overwrites a file now at the original path and refuses a quarantined copy whose
+  hash changed. `purge` refuses batches younger than 30 days and keeps any quarantined copy whose
+  canonical is missing or changed, since it may be the last one.
+
+Status 2026-11-24: built and tested on temp folders only. It has not been run with `--apply` on any
+real path.
 
 ## Pilot (GREYWOLF F:\, 2026-11-23/24)
 
