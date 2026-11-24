@@ -22,3 +22,6 @@ Conductor 062 asked for cluster-files remaining + A-class wrappers (up to 14 age
 
 ## Gotchas
 Hook treats any write under a handoff folder as a handoff; roster edits there trip it. Agent worktree isolation once refused (corrupt agent-a630... worktree); retry worked. Desk reports can claim files that do not exist: re-check with ls.
+
+## Update (~320k): A-class wrappers opened (A-CLASS.md top 14, all draft-PR wrapper desks, report per BRIEF-COMMON)
+U10 a29bc51ede0b66309; P12 afa9dcc2d80e2edb9; P17 a74eef3a9a7a06121; mail2-9 a10eae617a320e8f9; fold-s-orderplane a19ce9bef2fc1a54e; redline-1 a0f0e1c2c962c6eb1; fold-s-odyssey-engine aecc2219236db9abd; oss-4 ace02f3ce97cb9b15; oss-3 a7a0f211c513e9b8f; p16-3 ad3b510c4df09456f; P11 ada46172132295129; W15 a020f567bc6b0e770; W13 a937d688192acc091; desks-3-6 a9f1ff92a95da6a3d. Plus cluster parts 6/7/8 and the survey (done). 17 running. After they report: per-machine key step to Walk row; then successor via slot (leadfuel-way:launch), read back with get_session, then stop.
