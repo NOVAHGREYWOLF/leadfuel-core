@@ -9,9 +9,12 @@ Owner word via ROUTER #135: land green ones through the merge train, one PR per 
 - lucid 129, orbit 39, reach 44
 - leadfuel-core 80, 81, 82
 
-## Resume (two chains were still running when this was written; re-check state with gh first)
-- novahub: 1145 (in flight), 1146, 1150, 1097, then 1110 (stacked on 1097)
-- leadfuel-core: 86 (in flight), 88, 53, 83, 85, 87, 76
+## Update 2026-11-24T00:55Z
+- novahub chain finished: also merged 1145, 1146, 1150, 1097, 1110. ci-novahub released.
+- leadfuel-core also merged 86, 88, 53, 83, 85.
+
+## Resume (re-check state with gh first)
+- leadfuel-core: 87 (in flight when written, ci-leadfuel-core held by my stamp), then 76
 - Tool: `python -X utf8 land_pr.py <repo> <pr> [--hub]` (stops, never merges, when it cannot establish green).
 
 ## Held
