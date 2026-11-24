@@ -68,3 +68,14 @@ Taken on trust: that those drafts match each item's `done_when`. Only titles and
 - webchat-5: stop the three claude.ai cloud routines in the claude.ai routines page, owner's account.
 - machines-2: on Surface, `git -C <Jarvis checkout on the Surface desktop> status -sb` to see whether it is still ahead of origin;
   if yes, `git push` there or `git bundle create`. This desk did not ssh to Surface.
+
+## Part 218 continuation (SURFACE, 2026-11-23 Pacific)
+
+- **redline-5: done**, see `docs/REDLINE5_STATUS_TABLE.md` (26 questions, 22 Law 9 paths, 31 steps, with the SHA read per repo).
+- **mail2-30: closed as expired** on the router's instruction. The classification CSV has no `mail2-30` row (it has `mail-30`,
+  "close as expired"), so the two ids were treated as the same item; reversible, nothing was built or deleted. Its lane is WATCH.
+- **chats-16: drafted, unpublished**: `docs/drafts/FOUR_SITES.md` and two temp pages in `docs/drafts/temp-pages/`.
+- **machines-2: parked.** There is no Jarvis copy on this PC, so no bundle could be made here. Checked through the GitHub API
+  (read only): commit `689aa41e61` is NOT on the GitHub repo (HTTP 422 "No commit found"), so the 19 commits are still only on
+  the Surface. Creating the bundle there is an OWNER-STEP: run `git bundle create <path> --all` in the Jarvis checkout on the Surface.
+- **GAME-DESIGN.md** sits in the part 13 NODE handoff folder (path in Section "own-2" above), not in any repo.
