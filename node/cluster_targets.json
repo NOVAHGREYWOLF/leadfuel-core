@@ -1,0 +1,14 @@
+{
+  "schema": "cluster-targets-1",
+  "about": "Targets for node/cluster_route.py, in order of preference. No keys or credentials belong here; the R620 and R710 are named by user@private-address (no ssh alias exists for them on GREYWOLF), and the router refuses any address that is not loopback, RFC 1918 or tailnet. vm102 is the CI runner VM (a heavy job waits while a CI job runs there). r620 and r710 are Proxmox hosts with no docker: a job runs in a mktemp directory as nobody, under nice and timeout, and the directory is removed after. Both enabled by the owner's decision relayed by CONDUCTOR 060 via ROUTER #138 (2026-11-23). The r620 hosts the Postgres standby (VM 200): it gets a CPU cap of 6 of its 24 threads, idle I/O, a load ceiling of half, and the standby guard, which reads overlord's refresh status file read-only and skips the r620 when the copy is over 24 h old (catchup's own MAXAGE), a refresh is running, or either cannot be read.",
+  "targets": [
+    {"id": "vm102", "ssh": "ci-vm", "exec": "docker", "image": "python:3.12-slim", "python": "python",
+     "enabled": true, "counts_runners": true, "cpus": 8, "memory_gb": 8, "max_load_frac": 0.5},
+    {"id": "r620", "ssh": "root@10.20.0.52", "exec": "plain", "python": "python3",
+     "enabled": true, "counts_runners": false, "max_load_frac": 0.5, "cpu_cap": 6, "idle_io": true,
+     "guard": {"kind": "standby-refresh", "via": "overlord",
+               "status_file": "/var/log/pg-standby.status", "max_age_s": 86400}},
+    {"id": "r710", "ssh": "root@10.20.0.51", "exec": "plain", "python": "python3",
+     "enabled": true, "counts_runners": false, "max_load_frac": 0.5}
+  ]
+}
