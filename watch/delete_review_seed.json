@@ -1,0 +1,69 @@
+{
+  "generated": "2026-11-23",
+  "hold": "q1015",
+  "note": "Seed plan for the q1015 hold (Deleting data, 3 rows). NOTHING here is counted: every figure is a claim copied from a card or a checklist, with its source named. A row of the card is not a row of a table: card row E10 is 3 table rows, card row GRP-brain-hygiene is two bulk deletes, card row Q6d is a set of test chats. Counts become COUNTED only when a read-only dry run supplies them (render --dry-run-text) or the plan carries a counted block.",
+  "items": [
+    {
+      "id": "E10-knowledge-3",
+      "title": "Three duplicate brain entries (ids 12503 to 12505)",
+      "card_rows": ["E10"],
+      "store": "hub production database",
+      "table": "knowledge",
+      "method": "undecided",
+      "rule": "The rows with id 12503, 12504 and 12505. They are described as duplicates of fact 6261, which stays.",
+      "why": "They say what fact 6261 already says. The brain tool that adds entries has no matching delete, so they cannot be removed from the app.",
+      "claim": {"count": 3, "source": "home-node/10-MASTER-CHECKLIST.md item E10 (owner action, not yet done)."},
+      "ids": [12503, 12504, 12505],
+      "sample": [],
+      "backup": null,
+      "undo": "A soft delete (deleted_at) can be reversed; a hard delete cannot. The method has not been chosen."
+    },
+    {
+      "id": "egress-refusals",
+      "title": "The repeated embedding-refusal log rows",
+      "card_rows": ["GRP-brain-hygiene"],
+      "store": "hub production database",
+      "table": "egress_log",
+      "method": "hard",
+      "source_rule": "egress_log",
+      "rule": "Rows where the destination is the embedding door, the status is refused, the reason starts awaiting_email_approval, the row is older than 24 hours, and a newer row for the same account, feature and approval key exists. The newest refusal of each distinct question stays, and so does everything from the last day. Rows that were sent, intended or failed are never selected.",
+      "why": "A correct refusal was written again and again by a loop. The record that the door asked and was not answered stays; only the repetition goes.",
+      "claim": {"count": 219000, "source": "Card q1015 ('about 219,000 log rows'); production was not read when it was written."},
+      "ids": null,
+      "sample": [],
+      "backup": null,
+      "undo": "A hard delete cannot be undone. Only the backup file brings the rows back."
+    },
+    {
+      "id": "memory-exact-copies",
+      "title": "Exact copies in the memory table",
+      "card_rows": ["GRP-brain-hygiene"],
+      "store": "hub production database",
+      "table": "user_memory",
+      "method": "soft",
+      "source_rule": "user_memory",
+      "rule": "Live rows that are identical to an earlier live row on account, kind, type, source, family, privacy tier, event time, event id and the whole payload. In each group the row that already has an embedding is kept, then the lowest id. Rows that differ in any of those columns are not copies and are kept.",
+      "why": "The same fact was written more than once. Copies count twice in search and in the corpus census.",
+      "claim": {"count": 20238, "source": "Card q1015 ('about 20,238 duplicates and old test rows') and the product checklist X6 (10.2 percent of the corpus). Production was not read."},
+      "ids": null,
+      "sample": [],
+      "backup": null,
+      "undo": "Soft delete sets deleted_at and search already skips such rows, so it can be reversed by clearing deleted_at."
+    },
+    {
+      "id": "novahprime-test-chats",
+      "title": "Test conversations in the NovahPrime database",
+      "card_rows": ["Q6d"],
+      "store": "the local NovahPrime database on this PC",
+      "table": "conversations and messages",
+      "method": "hard",
+      "rule": "Conversations whose title matches 'selftest', or whose messages contain the scripted prompts 'run the tools', 'give me a long answer' or 'permission please'. This is a guess by wording: a real chat that used one of those phrases would be caught too, so the titles must be read first.",
+      "why": "The test run that made them is fixed, but the 80 conversations it left are still searchable and waiting to be embedded and copied.",
+      "claim": {"count": 80, "source": "home-node/10-MASTER-CHECKLIST.md item Q6d, 2026-08-23: 80 conversations and 672 messages. The local database has not been read since. NOTE: card q425 (2026-10-14) was answered 'leave them in place'; this page is where that is reopened, or not."},
+      "ids": null,
+      "sample": [],
+      "backup": null,
+      "undo": "Hard delete, and the delete trigger also removes the search index rows. Only a backup brings them back."
+    }
+  ]
+}
