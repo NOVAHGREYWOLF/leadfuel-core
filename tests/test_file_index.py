@@ -341,3 +341,21 @@ def test_cli_unknown_lock_does_not_queue(tmp_path, tree, capsys):
     rc = fi.main(["--db", str(tmp_path / "i.sqlite"), "index", str(tree), "--wait-lock", "5",
                   "--heavy-lock", str(tmp_path / "none.py")])
     assert rc == 3 and __import__("time").monotonic() - t0 < 30
+
+
+def test_search_works_while_a_scan_holds_the_write_lock(tmp_path, tree, capsys):
+    db = str(tmp_path / "i.sqlite")
+    con = fi.connect(db)
+    _index(con, tree)
+    con.execute("BEGIN IMMEDIATE")
+    con.execute("UPDATE files SET seen_scan=seen_scan")   # a scan mid-transaction
+    try:
+        assert fi.main(["--db", db, "search", "zebra"]) == 0
+        assert "result(s)" in capsys.readouterr().out
+    finally:
+        con.rollback()
+
+
+def test_search_on_a_missing_index_reads_unknown(tmp_path):
+    res = fi.search(fi.connect_ro(str(tmp_path / "new" / "i.sqlite")), "x")
+    assert res["count"] == 0 and any("greywolf: unknown" in n for n in res["notes"])

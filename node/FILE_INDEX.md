@@ -72,5 +72,20 @@ I/O priority, and hashing is capped at `--mbps`.
 
 ## Pilot (GREYWOLF F:\, 2026-11-23/24)
 
-See the PR description for the measured numbers (files, time, index size, hash coverage, duplicate
-groups). Machines other than GREYWOLF are `unknown` until each is indexed through its own path.
+Measured on 2026-11-24 (Pacific), one run under the heavy lock, below-normal priority, hash cap 60 MB/s:
+
+| What | Result |
+|---|---|
+| Files indexed | 347,595 in 43,483 folders, 731.5 GB; 0 unreadable folders; scan `complete` |
+| First scan (walk + text extract + FTS) | 1,596 s (about 218 files/s) |
+| Re-scan, nothing much changed | 44.5 s (712 new, 6 changed, 3 removed) |
+| Content extracted | 218,969 files (16 K characters each at most) |
+| Content not indexed (reported as unknown) | 3,432 private, 7,044 `.log`/`.jsonl`, 948 pdf/old office, 293 cloud placeholders, 47 too big, 11 errors |
+| Privacy tier (name only) | 1,431 credential, 1,252 health, 749 financial |
+| Hashing | 291,642 quick hashes, 185,987 full SHA-256 (38.4 GB read in about 31 min, about 20 MB/s), 71 read errors; 52,157 files have a unique size and need no hash |
+| Exact duplicates | 41,080 groups, 19.4 GB reclaimable (report only) |
+| Index size | 2.4 GB (most of it the content text and its FTS index) |
+| Search | 1.5 to 1.9 s per query, cold start, from the CLI |
+
+Machines other than GREYWOLF are `unknown` until each is indexed through its own path. On GREYWOLF
+only `F:\` minus the exclusions is indexed; `C:\` is `unknown`.

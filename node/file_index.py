@@ -205,6 +205,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(name, path, body, tokenize='un
 DECISIONS = ("keep_canonical", "keep_both", "decide_later")
 
 
+def connect_ro(db: str) -> sqlite3.Connection:
+    """Read-only connection for search, coverage, stats and the pages. It never takes the write
+    lock, so it works while a scan is running (WAL). A missing index is created empty first, so
+    every machine then reads `unknown`, never an error that looks like zero results."""
+    if not os.path.exists(db):
+        connect(db).close()
+    con = sqlite3.connect(f"file:{os.path.abspath(db)}?mode=ro", uri=True, timeout=30)
+    con.row_factory = sqlite3.Row
+    return con
+
+
 def connect(db: str) -> sqlite3.Connection:
     d = os.path.dirname(os.path.abspath(db))
     os.makedirs(d, exist_ok=True)
@@ -852,7 +863,7 @@ def make_handler(db: str):
         def do_GET(self):
             u = urlparse(self.path)
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
-            con = connect(db)
+            con = connect_ro(db)
             try:
                 if u.path == "/":
                     return self._send(200, search_page(), "text/html; charset=utf-8")
@@ -981,7 +992,7 @@ def main(argv=None) -> int:
     if a.cmd == "serve":
         serve(a.db, a.host, a.port)
         return 0
-    con = connect(a.db)
+    con = connect(a.db) if a.cmd in ("index", "decisions") else connect_ro(a.db)
 
     if a.cmd == "index":
         token = None
