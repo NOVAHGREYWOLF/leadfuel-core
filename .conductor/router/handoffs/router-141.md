@@ -32,3 +32,8 @@ hub 1208 (QBO scope wall, DOORS 208, 22e30810), hub 1213 (K01 web_liveness exclu
 ## Addendum 5
 - lc 111 sanitized and squashed to d52a61a (INTELLIGENCE 239): needs a fresh DOORS read; old commits e72654c/ed4d79e may stay visible via GitHub refs. lc 119 new draft (own-5 brief template, own-7 proposal/undo/stop; 7 tests): needs a DOORS read. Not built: own-1 (needs the approval queue), coverage-39, chats-3, chats-4 (owner step: where the OneDrive chat-sessions folder is).
 - Owner Walk is at v14 (SURFACE 236: P11 key names/hash prefixes, ADMIN_PASSWORD rotation, W03 'no such card'). CHECK that SURFACE 235's L-SURFACE link edit (v13) survived in v14 (236 could not tell); re-add via a SURFACE agent if missing.
+
+## Addendum 6
+- hub 1124 LANDED 5f0fdb6c (NODE 237 interim; 1179, 1188 next in its queue). 1123/1182 now need the conflict fix + read.
+- ARMS 226 NEEDS-ROUTER: novahos PR 43 (head 6ae35815, kernel classify -> haiku-5-5, draft; needs a DOORS read) and hub 1156 at d91cfd38 (red by design until its novahos pin bumps). Landing order (comment 7125392342 on 1156): (1) hub 1193 adc2755c (LAND-OK), (2) novahos 43, (3) bump 1156's novahos pin 0983c673 -> 43's merge commit + merge main (read the novahos range first; a desk), (4) 1156 CI pytest green on that head, (5) the five arm PRs (signal#44 reach#52 orbit#45 scope#38 odyssey#66). Next: open a DOORS read of novahos 43, add 1193 to the lander queue after 1205.
+- NODE 229 built K13.10/K14.10/K14.7/K16/K04-N4 as LOCAL estate commits (branches node-89-k13-k14 aa55512, node/229-k16-k04 7687acd 63c51e2); no PR, push is VAULT sync. H4 has no owner in the map: router decides.
