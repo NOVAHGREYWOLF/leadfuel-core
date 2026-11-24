@@ -158,7 +158,7 @@ class Decision:
 
 
 def load_targets(path: str) -> list[Target]:
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8-sig") as f:   # a BOM from PowerShell 5 is fine
         doc = json.load(f)
     if not isinstance(doc, dict) or doc.get("schema") != TARGETS_SCHEMA:
         raise ValueError(f"{path}: schema is not {TARGETS_SCHEMA}")
