@@ -43,7 +43,7 @@ Taken on trust: that those drafts match each item's `done_when`. Only titles and
 - **own-2 (unlimited levels): approve the rule as proposed.** `game/level_rule.py` is the written rule as pure code
   (source order gap, goal, re-check; pass only on a measured outcome; tier grows every five passes, capped; never
   "game over", it says `nothing_owed` with the next date; decline retires 30 days). `game/` has 15 tests.
-  GAME-DESIGN.md section 0 still needs the sentence pointing here (that file is in the estate repo, not this one).
+  GAME-DESIGN.md section 0 still needs the sentence pointing here (the file is `GAME-DESIGN.md` in the part 13 NODE handoff folder under `F:\Claude Sessions\handoff\`, outside any repo, not in this one).
 - **own-3 (payout ledger): count money in, money saved, hours returned, things running.** `game/payout_ledger.py`:
   a line needs a measured source (a click is refused and listed), totals are per kind and never added across kinds,
   an unreadable source reads `unknown` and not zero. The shell room that shows it waits on own-1 (the loop that
@@ -56,9 +56,9 @@ Taken on trust: that those drafts match each item's `done_when`. Only titles and
   Rotation itself is a Google Cloud console step. Taken on trust: the searched tree is the hub checkout's working tree,
   not a fresh main (git was not run there).
 - **chats-8 (client sites): four rows written privately** to `F:\Claude Sessions\handoff\ROUTER-140\chats-8\`
-  (names clients, so not in this repo). Read-only HTTP checks and the private clients repo. Hans: nothing found.
+  (names clients, so not in this repo). Read-only HTTP checks and the private clients repo; details are in the private handoff folder above.
 - **chats-16 (temp pages for etg.ai and leadfuel.cloud, four-site report): draft the pages unpublished** is the default.
-  Not built here: the four sites' live state was not read except nalamora.com and the client previews above.
+  Not built here: the four sites' live state was not read except one client site and the client previews above (named in the private handoff).
 - **machines-2 (bundle Jarvis from Surface):** the GitHub repo NOVAHGREYWOLF/Jarvis exists and was pushed 2026-10-31,
   after the 2026-11-21 note said 19 commits were missing from GitHub. Whether those 19 commits are now on it was not
   checked (that needs a clone). See OWNER-STEP.
@@ -66,5 +66,5 @@ Taken on trust: that those drafts match each item's `done_when`. Only titles and
 ## OWNER-STEPs (nothing here can be done from this desk)
 
 - webchat-5: stop the three claude.ai cloud routines in the claude.ai routines page, owner's account.
-- machines-2: on Surface, `git -C C:\Users\milto\Desktop\Jarvis status -sb` to see whether it is still ahead of origin;
+- machines-2: on Surface, `git -C <Jarvis checkout on the Surface desktop> status -sb` to see whether it is still ahead of origin;
   if yes, `git push` there or `git bundle create`. This desk did not ssh to Surface.

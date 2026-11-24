@@ -9,5 +9,5 @@ Remaining ids, in order of use:
    `git worktree` checkouts or the Grep tool on a current checkout, and write the SHA read per row.
 2. **mail2-30**: one-page have/partly/missing table for the 14 bullets of the five-step AI platform list, with queue ids.
 3. **chats-16**: the one page of four sites (what each shows, should show, links). Draft, unpublished.
-4. **machines-2**: owner step only, unless the Surface is reachable by ssh (user milto); check ahead-count first.
+4. **machines-2**: owner step only, unless the Surface is reachable by ssh (user name in the private machines notes); check ahead-count first.
 5. Wire `brand/novahos-brand.json` into the app (DESIGN lane) and add the pointer sentence to GAME-DESIGN.md section 0.

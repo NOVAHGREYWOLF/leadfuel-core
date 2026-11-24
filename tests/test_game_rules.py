@@ -19,6 +19,15 @@ def outcome(**kw):
 
 
 # ---- ledger -------------------------------------------------------------------------------------------
+def test_nan_and_infinity_are_never_a_measured_payout():
+    led = pl.build_ledger([outcome(id="n", value=float("nan")), outcome(id="i", value=float("inf")),
+                           outcome(id="g", value=5)])
+    assert [ln["id"] for ln in led["lines"]] == ["g"]
+    assert {r["id"] for r in led["refused"]} == {"n", "i"}
+    assert led["totals"]["money_in"]["value"] == 5
+    assert pl.build_ledger([outcome(id="n", value=float("nan"))])["status"] == "empty"
+
+
 def test_unreadable_source_is_unknown_not_zero():
     led = pl.build_ledger(None)
     assert led["status"] == "unknown" and led["totals"] == {}

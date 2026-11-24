@@ -18,6 +18,7 @@ it holds no paid outcome"; `unknown` means "I could not read it". The two must n
 from __future__ import annotations
 
 import datetime as dt
+import math
 from typing import Any, Iterable, Optional
 
 KINDS = {
@@ -81,7 +82,7 @@ def build_ledger(outcomes: Optional[Iterable[Any]]) -> dict:
             refused.append(_refuse(o, "no usable date"))
             continue
         value = o.get("value")
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
             refused.append(_refuse(o, "value is not a non-negative number"))
             continue
         if o.get("unit", KINDS[kind]) != KINDS[kind]:
