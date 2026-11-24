@@ -25,3 +25,6 @@ Stop hook misreads ROSTER.md as a handoff. cd to leadfuel-core before spawning A
 - lc 110 cleaned by NODE 232: squashed to f6f12d1 (allowlist guard, real guards, scanner fix, 93 tests); needs a fresh DOORS read at f6f12d1 (DOORS 212's CHANGES was at b7a2ffd). Old head b7a2ffd (IPs, login name, aliases; no credentials) may still be served by GitHub by SHA; main also already carries IPs from #103 (node/cluster_targets.json, tests/test_cluster_route.py). OWNER-STEPs: decide whether to change the IPs/login, whether to ask GitHub Support to purge b7a2ffd and whether a desk moves #103's values to a local file.
 - Successor: conductor 061 passed LAUNCH-REQUEST to CONDUCTOR 062 (live ~23:53 PT), who arms a Bypass slot for ROUTER #144.
 - hub 1124: lander NODE 237 merged main in (head 91f3e24d), CI running.
+
+## Addendum 4: new drafts needing a DOORS read
+hub 1208 (QBO scope wall, DOORS 208, 22e30810), hub 1213 (K01 web_liveness exclusion), hub 1214 (W16 prompt-site list), lc 112 LAND-OK b55af8b (DOORS 238), hub 1204 fixed to 59652538 (re-read owed), hub 1200 86cba04a (re-read owed). Owner Walk L-SURFACE row now links the 11-lane index (v13). K02 overtaken by hub 1078. Owner-steps: brain_census production read (counts only) for W16; rulings on W16 tensions (router posts a card).
