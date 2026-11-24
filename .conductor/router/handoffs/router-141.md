@@ -11,3 +11,8 @@ hub 1193 (fixed adc2755c by ARMS 200; DOORS 225 re-read running), 1156 (ARMS 226
 Re-reads after each fix lands; landing after LAND-OK (second lander pass for 1206, 1207, 1197-1203 etc.); 1123/1182 conflict fix + read; K-series PR reads; SURFACE 218 + 219 done; book/PRIVACY/COMMS lanes not opened; ROUTER #142/#143 slices proposed to 061 (answered cards, VAULT/COUNSEL/MONEY/BOOK B rows; SENSORS coverage-25, ROUNDTRIP coverage-40). W03 'ARMS step 5' card does not exist. NODE 21 local_28c73fb5 gets walk-page news.
 ## Gotchas
 Stop hook misreads ROSTER.md as a handoff. cd to leadfuel-core before spawning Agents; worktree isolation errors are transient, retry. Owner steps live on the Owner Walk page https://claude.ai/artifact/1i1FhsztHxTi16NYwYhpNL (v12+).
+
+## Addendum (after the first push)
+- lc 113 (NODE 203) got CHANGES at 3723bce (DOORS 224, comment 7124830991): private names in docs/SURFACE_OFFLOAD_REVIEW.md and docs/NODE_PART203_DECISION_RECORDS.md (public repo; use category counts, squash the branch clean) + probe should not follow redirects/proxies. Fix agent NOT opened: open one (NODE) first thing. model_service itself passes Law 9.
+- hub 1193 LAND-OK adc2755c (DOORS 225). lc 110 fix by NODE 232 running; lc 111 by INTELLIGENCE 239.
+- Successor: my arm of slot 06 was refused (nobody typed into this run); LAUNCH-REQUEST sent to conductor 061 (queued) with brief F:\Claude Sessions\handoff\ROUTER-141\SUCCESSOR-BRIEF-144.md. Slot 06's model line is now sonnet-5-5. If no ROUTER #144 appears, the owner pastes that brief into a fresh session.
