@@ -1,0 +1,71 @@
+# Chatwoot (MIT, self-hosted) as the support inbox. SUPPORT K07, first slice. NOT RUNNING, NOT DEPLOYED.
+#
+# Off by default: every service carries the `support` profile, so a plain `docker compose up` starts nothing.
+# Starting it is a download of four images and is the owner's typed go, then:
+#     docker compose -f support/chatwoot.compose.yml --profile support --env-file <your private env file> up -d
+#
+# Reachability: loopback only. Every published port is bound to 127.0.0.1; reaching it from the tailnet is a
+# separate, deliberate step (a tailscale serve rule), not something this file does. Nothing is exposed to the
+# internet and no public address is created.
+#
+# Secrets: none live here. Each one is a required variable (`:?`) so compose refuses to start with it unset;
+# the values belong in a private env file that is never committed.
+#
+# Image tags are pinned, never `latest`. The tags were written from memory of the upstream release lists and
+# have NOT been pulled or checked against the registries; confirm each exists before the first start.
+name: support-inbox
+
+x-chatwoot-env: &chatwoot-env
+  RAILS_ENV: production
+  NODE_ENV: production
+  SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY_BASE:?set CHATWOOT_SECRET_KEY_BASE in the private env file}
+  FRONTEND_URL: ${CHATWOOT_FRONTEND_URL:-http://127.0.0.1:3000}
+  POSTGRES_HOST: postgres
+  POSTGRES_DATABASE: chatwoot
+  POSTGRES_USERNAME: chatwoot
+  POSTGRES_PASSWORD: ${CHATWOOT_POSTGRES_PASSWORD:?set CHATWOOT_POSTGRES_PASSWORD in the private env file}
+  REDIS_URL: redis://redis:6379
+  ENABLE_ACCOUNT_SIGNUP: "false"
+  # Outbound mail is OFF until the owner sets a sender. Any reply is a send and goes through the door.
+  MAILER_SENDER_EMAIL: ${CHATWOOT_MAILER_SENDER_EMAIL:-}
+
+services:
+  rails:
+    image: chatwoot/chatwoot:v3.16.0
+    profiles: ["support"]
+    command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
+    environment: *chatwoot-env
+    depends_on: [postgres, redis]
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  sidekiq:
+    image: chatwoot/chatwoot:v3.16.0
+    profiles: ["support"]
+    command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+    environment: *chatwoot-env
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    profiles: ["support"]
+    environment:
+      POSTGRES_DB: chatwoot
+      POSTGRES_USER: chatwoot
+      POSTGRES_PASSWORD: ${CHATWOOT_POSTGRES_PASSWORD:?set CHATWOOT_POSTGRES_PASSWORD in the private env file}
+    volumes:
+      - chatwoot-pg:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["support"]
+    volumes:
+      - chatwoot-redis:/data
+    restart: unless-stopped
+
+volumes:
+  chatwoot-pg:
+  chatwoot-redis:
