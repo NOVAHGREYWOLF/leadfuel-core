@@ -333,13 +333,13 @@ def remote_command(target: Target, argv: list[str], job_id: str, timeout_s: int)
     job = " ".join(shlex.quote(a) for a in argv)
     t = int(timeout_s)
     if target.exec == "docker":
-        inner = (f"mkdir -p /w && cd /w && tar -xf - && "
+        inner = (f"mkdir -p /w && cd /w && tar -xzf - && "
                  f"PYTHONPATH=/w/_vendor HOME=/w PYTHONDONTWRITEBYTECODE=1 timeout {t} {job}")
         return (f"docker run --rm -i --network none --cpus {target.cpus} --memory {target.memory_gb}g "
                 f"--name jobroute-{_safe_id(job_id)} --label jobroute=1 {shlex.quote(target.image)} "
                 f"sh -c {shlex.quote(inner)}")
     return (f'd=$(mktemp -d /var/tmp/jobroute.XXXXXX) && chown nobody "$d" && cd "$d" && '
-            f"runuser -u nobody -- tar -xf - && "
+            f"runuser -u nobody -- tar -xzf - && "
             f'runuser -u nobody -- env PYTHONPATH="$d/_vendor" HOME="$d" PYTHONDONTWRITEBYTECODE=1 '
             f"nice -n 19 timeout {t} {job}; rc=$?; cd /; "
             f'[ -n "$d" ] && rm -rf "$d"; exit $rc')
@@ -353,9 +353,9 @@ def git_archive(repo: str, ref: str, run=subprocess.run) -> bytes:
 
 
 def make_bundle(tree_tar: bytes, vendor=VENDOR) -> bytes:
-    """The tree plus a vendored copy of pytest (pure Python) under _vendor/, no bytecode."""
+    """The tree plus a vendored copy of pytest (pure Python) under _vendor/, no bytecode, gzipped."""
     out = io.BytesIO()
-    with tarfile.open(fileobj=out, mode="w") as dst:
+    with tarfile.open(fileobj=out, mode="w:gz", compresslevel=6) as dst:   # the link is slow
         with tarfile.open(fileobj=io.BytesIO(tree_tar)) as src:
             for m in src.getmembers():
                 dst.addfile(m, src.extractfile(m) if m.isfile() else None)
