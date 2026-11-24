@@ -42,7 +42,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 SCHEMA_VERSION = 1
-KNOWN_MACHINES = ("overlord", "r710", "r620", "greywolf", "surface", "msi")
+# The machine ids of node/cluster_inventory_targets.json (part 1), so the inventory, the readers
+# (node/cluster_readers.py) and search name a machine the same way. r710-2 and r610 have no route yet:
+# they are listed so they read `unknown`, never absent.
+KNOWN_MACHINES = ("overlord", "r710-1", "r710-2", "r620", "r610", "greywolf", "surface", "msi")
 
 # Directory names never descended into, anywhere.
 SKIP_DIR_NAMES = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache",
@@ -454,7 +457,10 @@ def scan(con: sqlite3.Connection, machine: str, root: str, excludes: tuple[str, 
     return out
 
 
-def _upsert(con, machine, path, nd, name, s, attrs, in_git, scan_id, row, extract):
+def _upsert(con, machine, path, nd, name, s, attrs, in_git, scan_id, row, extract,
+            content_state: str | None = None):
+    """`content_state` replaces `pending` for a file whose content this run will never read (a
+    remote reader lists and hashes on the machine; no content crosses to the index)."""
     ext = os.path.splitext(name)[1].lower()
     priv = privacy_of(path)
     cloud = 1 if attrs & CLOUD_ATTRS else 0
@@ -463,7 +469,7 @@ def _upsert(con, machine, path, nd, name, s, attrs, in_git, scan_id, row, extrac
     elif cloud:
         hstate, xstate = "cloud", "cloud"
     else:
-        hstate, xstate = "pending", "pending"
+        hstate, xstate = "pending", content_state or "pending"
     body = None
     if xstate == "pending" and extract:
         xstate, body = extract_text(path, ext, s.st_size)
@@ -499,11 +505,16 @@ def _drop_missing(con, machine, root, scan_id, unreadable) -> int:
     return len(gone)
 
 
-def extract_pending(con, budget: Budget | None = None, log=print) -> int:
-    """Extract text for rows a scan left `pending` (scan ran with extract off)."""
+def extract_pending(con, budget: Budget | None = None, log=print, machine: str | None = None) -> int:
+    """Extract text for rows a scan left `pending` (scan ran with extract off). Reads files with
+    local open(), so pass the machine this process runs on: another machine's path is not ours."""
     budget = budget or Budget(None)
     n = 0
-    for r in con.execute("SELECT id, path, ext, size, name FROM files WHERE extract_state='pending'").fetchall():
+    sql = "SELECT id, path, ext, size, name FROM files WHERE extract_state='pending'"
+    args: tuple = ()
+    if machine:
+        sql, args = sql + " AND machine=?", (machine,)
+    for r in con.execute(sql, args).fetchall():
         if budget.out():
             break
         state, body = extract_text(r["path"], r["ext"], r["size"])
@@ -520,21 +531,48 @@ def extract_pending(con, budget: Budget | None = None, log=print) -> int:
     return n
 
 
+def quick_candidates(con, machine: str | None = None, min_size: int = 1) -> list:
+    """Rows that need a quick hash: no quick hash yet, and a size shared by another hashable file on
+    ANY machine (a duplicate across machines counts). Restricted to `machine` when given."""
+    sql = ("SELECT id, path, size FROM files WHERE quick IS NULL AND hash_state IN ('pending','quick') "
+           "AND size>=? AND size IN (SELECT size FROM files WHERE hash_state NOT IN ('private','cloud') "
+           "AND size>=? GROUP BY size HAVING COUNT(*)>1)")
+    args: list = [min_size, min_size]
+    if machine:
+        sql += " AND machine=?"
+        args.append(machine)
+    return con.execute(sql + " ORDER BY size DESC", args).fetchall()
+
+
+def quick_groups(con) -> list:
+    """Quick hashes shared by more than one file, across every machine, largest reclaim first."""
+    return con.execute(
+        "SELECT quick, size, COUNT(*) n FROM files WHERE quick IS NOT NULL AND hash_state IN ('quick','full') "
+        "GROUP BY quick HAVING n>1 ORDER BY size*(n-1) DESC").fetchall()
+
+
+def full_candidates(con, quick: str, machine: str | None = None) -> list:
+    sql = "SELECT id, path, size FROM files WHERE quick=? AND hash_state='quick'"
+    args: list = [quick]
+    if machine:
+        sql += " AND machine=?"
+        args.append(machine)
+    return con.execute(sql, args).fetchall()
+
+
 def hash_candidates(con, mbps: float = 60.0, byte_budget: int | None = None,
                     budget: Budget | None = None, min_size: int = 1, throttle: Throttle | None = None,
-                    log=print) -> dict:
+                    log=print, machine: str | None = None) -> dict:
     """Two-stage exact-duplicate hashing, throttled.
     1. quick hash (size + first and last 64 KiB) of every file whose size is shared by another file;
     2. full SHA-256 of files whose quick hash is shared, largest potential reclaim first.
-    Files with a unique size cannot have an exact duplicate: they stay `pending` (no hash yet)."""
+    Files with a unique size cannot have an exact duplicate: they stay `pending` (no hash yet).
+    Reads with local open(): pass `machine`, the machine this process runs on, once the index holds
+    rows from other machines (their paths are hashed on their own machine by cluster_readers)."""
     budget = budget or Budget(None)
     th = throttle or Throttle(mbps)
     st = {"quick": 0, "full": 0, "bytes": 0, "errors": 0, "stopped": None}
-    where = ("hash_state IN ('pending','quick') AND size>=? AND size IN "
-             "(SELECT size FROM files WHERE hash_state NOT IN ('private','cloud') AND size>=? "
-             "GROUP BY size HAVING COUNT(*)>1)")
-    rows = con.execute(f"SELECT id, path, size FROM files WHERE quick IS NULL AND {where} ORDER BY size DESC",
-                       (min_size, min_size)).fetchall()
+    rows = quick_candidates(con, machine, min_size)
     for r in rows:
         if budget.out():
             st["stopped"] = "time budget"
@@ -552,12 +590,8 @@ def hash_candidates(con, mbps: float = 60.0, byte_budget: int | None = None,
     if st["stopped"]:
         log(f"hash: stopped in the quick pass ({st['stopped']}); {st['quick']} quick hashes")
         return st
-    groups = con.execute(
-        "SELECT quick, size, COUNT(*) n FROM files WHERE quick IS NOT NULL AND hash_state IN ('quick','full') "
-        "GROUP BY quick HAVING n>1 ORDER BY size*(n-1) DESC").fetchall()
-    for g in groups:
-        for r in con.execute("SELECT id, path, size FROM files WHERE quick=? AND hash_state='quick'",
-                             (g["quick"],)).fetchall():
+    for g in quick_groups(con):
+        for r in full_candidates(con, g["quick"], machine):
             if budget.out():
                 st["stopped"] = "time budget"
                 break
@@ -582,23 +616,43 @@ def hash_candidates(con, mbps: float = 60.0, byte_budget: int | None = None,
 
 # --------------------------------------------------------------------------- coverage and search
 
+def record_unreachable(con, machine: str, root: str, reason: str) -> int:
+    """A reader could not reach `root` on `machine`. Records the attempt and the reason so coverage
+    reads `unknown` with why; rows from an earlier scan are kept, never removed."""
+    cur = con.execute("INSERT INTO scans (machine, root, started, finished, state, note) VALUES (?,?,?,?,?,?)",
+                      (machine, norm(root), time.time(), time.time(), "unreachable", reason[:300]))
+    sid = cur.lastrowid
+    old = con.execute("SELECT excludes FROM sources WHERE machine=? AND root=?", (machine, norm(root))).fetchone()
+    con.execute("INSERT OR REPLACE INTO sources VALUES (?,?,?,?,?)",
+                (machine, norm(root), old["excludes"] if old else "[]", sid, "unreachable"))
+    con.commit()
+    return sid
+
+
 def coverage(con) -> dict:
-    """Per machine: indexed (complete), partial, or unknown (not indexed yet)."""
+    """Per machine: indexed (complete), partial, or unknown (not indexed yet, or unreachable)."""
     out = {m: {"state": "unknown", "detail": "not indexed yet", "roots": []} for m in KNOWN_MACHINES}
-    for s in con.execute("SELECT s.machine, s.root, s.state, s.excludes, c.finished, c.files "
+    for s in con.execute("SELECT s.machine, s.root, s.state, s.excludes, c.finished, c.files, c.note "
                          "FROM sources s LEFT JOIN scans c ON c.id=s.last_scan"):
         m = out.setdefault(s["machine"], {"state": "unknown", "detail": "not indexed yet", "roots": []})
         when = (datetime.fromtimestamp(s["finished"], timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
                 if s["finished"] else None)
         m["roots"].append({"root": s["root"], "state": s["state"], "files": s["files"], "at": when,
-                           "excludes": json.loads(s["excludes"] or "[]")})
-    for m in out.values():
+                           "excludes": json.loads(s["excludes"] or "[]"), "note": s["note"]})
+    for name, m in out.items():
         states = {r["state"] for r in m["roots"]}
         if not states:
             continue
+        if states == {"unreachable"}:
+            kept = con.execute("SELECT COUNT(*) FROM files WHERE machine=?", (name,)).fetchone()[0]
+            m["state"] = "unknown"
+            m["detail"] = ("unreachable: " + "; ".join(sorted({r["note"] or "no reason" for r in m["roots"]}))
+                           + (f"; {kept} rows from an earlier scan are kept and may be stale" if kept else ""))
+            continue
         m["state"] = "indexed" if states == {"complete"} else "partial"
         m["detail"] = ("only the roots listed are indexed; everything else on this machine is unknown"
-                       if m["state"] == "indexed" else "a scan did not finish; missing rows are unknown")
+                       if m["state"] == "indexed"
+                       else "a scan did not finish or a root was unreachable; missing rows are unknown")
     return out
 
 
@@ -1013,7 +1067,8 @@ def main(argv=None) -> int:
             excl = tuple(a.exclude) + (PILOT_EXCLUDES if a.pilot else ())
             sc = scan(con, a.machine, a.root, excl, budget)
             if not a.no_hash and not budget.out():
-                hash_candidates(con, a.mbps, int(a.hash_gb * 1e9) if a.hash_gb else None, budget)
+                hash_candidates(con, a.mbps, int(a.hash_gb * 1e9) if a.hash_gb else None, budget,
+                                machine=a.machine)
         finally:
             if token:
                 heavy_lock_release(token, a.heavy_lock)

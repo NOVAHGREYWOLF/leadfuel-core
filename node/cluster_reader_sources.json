@@ -1,0 +1,44 @@
+{
+  "schema": "cluster-reader-sources-1",
+  "about": "What node/cluster_readers.py reads on each machine of node/cluster_inventory_targets.json (same ids; every machine is listed, so none is silently skipped). Routes, os and the in-use flag come from the targets file, not from here. READ ONLY: a reader lists names, sizes and dates and hashes on the machine that owns the disk under nice/ionice (Linux) or Idle priority (Windows); only path, size, mtime and hash cross the LAN or tailnet to the index on GREYWOLF, never file content (content is extracted only for GREYWOLF's own files, which never leave it). A root that is missing or not mounted reads `unknown`, never empty. `one_fs` keeps a walk on the root's own file system (an NFS mount below it is recorded as not crossed, not as empty). Guards: `ingest` reads overlord's systemd units and leaves `subtree` unread (unknown) while an ingest-* unit is active or the check fails; `standby` is cluster_route's Postgres standby guard (node/cluster_targets.json, target `guard_from`): any answer but ok defers the pass. No key, password or token belongs here.",
+  "presets": {
+    "windows-system": ["C:/Windows", "C:/Program Files", "C:/Program Files (x86)", "C:/ProgramData",
+                       "C:/Recovery", "C:/$WinREAgent", "C:/$Windows.~BT", "C:/$Windows.~WS",
+                       "C:/Windows.old", "C:/PerfLogs"]
+  },
+  "machines": {
+    "overlord": {
+      "roots": [
+        {"path": "/mnt/ro", "require_mount": true, "why": "the old SSD copies (sda4, sdb3, sdc1, nvme1n1p1) when mounted read-only"},
+        {"path": "/root", "why": "scripts and notes on the host"},
+        {"path": "/var/lib/vz", "why": "local storage: ISOs, templates, dumps"}
+      ],
+      "one_fs": true
+    },
+    "r710-1": {
+      "roots": [{"path": "/mnt/backup", "require_mount": true, "why": "the 7.3 TB backup store and canonical copies"}],
+      "one_fs": true,
+      "guards": [{"kind": "ingest", "via": "overlord", "subtree": "/mnt/backup/overlord-dumps"}]
+    },
+    "r620": {
+      "roots": [{"path": "/srv/library", "require_mount": true, "why": "the second library copy"}],
+      "one_fs": true,
+      "guards": [{"kind": "standby", "guard_from": "r620"}]
+    },
+    "r710-2": {"roots": [], "why": "no route (VLAN 30 lab lockdown): unknown"},
+    "r610": {"roots": [], "why": "no route (VLAN 30 lab lockdown): unknown"},
+    "greywolf": {
+      "roots": [{"path": "C:/", "why": "GREYWOLF C:\\ (F:\\ is the part 5 pilot, indexed by file_index.py)"}],
+      "excludes_preset": "windows-system",
+      "exclude_index_dir": true
+    },
+    "surface": {
+      "roots": [{"path": "C:/", "why": "the only local disk"}],
+      "excludes_preset": "windows-system"
+    },
+    "msi": {
+      "roots": [{"path": "C:/", "why": "the only local disk; read before the planned wipe"}],
+      "excludes_preset": "windows-system"
+    }
+  }
+}
