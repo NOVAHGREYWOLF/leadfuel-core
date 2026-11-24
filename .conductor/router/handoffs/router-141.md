@@ -16,3 +16,7 @@ Stop hook misreads ROSTER.md as a handoff. cd to leadfuel-core before spawning A
 - lc 113 (NODE 203) got CHANGES at 3723bce (DOORS 224, comment 7124830991): private names in docs/SURFACE_OFFLOAD_REVIEW.md and docs/NODE_PART203_DECISION_RECORDS.md (public repo; use category counts, squash the branch clean) + probe should not follow redirects/proxies. Fix agent NOT opened: open one (NODE) first thing. model_service itself passes Law 9.
 - hub 1193 LAND-OK adc2755c (DOORS 225). lc 110 fix by NODE 232 running; lc 111 by INTELLIGENCE 239.
 - Successor: my arm of slot 06 was refused (nobody typed into this run); LAUNCH-REQUEST sent to conductor 061 (queued) with brief F:\Claude Sessions\handoff\ROUTER-141\SUCCESSOR-BRIEF-144.md. Slot 06's model line is now sonnet-5-5. If no ROUTER #144 appears, the owner pastes that brief into a fresh session.
+
+## Addendum 2
+- hub 1200 new head 86cba04a (WATCH 234; CI tests+lint success on it; stacked on 1105 -> 1070, none landed): needs a fresh DOORS read; its LAND-OK at 809f6d66 is stale.
+- SENSORS part 4 RAN the read-only Railway production pass (owner typed yes, ~23:35 PT): report F:\Claude Sessions\handoff\ROUTER-141-or-140\SENSORS-4\out\report_railway_run_20261124_073530Z.txt. lucid:day has 0 rows ever (do NOT flip LUCID-DAY-RECURRING); QBO 6 of 8 rails over budget, 0 rows in 7d, re-sign-in owner step real; watchdog heartbeat alive; ingest_rejected 66 all-time. Walk page needs: mark the read-only pass step done; cut-uid count still needs its own yes. #140 is now ARCHIVED (its agents' reports are lost).
