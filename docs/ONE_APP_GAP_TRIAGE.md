@@ -28,7 +28,10 @@ What I did and did not verify (read this before trusting a row):
   means code and tests on main, not "proven in the window".** That proof is queue Stage 3, "prove by running".
 - **Not checked:** the mockup (artifact) rows of doc 38; production; any network. Nothing here left the machine.
 
-## Found while checking: engine warnings are dropped (build now, first)
+## Found while checking: engine warnings are dropped (build now, first; since built, estate `8d06346`)
+
+*Update 2026-11-23: `Turn._map` now forwards every `done` warning as a `warning` event (11 + 6 tests, red before the
+fix). The text below is the finding as it stood when this triage was written.*
 
 `lfdesk/engine/base.py` says warnings that must reach the owner ride as `meta["warnings"]` on the `done` chunk. The
 local engine puts these there: `CONTEXT_COMPACTED` (it removed earlier messages), `CONTEXT_TRUNCATED` (the server
@@ -51,7 +54,8 @@ rail), **Code**, **Terminal**, **Memory**, **Artifacts**, **Library** (Archive a
 **Agents** (agents, tasks, notifications panes under More), **Connections** (System), **Settings**, **Phone**,
 **Shell** (window, keys, status strip).
 
-Disposition: **landed** = code and tests on main, nothing owed that is small and code-only. **build now** = a
+Disposition: **landed** = code and tests on main, nothing owed that is small and code-only; a row marked "built
+after this triage" has its code and tests on the estate branch instead (local commits, not yet on main). **build now** = a
 small, code-only, local slice is left and a desk can take it today. **later** = left, but large, Sec (running code,
 memory, egress) or waiting on a download, a pairing or an owner choice. **closed by design** = a standing rule
 forbids the Claude form (named in the row).
@@ -61,10 +65,10 @@ Sec = Opus plus a Law 9 look, as doc 38 tagged it.
 |---|---|---|---|---|
 | GAP-01 context line under the box | Context bar | `ui/ctxbar.js`, `ctxextras.py`; 187+30 tests per ONE-CTX2 | landed | Percent, used/total, hint line. Unknown shows "unknown". |
 | GAP-02 `context_breakdown` and `/context` | Context bar | `ctxextras.py` | landed | chars/4 estimates marked approx. |
-| GAP-03 compaction visible, `/compact` | Context bar | owner `/compact` built; engine compaction **invisible** | **build now** | Forward `done` warnings (finding above). Model-written summary stays out (Sec, a model turn). |
-| GAP-04 effort and thinking | Context bar | `ctx_set_effort`, `ctx_set_thinking` | **build now** (warnings) / later (persist) | Effort stops are silent until the warnings forward. Persisting across restart is a choice (engine-wide today), later. |
-| GAP-05 key grammar, Claude chords | Shell | `Ctrl+\`, `Ctrl+Shift+M`, Ctrl+` built; `Ctrl+Shift+E`, `Ctrl+Shift+B` **absent** (checked) | **build now** | Both were held back "nothing behind them"; effort (GAP-04) and the Code Preview tab (GAP-46) now exist. `ui/keymap.js` only. |
-| GAP-06 local usage | Context bar | `ctx_usage`, `/usage`, Settings > Usage | landed (slice later) | Session model time and lines changed stay `unknown` on purpose: no per-reply time is stored (schema change), so later. |
+| GAP-03 compaction visible, `/compact` | Context bar | owner `/compact`; engine `done` warnings now forwarded (built, estate `8d06346`, 6 + 11 tests) | landed (built after this triage, estate branch) | `Turn._map` forwards every `meta["warnings"]` entry as a `warning` event. Model-written summary stays out (Sec, a model turn). Card not seen in the real window. |
+| GAP-04 effort and thinking | Context bar | `ctx_set_effort`, `ctx_set_thinking`; warnings forwarded (`8d06346`); persisted across restart (`ccbb114`, 13 tests) | landed (built after this triage, estate branch) | Persist was built as "persist" (settings keys `effort_level`, `thinking_pref`). Known gap: an effort set under engine A is not re-applied after a switch to engine B. |
+| GAP-05 key grammar, Claude chords | Shell | `Ctrl+\`, `Ctrl+Shift+M`, Ctrl+` built; `Ctrl+Shift+E` (effort) and `Ctrl+Shift+B` (Code preview) built (estate `4305d7b`, 22 node checks) | landed (built after this triage, estate branch) | `ui/keymap.js`, `ui/ctxbar.js`. Chords never pressed in a real window. `3c6f1cd` also closed a three-way `Ctrl+Shift+I` clash (model picker keeps it; session panel took `Ctrl+Shift+U`). |
+| GAP-06 local usage | Context bar | `ctx_usage`, `/usage`, Settings > Usage; reply time and changed lines built (estate `4f66f6d`, 14 + 12 tests) | landed (built after this triage, estate branch) | Reply time is recorded per `turn_end` in `shell.db` and says it includes tool runs and waits (not Claude's API time). Changes card shows uncommitted +A / -D. Not seen in the real window. |
 | GAP-07 model warm until | Context bar | `ctx_warm` (loopback `/api/ps`) | landed | Local `/api/ps` read only; a silent probe says unknown. |
 | GAP-08 header chips folder, branch, repo | Context bar | `ctxbar.js`, repo from `.git/config` | landed | Display only; credentials stripped from the remote. |
 | GAP-09 copy chat id | Chat | `ui/app.js` menu | landed | Menu item and a Copy in the rail. |
@@ -76,7 +80,7 @@ Sec = Opus plus a Law 9 look, as doc 38 tagged it.
 | GAP-15 RAM and VRAM | Context bar, Shell | `ctx_machine` | landed | RAM from the OS, VRAM from `nvidia-smi` capped at 3 s. |
 | GAP-16 `/` slash menu | Chat box | `commands.py` registry, `ui/shell1.js`, `ui/composer.js` | landed | `/init`, `/review` flipped by ONE-D4. |
 | GAP-17 images in | Chat box | `imagegate.py`, `ui/images.js` | landed (download later) | Vision model is on the installer list; **pulling it is a download the owner approves**. |
-| GAP-18 attach anywhere | Chat box | `attach_pick`, text only | landed (slice later) | PDF and docx text extraction not built; needs a library choice. |
+| GAP-18 attach anywhere | Chat box | `attach_pick`; Word `.docx` read as text (estate `c297f7d`, 19 tests) | landed (slice later) | `.docx` uses stdlib only (first bytes decide, DTD refused, one fixed member opened). PDF extraction still not built: it needs a library, an owner choice. Old `.doc` says "save as .docx". |
 | GAP-19 `@` mentions | Chat box | `mention_search` | landed | The page can attach only a token the last search returned, never a typed path. |
 | GAP-20 terminal output to chat | Terminal | `ui/term.js` "Send to chat" | landed | Proven in the real window per ONE-AGT1. |
 | GAP-21 history, Ctrl+R, stash | Chat box | `ui/shell1.js` | landed | Local storage of this window; works if storage is blocked. |
@@ -93,17 +97,17 @@ Sec = Opus plus a Law 9 look, as doc 38 tagged it.
 | GAP-32 document and slide artifacts | Artifacts | `artifacts/docs.py` | landed | Local sandboxed render, export to one .html. |
 | GAP-33 `chat_search` as a model tool | Memory | `tools/pastchats.py` | landed | Skips the open chat, trash, secret and incognito chats; unknown state reads none. |
 | GAP-34 catalogue store | Library | browse UI `ui/storebrowse.js`; fetch is `StoreOff` | landed (fetch later) | Selling and fetching are the later, gated build (two-products note). Law 9: a fetch needs a door the owner arms. |
-| GAP-35 skills folder, `/` invocation, authoring | Chat box | `skillgate.py`, `lfdesk/skills/` | landed (authoring later) | Invocation built; "create a skill" command is not. Small, but wait for the skills pane. |
+| GAP-35 skills folder, `/` invocation, authoring | Chat box | `skillgate.py`, `lfdesk/skills/` | landed (built after this triage, estate branch) | Invocation was built; authoring is now too (estate `8bcac89`): `/skill-new <name> <what it is for>` draws an ask card with the path and the whole starter text, and a real click on "Write the skill" makes one new folder with one `SKILL.md` (exclusive create, linted, removed again on failure; no model, no script, no overwrite). `command_skill_confirm` is FENCED and BRIDGE_NEVER from the start. 30 py + 13 node checks. No skills pane exists yet and none is needed for this. Not seen in the real window. |
 | GAP-36 plugins as local bundles | Library | `lfdesk/plugins/` | landed | Closed by design: a remote marketplace and URL install (Law 9). |
 | GAP-37 owner hooks | Settings | viewer and validator; `run()` always raises `HooksOff` | later | Sec. The runner runs owner code: needs the owner's yes and a reviewed runner. |
 | GAP-38 per-folder instructions file | Code | `codexgate.py`, `NOVAHOS.md` | landed | NOVAHOS.md, then CLAUDE.md, then AGENTS.md; marks the session untrusted. |
 | GAP-39 command sandbox | Code, Chat | research note, `run_bounded` timeout fix | later | Sec. Job caps, low-integrity children, network are owner decisions in ONE-LEFT1. |
 | GAP-40 Diagnose | Settings | `diaggate.py`, `/doctor` | landed | Checks gates, engines, store, routines, agents and notifications. |
-| GAP-41 Terminal findable, Ctrl+` | Terminal, Shell | launcher button, `pane.term.toggle` | landed (tabs later) | One terminal only: multiple tabs (Claude has them) not built; a UI and host change, later. Mockup v4 draws Terminal in the toolbar. |
+| GAP-41 Terminal findable, Ctrl+` | Terminal, Shell | launcher button, `pane.term.toggle`; real tab strip built (estate `742b35e`, 67 node checks + py wrapper) | landed (built after this triage, estate branch) | **The earlier "one terminal only" sentence was wrong:** `ownerhost.py` already had `MAX_SESSIONS = 8` and `term.js` kept an `Emu` per session; only the strip was missing, so no host change was needed. Closing a live shell still asks for its id. Strip not seen in the real window. |
 | GAP-42 diff line comments | Code | `codexgate.py` | landed | Comments are sent as one message; stored beside the worktree. |
 | GAP-43 local code review | Code | `codexgate.py`, `/review` | landed | Local backend only, no tools; findings can be turned into a message, never sent for you. |
 | GAP-44 `edit_file` and editable Files | Code | `edit_tools.py`, Files tab | landed (chat later) | `edit_file` is not in the chat catalogue (checked, `wiring.py`). Sec: a model editing files from chat; needs the mode classifier decision (IN-04). |
-| GAP-45 checkpoints, rewind | Code, Chat | gate + Code Rewind tab | landed (chat later) | No rewind picker in chat (checked: only `ui/code2.js` calls it). Esc Esc is closed by design (owner rule, Esc never opens anything). |
+| GAP-45 checkpoints, rewind | Code, Chat | gate + Code Rewind tab; chat picker built (estate `f799ef6`, `ui/rewind.js`, 79 node checks) | landed (built after this triage, estate branch) | `/rewind` draws a picker (preview, mode, inline confirm answered only by a real click, undo). **Found and fixed first (`934ae93`):** a Claude `ui_click` could really rewind a chat because `checkpoint_rewind` and `checkpoint_undo` were not drive-fenced; both are now FENCED and BRIDGE_NEVER (the owner's own call still works; this also closed the Code Rewind tab's path). Esc Esc stays closed by design. Card not seen in the real window. |
 | GAP-46 loopback preview, launch.json | Code | `devserver.py`, `ui/preview1.js` | landed | Dev-server start is a confirm click (owner card default A). |
 | GAP-47 pop-out, split | Code, Shell | Code content only | later | Chat panes do not pop out; panes system is another desk's. |
 | GAP-48 model shell, per-command card | Chat | `shell_tools.py`, switch off by default | landed | Sec, behind the owner's Switches pane. |
@@ -117,22 +121,33 @@ Sec = Opus plus a Law 9 look, as doc 38 tagged it.
 | GAP-56 high-contrast, colorblind skin | Settings | `ui/palettes.css` | landed | Contrast and colour-blind separation are computed in a test. |
 | GAP-57 history folders | Chat | `chat_folders*` | landed | Folder filter not exercised in the mock. |
 
-Counts of the table: **landed 51** (9 of them name a later slice or an owner step in the same row: GAP-06, 17, 18,
-34, 35, 41, 44, 45, 52), **build now 3** (GAP-03, GAP-04, GAP-05; GAP-04 also names a later slice), **later 3**
+Counts of the table (updated 2026-11-23 after the build desks of redline-6): **landed 54** (5 of them still name a
+later slice or an owner step in the same row: GAP-17, 18, 34, 44, 52; 7 are "built after this triage" and sit on the
+estate branch `node/redline-6-gap-triage` as local commits, push being the VAULT sync, so they are on no remote and not
+on main yet: GAP-03, 04, 05, 06, 35, 41, 45), **build now 0** (it was GAP-03, GAP-04, GAP-05), **later 3**
 (GAP-37, GAP-39, GAP-47), **closed by design 0** as a whole proposal (parts only: a remote plugin marketplace,
 Esc Esc rewind, cloud effort). The counts are recomputed from the rows by `tests/test_one_app_gap_triage.py`.
+
+Status of the build (read from the estate branch's notes `home-node/handoffs/NODE-redline-6-build*.md`, 1 to 5; the
+tests named in the rows were run by the desks that built them, none in the real WebView2 window): items 1, 2 and every
+small slice of item 4 are built except **PDF text extraction for GAP-18** (needs a library, an owner choice). Two
+findings came out of building: the engine's `done` warnings were never forwarded (item 1), and `checkpoint_rewind` and
+`checkpoint_undo` were reachable by a Claude click (now FENCED and BRIDGE_NEVER, estate `934ae93`). One more is open and
+is a Sec call: `plugin_install` and `plugin_set_enabled` are in the same unfenced state (listed from the code, not driven).
+Items 3, 5 and 6 below are untouched.
 
 ## Proposed order (the owner approves this; it is the one owner step)
 
 1. **Forward the dropped engine warnings** (GAP-03 and GAP-04 residue). It is a truth bug under two landed
-   features and one file, `turn.py`.
+   features and one file, `turn.py`. *Built (estate `8d06346`).*
 2. **Register `Ctrl+Shift+E` and `Ctrl+Shift+B`** (GAP-05). The owner asked for the whole context bar and the
-   keys; this closes the last two chords.
+   keys; this closes the last two chords. *Built (estate `4305d7b`).*
 3. **Walk the landed rooms in the real window**, one recorded run per room (queue Stage 3). The 51 landed rows
    are code and tests, not proof; start with the Context bar and Chat box, which the owner asked for first.
 4. **Small slices, one desk each:** session model time and lines changed (GAP-06, needs a stored per-reply time),
    effort and thinking persisted (GAP-04, an owner choice), terminal tabs (GAP-41), chat-side rewind picker
-   (GAP-45), skill authoring (GAP-35), PDF and docx attach (GAP-18).
+   (GAP-45), skill authoring (GAP-35), PDF and docx attach (GAP-18). *All built except PDF text extraction (docx is
+   built), which needs a library choice.*
 5. **Sec group, Opus with a Law 9 look:** `edit_file` in chat (GAP-44), the hooks runner (GAP-37), sandbox build
    (GAP-39), pop-out of chat panes (GAP-47).
 6. **Gated, last, per the two-products note** (first MVP is the chat app; selling and the catalogue come later):
