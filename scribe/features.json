@@ -1,0 +1,8 @@
+[
+  {"feature": "The egress door (one place every transmission leaves)", "evidence": {"test": "tests/test_egress.py"}},
+  {"feature": "The spend gate (approval before a paid model call)", "evidence": {"test": "tests/test_spend_gate.py"}},
+  {"feature": "World-data provider terms, unknown fails closed", "evidence": {"test": "tests/test_world_terms.py"}},
+  {"feature": "Odyssey inbound sweep cron", "flag": "ODYSSEY_INBOUND_CRON_ENABLED", "evidence": {"test": "tests/test_egress.py"},
+   "note": "evidence points at the door test only; add the sweep's own test when one exists"},
+  {"feature": "Sub-processor table checked against the egress registry", "planned": true, "evidence_text": "planned, in review (K08 draft PR)"}
+]
