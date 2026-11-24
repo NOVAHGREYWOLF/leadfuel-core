@@ -126,10 +126,11 @@ def test_load_reach_reads_a_checkout_by_path(tmp_path):
     assert r["verdict"] == dr.CLEAN
 
 
-_REAL = r"F:\Leadfuel\repos\novaherald"
+_REAL = os.environ.get("REACH_CHECKOUT", "")
 
 
-@pytest.mark.skipif(not os.path.isfile(os.path.join(_REAL, "render.py")), reason="no reach checkout on this machine")
+@pytest.mark.skipif(not _REAL or not os.path.isfile(os.path.join(_REAL, "render.py")),
+                    reason="set REACH_CHECKOUT to a reach checkout to run this test")
 def test_against_the_real_reach_render_and_guard():
     reach = dr.load_reach(_REAL)
     good = {"id": "g", "subject": "A note for {{first_name}}", "body": "Hi {{first_name}}, " + LONG,
