@@ -1,0 +1,16 @@
+{
+  "schema": "watch.walk_run/1",
+  "cell": "protect-nightly-full-run",
+  "result": "unknown",
+  "ran_at": "2026-11-23T22:17:09Z",
+  "ran_by": "WATCH desk, last verdict line of the nightly full run read through walk_scoreboard.py probe",
+  "how": "Read the last verdict line of the nightly full run log. PASS and FAIL pass through; UNKNOWN and SKIPPED-BUSY read unknown.",
+  "evidence": [
+    {
+      "path": "watch/walk/evidence/protect-nightly-full-run__20261123T221709Z__nightly_full_run_verdict.json",
+      "sha256": "8176eb95da60ce6ba3b94c4d18acc18d117a02aa3602135ef76603101b60799b"
+    }
+  ],
+  "subject_at": "2026-11-23T17:01:38Z",
+  "reason": "last verdict line says UNKNOWN"
+}
