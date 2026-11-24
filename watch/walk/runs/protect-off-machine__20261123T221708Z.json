@@ -1,0 +1,16 @@
+{
+  "schema": "watch.walk_run/1",
+  "cell": "protect-off-machine",
+  "result": "fail",
+  "ran_at": "2026-11-23T22:17:08Z",
+  "ran_by": "WATCH desk, watch/vault_sync_status.py read through walk_scoreboard.py probe",
+  "how": "Ran the reader over the VAULT private sync log. The evidence is the reader's own output with the log path removed.",
+  "evidence": [
+    {
+      "path": "watch/walk/evidence/protect-off-machine__20261123T221708Z__vault_sync_status.json",
+      "sha256": "854be4bd1733cfaf0c119f43886c9a652ab41974ffe522aedf78bb13ac892799"
+    }
+  ],
+  "subject_at": "2026-11-23T11:52:18Z",
+  "reason": "reader state failed: exit 3: an excluded path or a big blob survived the filter; nothing pushed"
+}
