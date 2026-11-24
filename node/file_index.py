@@ -80,6 +80,8 @@ ZIP_DOC_EXT = {".docx": ("word/document.xml",), ".pptx": ("ppt/slides/",),
                ".xlsx": ("xl/sharedStrings.xml",), ".odt": ("content.xml",),
                ".ods": ("content.xml",), ".odp": ("content.xml",)}
 NO_EXTRACTOR_EXT = {".pdf", ".doc", ".xls", ".ppt", ".rtf", ".epub", ".pages", ".key"}
+# Machine output: large and noisy. Name and path are indexed; content is not (reported as unknown).
+NOISY_EXT = {".log", ".jsonl"}
 
 TYPE_OF_EXT = {}
 for _t, _exts in {
@@ -107,7 +109,7 @@ for _t, _exts in {
 FILE_TYPES = ("doc", "code", "data", "image", "video", "audio", "archive", "binary", "other")
 
 EXTRACT_MAX_FILE = 5 * 1024 * 1024     # files above this are not content-extracted
-EXTRACT_MAX_BODY = 64 * 1024           # characters stored per file
+EXTRACT_MAX_BODY = 16 * 1024           # characters stored per file (64 K measured too big in the pilot)
 ZIP_MEMBER_MAX = 8 * 1024 * 1024       # decompressed bytes read from one zip member
 QUICK_BYTES = 64 * 1024                # head and tail bytes for the quick hash
 CHUNK = 1024 * 1024
@@ -283,6 +285,8 @@ def extract_text(path: str, ext: str, size: int) -> tuple[str, str | None]:
     ext = ext.lower()
     if ext in NO_EXTRACTOR_EXT:
         return "no-extractor", None
+    if ext in NOISY_EXT:
+        return "skipped-noisy", None
     if ext not in TEXT_EXT and ext not in ZIP_DOC_EXT:
         return "none", None
     if size > EXTRACT_MAX_FILE:
@@ -896,7 +900,7 @@ def heavy_lock_acquire(job: str, lock_py: str | None) -> tuple[str, str | None]:
     """('granted', token) | ('refused', None) | ('unknown', None). Unknown never runs."""
     if not lock_py or not os.path.isfile(lock_py):
         return "unknown", None
-    tok = os.path.join(os.path.dirname(default_db()), f"heavy-{os.getpid()}.token")
+    tok = os.path.join(os.path.dirname(default_db()), "heavy.token")   # one file, overwritten
     os.makedirs(os.path.dirname(tok), exist_ok=True)
     try:
         p = subprocess.run([sys.executable, lock_py, "acquire", "--job", job, "--pid", str(os.getpid()),
