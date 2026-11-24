@@ -9,6 +9,8 @@ The owner clicks a card on the Router desk page, and before this nothing woke th
 
 **Four states, one pass.** `DELIVERED` only when the target's own transcript holds the card's token. A send that was queued or held for approval is `HELD` and is rechecked next pass, never resent. A failed send, or HELD or UNKNOWN past 120 minutes, is `UNDELIVERED` and gets a durable note on the Build Board. A pass that cannot read its inputs says `UNKNOWN`. A send is not delivered because it was sent.
 
+**UNDELIVERED is retried (0.1.26).** Measured 2026-11-23: 84 unrouted cards sat UNDELIVERED for good. 47 had gone to an asker that is now archived (21 of them already archived when the send went out), 18 to a session id no store row has (17 real, one the withdrawn proof card), and 19 to a live session that never started on the message (queued, or "no sign of starting within 20s", which the tool says it "can still pick up later", now read as a hold). The plan now sends an UNDELIVERED answer again, at most 3 tries in all (`wake.attempts`): at once when the send said the target is archived or not found (`wake.gone`), else 60 minutes after the last try. A retry never goes to a target known to be gone (archived in the session store, or named in `wake.gone_to`); it goes to the asker's live successor: the highest live router of the project the asker's title names (`NODE · novah estate part · 10` finds `ROUTER #140 · novah estate`, and a bare `ROUTER #102` finds its project through the archived #102's own title), the one live upper-case `CONDUCTOR` for a conductor's card, else `router/current` when that is not archived. The 48-hour rule does not apply to a retry (the answer was tried and never arrived); a retry older than 30 days is listed as `retry_too_old` and left. The message says which cards are sent again, so the reader checks the card before acting.
+
 ## The pass
 Pages: Router desk `https://claude.ai/artifact/LzmP6QcxmYh9TdvMMjS883` (collection `questions`); Build Board `https://claude.ai/artifact/A4uS9xn1emqupohdE4DUfV` (collection `router`). Script: `python "${CLAUDE_PLUGIN_ROOT}/scripts/wake_on_answer.py"`. Use PowerShell for any shell step (a scheduled run's Bash may lack tools on PATH).
 
@@ -26,12 +28,12 @@ Pages: Router desk `https://claude.ai/artifact/LzmP6QcxmYh9TdvMMjS883` (collecti
 11. **End** with the judge's last line (`WAKE-PASS DELIVERED=… HELD=… UNDELIVERED=… UNKNOWN=…`), or the step-6 line, then the sweep's last line (`RESUME-SWEEP nudge=...`). Ids and counts only.
 
 ## What a card carries afterwards
-- `wake`: `{state, at, to, why, delivery, message_id, first_sent_at, sends, answered_at, note_at, by}`. The token is never written to a card: a router reading the card would otherwise carry it in its own transcript and a message that never arrived would look delivered.
+- `wake`: `{state, at, to, why, delivery, message_id, first_sent_at, sends, attempts, gone, gone_to, answered_at, note_at, by}`. The token is never written to a card: a router reading the card would otherwise carry it in its own transcript and a message that never arrived would look delivered.
 - `routed` (only when DELIVERED): `{at, by: "wake-on-answer", to, note}`. The page then shows the owner that his answer was picked up. The session that acts writes what it did in `routed.note`.
 - A card the owner answers again, or adds a note to, gets `routed: null` from the page and a new `answered_at` or `note_at`, so the next pass sends it again.
 
 ## Who is the target
-`asker_session` when it is a full `local_` id; else a full `local_` id inside the `asker` text; else the live router, `router/current.session_id` on the Build Board. A row id such as `intelligence/local_8e471cfd-1` is not a session. A router that wants a desk woken directly puts that desk's id in `asker_session` when it posts the card, and only for a desk under 300k tokens (`leadfuel-way:router`, "Waking").
+`asker_session` when it is a full `local_` id; else a full `local_` id inside the `asker` text; else the router or session the asker names by title; else the live router, `router/current.session_id` on the Build Board. Since 0.1.26 an id that is known gone (archived in the store, or a send said archived / not found) is skipped for the asker's live successor (section above). A row id such as `intelligence/local_8e471cfd-1` is not a session. A router that wants a desk woken directly puts that desk's id in `asker_session` when it posts the card, and only for a desk under 300k tokens (`leadfuel-way:router`, "Waking").
 
 ## Never
 - Never change any session's permission mode to get a message through (the owner's standing rule). A held message stays HELD and then becomes UNDELIVERED with a note.

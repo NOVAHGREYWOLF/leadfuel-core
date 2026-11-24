@@ -678,3 +678,146 @@ def test_an_archived_or_watcher_session_is_never_found_by_title(woa):
              dict(sess(R121, "Wake on answer, long enough title"), task="wake-on-answer")]
     assert woa.session_by_title("WATCH · desk archival analysis part 2", store) == (None, "")
     assert woa.session_by_title("Wake on answer, long enough title", store) == (None, "")
+
+
+# ---- 0.1.26: UNDELIVERED is retried, never to a target known to be gone (WATCH, U04) ---------------------------
+# Measured 2026-11-23 on the Router desk: 84 unrouted cards were UNDELIVERED. 39 had been sent to an asker that was
+# archived or did not exist; the rest were queued, or "gave no sign of starting within 20s", and were never looked
+# at again once the 120-minute hold ran out. The wordings below are verbatim from that run's sent/*.txt files.
+
+SEND_ARCHIVED = (f"Message not delivered: session {DESK} is archived; unarchive it first. "
+                 "(delivery: undelivered; message_id: c57281c1-d6cd-4ed0-0000-000000000000)")
+SEND_NO_START = (f"ERROR Message not delivered to session {ROUTER} (\"ROUTER #118 · reports\"): \"that session gave no "
+                 "sign of starting on it within 20s (it may be waiting for approval there, or slow to start); it can "
+                 "still pick it up later\". (delivery: undelivered; message_id: 2dee6fc1-6e3e-4c77-bd8c-67a20411b836)")
+SEND_NO_START_SHORT = ("send to x token WAKE-e8fd74b2a0: Message not delivered: no sign of starting within 20s "
+                       "(delivery: undelivered; message_id: 1)")
+R139 = "local_13900000-0000-4000-8000-000000000139"
+R140 = "local_14000000-0000-4000-8000-000000000140"
+C60 = "local_06000000-0000-4000-8000-000000000060"
+
+
+def undelivered(to, at="2026-10-14T00:00:00Z", **extra):
+    w = {"state": "UNDELIVERED", "answered_at": "2026-10-14T01:45:40.495Z", "note_at": None, "to": to, "at": at,
+         "delivery": "undelivered", "sends": 1}
+    w.update(extra)
+    return w
+
+
+@pytest.mark.parametrize("text", [SEND_ARCHIVED, SEND_NOT_FOUND])
+def test_an_archived_or_missing_target_is_undelivered_and_gone(woa, text):
+    parsed = woa.parse_send(text)
+    assert parsed["delivery"] == "undelivered" and parsed["gone"] is True
+
+
+@pytest.mark.parametrize("text", [SEND_NO_START, SEND_NO_START_SHORT])
+def test_no_sign_of_starting_is_a_hold_not_a_failure(woa, text):
+    """The tool says it 'can still pick it up later': rechecked, never failed on the spot."""
+    parsed = woa.parse_send(text)
+    assert parsed["delivery"] == "held" and not parsed.get("gone")
+
+
+def test_an_archived_asker_session_is_passed_over_for_the_live_router_of_its_project(woa):
+    store = [sess(DESK, "NODE · novah estate part · 10", archived=True), sess(R139, "ROUTER #139 · novah estate"),
+             sess(R140, "ROUTER #140 · novah estate")]
+    c = card(asker="NODE · novah estate part · 10 (via ROUTER #122)", asker_session=DESK)
+    target, why = woa.resolve_target(c, ROUTER, store)
+    assert target == R140 and DESK in why and "is gone" in why
+
+
+def test_a_gone_asker_with_no_project_router_goes_to_router_current_not_nowhere(woa):
+    store = [sess(DESK, "NODE · two-stack plan", archived=True)]
+    target, why = woa.resolve_target(card(asker="NODE · two-stack plan", asker_session=DESK), ROUTER, store)
+    assert target == ROUTER and "router/current" in why and "is gone" in why
+
+
+def test_a_target_a_send_called_gone_is_never_chosen_again(woa):
+    """A session missing from the store is not known gone (the store is this machine's only); a send that said
+    'not found' makes it gone."""
+    c = card(asker_session=DESK)
+    assert woa.resolve_target(c, ROUTER, STORE)[0] == DESK
+    assert woa.resolve_target(c, ROUTER, STORE, gone=[DESK])[0] == ROUTER
+
+
+def test_router_current_that_is_archived_is_no_target(woa):
+    store = [sess(ROUTER, "ROUTER #53 · estate", archived=True)]
+    target, why = woa.resolve_target(card(asker="someone"), ROUTER, store)
+    assert target is None and "router/current" in why
+
+
+def test_a_bare_router_number_that_rotated_finds_its_projects_live_router(woa):
+    store = [sess(R114, "ROUTER #102 · one-interface", archived=True), sess(R121, "ROUTER #117 · one-interface")]
+    target, why = woa.resolve_target(card(asker="ROUTER #102"), ROUTER, store)
+    assert target == R121 and "ROUTER #102's project" in why
+
+
+def test_a_conductors_card_goes_to_the_one_live_conductor_and_only_an_upper_case_one(woa):
+    store = [sess(DESK, "CONDUCTOR · system build (058)", archived=True), sess(C60, "CONDUCTOR · system build (061)"),
+             sess(R121, "Conductor and report delivery")]
+    c = card(asker=f"CONDUCTOR 058 ({DESK})")
+    assert woa.resolve_target(c, ROUTER, store)[0] == C60
+    two = store + [sess(R114, "CONDUCTOR · another")]
+    assert woa.resolve_target(c, ROUTER, two)[0] == ROUTER  # two live: no guess, the live router
+
+
+def test_an_undelivered_card_is_retried_after_the_wait_and_only_while_attempts_remain(woa):
+    now = "2026-10-14T02:00:00Z"
+    assert woa.pending({"q1": card(wake=undelivered(ROUTER, at="2026-10-14T01:30:00Z"))}, now=now) == []
+    assert woa.pending({"q1": card(wake=undelivered(ROUTER, at="2026-10-14T00:30:00Z"))}, now=now) == [("q1", "retry")]
+    spent = undelivered(ROUTER, at="2026-10-14T00:30:00Z", attempts=woa.MAX_ATTEMPTS)
+    assert woa.pending({"q1": card(wake=spent)}, now=now) == []
+
+
+def test_a_gone_target_is_retried_at_once(woa):
+    w = undelivered(DESK, at="2026-10-14T01:59:00Z", gone=True)
+    assert woa.pending({"q1": card(wake=w)}, now="2026-10-14T02:00:00Z") == [("q1", "retry")]
+
+
+def test_an_undelivered_card_whose_last_attempt_has_no_time_is_not_retried(woa):
+    """A check that cannot establish how long it waited does not act."""
+    w = undelivered(ROUTER, at=None)
+    assert woa.pending({"q1": card(wake=w)}, now="2026-10-14T02:00:00Z") == []
+
+
+def test_a_retry_skips_the_48_hour_rule_but_not_its_own_limit(woa):
+    old = card(answered_at="2026-10-01T00:00:00Z",
+               wake=dict(undelivered(ROUTER, at="2026-10-02T00:00:00Z"), answered_at="2026-10-01T00:00:00Z"))
+    plan = woa.make_plan({"q1": old}, ROUTER, now="2026-10-14T02:00:00Z")
+    assert plan["stale"] == [] and plan["retries"] == ["q1"] and plan["sends"][0]["cards"] == ["q1"]
+    assert "Sent again (q1)" in plan["sends"][0]["text"] and plan["why"]["q1"].startswith("retry 2 of 3")
+    plan = woa.make_plan({"q1": old}, ROUTER, now="2026-10-14T02:00:00Z", retry_max_age_hours=24)
+    assert plan["sends"] == [] and plan["retry_too_old"] == ["q1"]
+
+
+def test_a_retry_reroutes_from_a_target_that_is_missing_from_the_store_after_an_undelivered_send(woa):
+    """Cards judged before 0.1.26 carry no `gone` flag; measured: 17 such cards named a session no store row has."""
+    c = card(asker_session=DESK, wake=undelivered(DESK))
+    plan = woa.make_plan({"q1": c}, ROUTER, sessions=STORE, now="2026-10-14T02:00:00Z")
+    assert plan["sends"][0]["to"] == ROUTER and plan["cards"]["q1"]["gone_to"] == [DESK]
+    held = card(asker_session=DESK, wake=undelivered(DESK, delivery="held"))
+    plan = woa.make_plan({"q1": held}, ROUTER, sessions=STORE, now="2026-10-14T02:00:00Z")
+    assert plan["sends"][0]["to"] == DESK  # a hold says nothing about whether the session exists
+
+
+def test_judge_records_gone_and_counts_attempts_so_retries_end(woa):
+    c = card(asker_session=DESK, wake=undelivered(DESK, delivery="held", at="2026-10-14T00:00:00Z"))
+    plan = woa.make_plan({"q1": c}, ROUTER, now="2026-10-14T02:00:00Z")
+    tok = plan["sends"][0]["search_token"]
+    out = woa.judge(plan, {tok: SEND_ARCHIVED}, {tok: "No matching sessions found."}, now="2026-10-14T02:01:00Z",
+                    versions={"q1": 4})
+    wake = out["writes"][0]["data"]["wake"]
+    assert wake["state"] == "UNDELIVERED" and wake["gone"] is True and wake["gone_to"] == [DESK]
+    assert wake["attempts"] == 2 and wake["sends"] == 2
+    assert "again" in out["fallback"]["q1"]["next"]
+    nxt = woa.make_plan({"q1": card(asker_session=DESK, wake=wake)}, ROUTER, now="2026-10-14T02:02:00Z")
+    assert nxt["sends"][0]["to"] == ROUTER  # straight away, and never to the gone asker
+    last = dict(wake, attempts=woa.MAX_ATTEMPTS)
+    assert woa.pending({"q1": card(wake=last)}, now="2026-10-14T05:00:00Z") == []
+
+
+def test_a_no_target_card_is_retried_and_its_attempts_count(woa):
+    plan = woa.make_plan({"q1": card()}, None, now="2026-10-14T02:00:00Z")
+    wake = woa.judge(plan, {}, {}, now="2026-10-14T02:01:00Z", versions={"q1": 2})["writes"][0]["data"]["wake"]
+    assert wake["attempts"] == 1 and wake["sends"] == 0
+    again = woa.make_plan({"q1": card(wake=wake)}, ROUTER, now="2026-10-14T03:30:00Z")
+    assert again["sends"][0]["to"] == ROUTER
