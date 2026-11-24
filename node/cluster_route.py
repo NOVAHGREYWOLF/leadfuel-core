@@ -69,7 +69,8 @@ DEFAULT_HEAVY_LOCK = os.environ.get(
 DEFAULT_LOG = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"),
                            "cluster_route", "placements.jsonl")
 KINDS = ("test", "lint", "build", "mechanical")
-VENDOR = ("pytest", "_pytest", "pluggy", "iniconfig", "packaging", "py")
+# pytest and what it needs on Python 3.11+ (importlib.metadata.requires("pytest"), pytest 9.0).
+VENDOR = ("pytest", "_pytest", "pluggy", "iniconfig", "packaging", "pygments", "py")
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
 PROBE_TIMEOUT_S = 25
 LAN_NETS = tuple(ipaddress.ip_network(n) for n in (
