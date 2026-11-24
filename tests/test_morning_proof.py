@@ -437,6 +437,79 @@ def test_cards_answered_and_not_routed():
     assert watcher("cards-unrouted")(ctx).status == "FAIL"
 
 
+def test_cards_older_than_the_wake_horizon_are_a_backlog_not_a_failed_pass():
+    # First real read, 2026-11-23: 160 of 189 unrouted cards were answered from 2026-10-17 on (oldest 894 h). The
+    # wake pass sends nothing for a card answered more than 48 h ago, so those cannot be what tells the morning
+    # the pass is broken; counted together they would make the line red for ever and hide a new failure.
+    ctx = make_ctx()
+    cards = {"old1": card(answered=NOW - 100 * H), "old2": card(answered=NOW - 900 * H)}
+    put(ctx, "cards_snapshot", json.dumps(cards))
+    f = watcher("cards-unrouted")(ctx)
+    assert f.status == "OK" and "2 older than 48 h never marked routed" in f.evidence and "old2" in f.evidence, f.evidence
+    cards["new"] = card(answered=NOW - 5 * H)
+    put(ctx, "cards_snapshot", json.dumps(cards))
+    f = watcher("cards-unrouted")(ctx)
+    assert f.status == "FAIL" and "new" in f.evidence and "2 older than 48 h" in f.evidence, f.evidence
+    assert mp.CARD_WAKE_HORIZON > mp.CARD_ROUTE_GRACE
+    cards = {"old1": card(answered=NOW - 100 * H), "x": {"answer": "A", "routed": None}}      # one with no time at all
+    put(ctx, "cards_snapshot", json.dumps(cards))
+    f = watcher("cards-unrouted")(ctx)
+    assert f.status == "UNKNOWN" and "no time" in f.evidence and "1 older than 48 h" in f.evidence, f.evidence
+
+
+def test_cards_with_the_real_page_timestamps_are_told_apart_not_all_called_timeless():
+    # Read from a real card (questions/q9549, 2026-11-23): the page writes answered_at with milliseconds
+    # ("2026-11-22T04:10:33.854Z") and a hand-routed card carries routed = {at, note} with no `by`. The first
+    # build parsed whole seconds only, so every answered card read as "no time" and the line was UNKNOWN for ever.
+    ctx = make_ctx()
+    real = {"id": "q9549", "kind": "choice", "answer": "A", "answered_at": z(NOW - 6 * H)[:-1] + ".854Z", "routed": None}
+    put(ctx, "cards_snapshot", json.dumps({"q9549": real}))
+    f = watcher("cards-unrouted")(ctx)
+    assert f.status == "FAIL" and "q9549" in f.evidence and "6.0 h" in f.evidence, f.evidence
+    real["routed"] = {"at": "2026-11-22T05:20:00Z", "note": "ROUTER: done"}
+    put(ctx, "cards_snapshot", json.dumps({"q9549": real}))
+    assert watcher("cards-unrouted")(ctx).status == "OK"
+    assert mp.parse_card_ts("2026-11-22T04:10:33.854Z") == utc("2026-11-22T04:10:33Z") + dt.timedelta(milliseconds=854)
+    assert mp.parse_card_ts("2026-11-22T04:10:33Z") == utc("2026-11-22T04:10:33Z")
+    assert mp.parse_card_ts("2026-11-22T04:10:33") is None and mp.parse_card_ts("soon") is None and mp.parse_card_ts(None) is None
+
+
+def _save_card(d, cid, doc):
+    d.mkdir(parents=True, exist_ok=True)
+    (d / (cid + ".json")).write_text(json.dumps(doc, indent=2), encoding="utf-8")
+
+
+def test_snapshot_cards_builds_the_file_the_cards_line_reads(tmp_path):
+    src, to = tmp_path / "questions", tmp_path / "inputs" / "router-desk-questions.json"
+    _save_card(src, "q1", {"id": "q1", "answer": "A", "answered_at": "2026-11-22T04:10:33.854Z", "routed": None})
+    _save_card(src, "q2", {"id": "q2", "answer": None, "routed": None})
+    assert mp.main(["snapshot-cards", "--from-dir", str(src), "--to", str(to), "--now", "2026-11-23T12:00:00Z"]) == 0
+    body = json.loads(to.read_text(encoding="utf-8"))
+    assert body["count"] == 2 and body["exported_at"] == "2026-11-23T12:00:00Z" and set(body["cards"]) == {"q1", "q2"}
+    ctx = make_ctx(now=utc("2026-11-23T13:00:00Z"))
+    put(ctx, "cards_snapshot", to.read_text(encoding="utf-8"), mtime=utc("2026-11-23T12:00:00Z"))
+    f = watcher("cards-unrouted")(ctx)
+    assert f.status == "FAIL" and "q1" in f.evidence, f.evidence      # answered a day ago and never routed
+
+
+def test_snapshot_cards_refuses_what_could_read_as_a_clean_bill(tmp_path, capsys):
+    to = tmp_path / "out.json"
+    assert mp.main(["snapshot-cards", "--from-dir", str(tmp_path / "missing"), "--to", str(to)]) == 2
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert mp.main(["snapshot-cards", "--from-dir", str(empty), "--to", str(to)]) == 2           # empty looks like "nothing waits"
+    assert not to.exists()
+    assert mp.main(["snapshot-cards", "--from-dir", str(empty), "--to", str(to), "--allow-empty"]) == 0
+    assert json.loads(to.read_text(encoding="utf-8"))["count"] == 0
+    to.unlink()
+    broken = tmp_path / "broken"
+    _save_card(broken, "q1", {"id": "q1", "answer": "A"})
+    (broken / "q2.json").write_text("{not json", encoding="utf-8")
+    assert mp.main(["snapshot-cards", "--from-dir", str(broken), "--to", str(to), "--allow-empty"]) == 2   # a card it cannot see may be the stuck one
+    assert not to.exists()
+    assert "q2.json" in capsys.readouterr().err                                                    # and it names the file it could not read
+
+
 def test_cards_snapshot_that_is_old_or_unreadable_is_unknown():
     ctx = make_ctx()
     put(ctx, "cards_snapshot", json.dumps({}), mtime=NOW - 30 * H)

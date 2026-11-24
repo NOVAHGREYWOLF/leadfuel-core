@@ -34,6 +34,8 @@ nightly_full_run.py). The dated file is the verdict.
 COMMANDS (stdlib only, run by path):
   python watch/morning_proof.py run [--now ISO] [--out-dir DIR] [--inputs-dir DIR] [--hub DIR] [--offline]
         [--live-tls] [--nightly-log P] [--library-log P] [--archive-dir D] [--vault-log P] [--no-write]
+  python watch/morning_proof.py snapshot-cards --from-dir DIR [--to P] [--allow-empty]
+        (DIR = the <card id>.json files `ArtifactData query ... out_dir` saved; writes the cards copy below)
   python watch/morning_proof.py selftest
 
 MIRRORS (the exact files NODE must expose, fresh each morning before the read; the file's modification time
@@ -43,8 +45,9 @@ on this PC is taken as the moment the source was read, so write it fresh, do not
   <inputs>/overlord/greywolf-state.status     <- tail -n 40 /var/log/greywolf-state.status
   <inputs>/overlord/utilization.json          <- cat /var/lib/cluster/utilization.json
   <inputs>/router-desk-questions.json         <- the Router desk `questions` collection, one JSON object keyed
-                                                 by card id (a desk with ArtifactData writes it; an optional
-                                                 top-level "exported_at" is used as its time)
+                                                 by card id (a desk with ArtifactData saves the cards with
+                                                 out_dir and `snapshot-cards` assembles the file; a top-level
+                                                 "exported_at" is used as its time)
 Times are shown in Pacific; every machine field is UTC.
 
 SCHEDULE: watch/Register-MorningProof.ps1 (a dry run unless -Apply is given: registering a standing task is the
@@ -102,6 +105,7 @@ UTIL_MIRROR_MAX_AGE = dt.timedelta(hours=3)      # the copy must be taken close 
 UTIL_FEED_MAX_AGE = dt.timedelta(minutes=15)     # the feed runs every 5 minutes: three missed runs
 CARDS_SNAPSHOT_MAX_AGE = dt.timedelta(hours=6)
 CARD_ROUTE_GRACE = dt.timedelta(hours=2)         # the wake pass's own limit before it calls a card UNDELIVERED
+CARD_WAKE_HORIZON = dt.timedelta(hours=48)       # the wake pass sends nothing for a card answered longer ago than this
 HUB_TESTS_MAX_AGE = dt.timedelta(hours=72)
 OPEN_PR_STALE = dt.timedelta(hours=72)           # a non-draft hub PR older than this is waiting on the train
 PR_LIST_LIMIT = 300
@@ -178,6 +182,19 @@ def parse_ts(s):
     except ValueError:
         pass
     return None
+
+
+def parse_card_ts(s):
+    """A Router desk card time. The page writes 2026-11-22T04:10:33.854Z (milliseconds, read from a real card on
+    2026-11-23); parse_ts takes only whole seconds, so with it every answered card read as having no time. A time
+    with no zone is refused, never guessed."""
+    if not isinstance(s, str):
+        return None
+    try:
+        t = dt.datetime.fromisoformat(s.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t.astimezone(dt.timezone.utc) if t.tzinfo else None
 
 
 def _clean(s, n=EVIDENCE_MAX):
@@ -527,7 +544,7 @@ def _card_list(data):
     """(cards as [(id, dict)], exported_at) from the shapes a snapshot may take, or (None, None)."""
     exported = None
     if isinstance(data, dict):
-        exported = parse_ts(data.get("exported_at") or "") if isinstance(data.get("exported_at"), str) else None
+        exported = parse_card_ts(data.get("exported_at"))
         for key in ("cards", "questions"):
             if isinstance(data.get(key), (dict, list)):
                 data = data[key]
@@ -546,7 +563,7 @@ def w_cards(ctx):
     path = ctx.paths["cards_snapshot"]
     rd = ctx.io.read(path)
     if rd.text is None:
-        why = ("no snapshot at %s; a desk with ArtifactData must write the Router desk `questions` collection there" % path
+        why = ("no snapshot at %s; a desk with ArtifactData saves the Router desk `questions` cards with out_dir, then `morning_proof.py snapshot-cards` writes it" % path
                if rd.error == "missing" else "the snapshot at %s is %s" % (path, rd.error))
         return Finding(wid, UNKNOWN, why)
     try:
@@ -570,20 +587,30 @@ def w_cards(ctx):
         routed = c.get("routed")
         if isinstance(routed, dict) and routed.get("at"):
             continue
-        stamps = [parse_ts(c.get(k) or "") for k in ("answered_at", "note_at") if isinstance(c.get(k), str)]
+        stamps = [parse_card_ts(c.get(k)) for k in ("answered_at", "note_at")]
         stamps = [s for s in stamps if s]
         (pending if stamps else no_time).append((cid, ctx.now - max(stamps) if stamps else None))
-    stuck = sorted((p for p in pending if p[1] > CARD_ROUTE_GRACE), key=lambda p: -p[1].total_seconds())
+    # The wake pass sends a card answered within CARD_WAKE_HORIZON and sends an older one to nobody (it treats it as
+    # relayed by hand long ago). So the card that tells the morning the pass is broken is one the pass should have
+    # routed and did not: older than the grace and inside the horizon. Cards older than the horizon are a standing
+    # backlog: counted in the evidence every day, not the reason a working pass reads FAIL. (First real read,
+    # 2026-11-23: 160 of 189 unrouted cards were answered from 2026-10-17 on, the oldest 894 h; counted together
+    # they made the line red for ever and hid a new failure.)
+    stuck = sorted((p for p in pending if CARD_ROUTE_GRACE < p[1] <= CARD_WAKE_HORIZON), key=lambda p: -p[1].total_seconds())
+    backlog = sorted((p for p in pending if p[1] > CARD_WAKE_HORIZON), key=lambda p: -p[1].total_seconds())
+    old = ("; %d older than %.0f h never marked routed (the wake pass skips those), oldest %s (%.0f h)" % (
+        len(backlog), CARD_WAKE_HORIZON.total_seconds() / 3600, backlog[0][0], backlog[0][1].total_seconds() / 3600)) if backlog else ""
     n = len(pending) + len(no_time)
     if stuck:
         cid, age = stuck[0]
-        return Finding(wid, FAIL, "%d answered and not routed; %d older than %.0f h, oldest %s (%.1f h)" % (
-            n, len(stuck), CARD_ROUTE_GRACE.total_seconds() / 3600, cid, age.total_seconds() / 3600), taken)
+        return Finding(wid, FAIL, "%d answered and not routed; %d the wake pass should have routed (older than %.0f h, inside %.0f h), oldest %s (%.1f h)%s" % (
+            n, len(stuck), CARD_ROUTE_GRACE.total_seconds() / 3600, CARD_WAKE_HORIZON.total_seconds() / 3600,
+            cid, age.total_seconds() / 3600, old), taken)
     if no_time:
-        return Finding(wid, UNKNOWN, "%d answered and not routed, %d with no time so it cannot be told whether they are stuck (%s)" % (
-            n, len(no_time), no_time[0][0]), taken)
-    return Finding(wid, OK, "%d answered and not routed, none older than %.0f h (snapshot %s)" % (
-        n, CARD_ROUTE_GRACE.total_seconds() / 3600, fmt_pt(taken)), taken)
+        return Finding(wid, UNKNOWN, "%d answered and not routed, %d with no time so it cannot be told whether they are stuck (%s)%s" % (
+            n, len(no_time), no_time[0][0], old), taken)
+    return Finding(wid, OK, "%d answered and not routed, none waiting longer than %.0f h inside the wake pass's %.0f h reach (snapshot %s)%s" % (
+        n, CARD_ROUTE_GRACE.total_seconds() / 3600, CARD_WAKE_HORIZON.total_seconds() / 3600, fmt_pt(taken), old), taken)
 
 
 _NOTES_NAME = re.compile(r"^NOTES-(\d{4}-\d{2}-\d{2})\.md$")
@@ -925,6 +952,47 @@ def _cmd_run(a):
     return exit_code(rep["summary"])
 
 
+def _cmd_snapshot_cards(a):
+    """Assemble the cards copy the cards-unrouted line reads from the card files ArtifactData saved with out_dir.
+
+    The files are local: this never talks to the Router desk. It refuses to write a snapshot that could read as a
+    clean bill by accident: no cards at all (a failed or empty export looks the same as 'nothing waits', so an empty
+    set needs --allow-empty, given only when the query itself succeeded and returned none) or any file it could not
+    read (a card it could not see may be the stuck one)."""
+    now = _parse_now(a.now) if a.now else dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    try:
+        names = sorted(n for n in os.listdir(a.from_dir) if n.lower().endswith(".json"))
+    except OSError as e:
+        print("cannot read %s: %s; no snapshot written" % (a.from_dir, e.__class__.__name__), file=sys.stderr)
+        return 2
+    cards, bad = {}, []
+    for n in names:
+        try:
+            with open(os.path.join(a.from_dir, n), encoding="utf-8-sig") as f:
+                doc = json.load(f)
+        except (OSError, ValueError):
+            bad.append(n)
+            continue
+        if not isinstance(doc, dict):
+            bad.append(n)
+            continue
+        cards[str(doc.get("id") or os.path.splitext(n)[0])] = doc
+    if bad:
+        print("could not read %d file(s) (%s); no snapshot written: a card it cannot see may be the stuck one" % (len(bad), ", ".join(bad[:5])), file=sys.stderr)
+        return 2
+    if not cards and not a.allow_empty:
+        print("no cards in %s; no snapshot written (an empty export looks like 'nothing waits'; pass --allow-empty only when the query succeeded and returned none)" % a.from_dir, file=sys.stderr)
+        return 2
+    body = {"schema": "watch.morning_proof.cards/1", "exported_at": iso(now), "count": len(cards), "cards": cards}
+    os.makedirs(os.path.dirname(os.path.abspath(a.to)), exist_ok=True)
+    tmp = a.to + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(body, indent=1) + "\n")
+    os.replace(tmp, a.to)
+    print("wrote %s with %d card(s), exported_at %s" % (a.to, len(cards), iso(now)))
+    return 0
+
+
 def _cmd_selftest(_a):
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
     ok, bad = run_controls(now)
@@ -948,6 +1016,12 @@ def main(argv=None):
     r.add_argument("--live-tls", action="store_true", help="make one TLS handshake per certificate host (the owner's call)")
     r.add_argument("--no-write", action="store_true", help="print the report and write no file")
     r.set_defaults(fn=_cmd_run)
+    c = sub.add_parser("snapshot-cards", help="assemble the cards copy from card files ArtifactData saved with out_dir")
+    c.add_argument("--from-dir", required=True, help="the folder holding the saved <card id>.json files")
+    c.add_argument("--to", default=os.path.join(DEFAULT_INPUTS, "router-desk-questions.json"))
+    c.add_argument("--allow-empty", action="store_true", help="write an empty snapshot (only when the query succeeded and returned none)")
+    c.add_argument("--now", help="UTC time to stamp as exported_at (default: now)")
+    c.set_defaults(fn=_cmd_snapshot_cards)
     s = sub.add_parser("selftest", help="run the built-in controls and print the answer")
     s.set_defaults(fn=_cmd_selftest)
     a = p.parse_args(argv)
