@@ -79,6 +79,8 @@ HEAVY_LOCK_MARKER = "actions/runners"
 DEFAULT_LOG = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"),
                            "cluster_route", "placements.jsonl")
 KINDS = ("test", "lint", "build", "mechanical")
+JOB_KINDS = ("test", "lint", "build")     # the kinds that are placed on a node over ssh
+POLICIES = ("first-free", "most-headroom")
 # pytest and what it needs on Python 3.11+ (importlib.metadata.requires("pytest"), pytest 9.0).
 VENDOR = ("pytest", "_pytest", "pluggy", "iniconfig", "packaging", "pygments", "py")
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
@@ -118,6 +120,7 @@ class Target:
     cpu_cap: int = 0          # plain hosts: taskset to CPUs 0..cap-1 (0 = no cap)
     idle_io: bool = False     # plain hosts: ionice -c3, so the job's disk work yields to everything
     guard: dict | None = None # {"kind": "standby-refresh", "via": alias, "status_file": ..., "max_age_s": n}
+    kinds: tuple = JOB_KINDS  # which job kinds this node may take (a rule per node, not a fall-through)
 
     @classmethod
     def from_dict(cls, d: dict) -> "Target":
@@ -142,6 +145,11 @@ class Target:
             if frac > 0.5 or not int(d.get("cpu_cap", 0)):
                 raise ValueError(f"target {d['id']}: a guarded host takes max_load_frac <= 0.5 "
                                  "and a cpu_cap (owner, CONDUCTOR 060)")
+        kinds = d.get("kinds", list(JOB_KINDS))
+        if (not isinstance(kinds, list) or not kinds or any(k not in JOB_KINDS for k in kinds)
+                or len(set(kinds)) != len(kinds)):
+            raise ValueError(f"target {d['id']}: kinds must be a non-empty list of "
+                             f"{', '.join(JOB_KINDS)}")
         cap = int(d.get("cpu_cap", 0))
         if cap < 0:
             raise ValueError(f"target {d['id']}: cpu_cap must be 0 or more")
@@ -149,7 +157,8 @@ class Target:
                    python=str(d.get("python", "python3")), image=str(d.get("image", "")),
                    enabled=d.get("enabled", False), counts_runners=bool(d.get("counts_runners", False)),
                    cpus=int(d.get("cpus", 4)), memory_gb=int(d.get("memory_gb", 4)), max_load_frac=frac,
-                   cpu_cap=cap, idle_io=bool(d.get("idle_io", False)), guard=guard)
+                   cpu_cap=cap, idle_io=bool(d.get("idle_io", False)), guard=guard,
+                   kinds=tuple(kinds))
 
 
 @dataclass(frozen=True)
@@ -187,6 +196,15 @@ class Decision:
     considered: list = field(default_factory=list)   # (target id, verdict, why)
 
 
+def load_policy(path: str) -> str:
+    """The placement policy named in the targets file; first-free when it names none."""
+    with open(path, encoding="utf-8-sig") as f:
+        policy = (json.load(f) or {}).get("policy", "first-free")
+    if policy not in POLICIES:
+        raise ValueError(f"{path}: policy {policy!r} is not one of {', '.join(POLICIES)}")
+    return policy
+
+
 def load_targets(path: str) -> list[Target]:
     with open(path, encoding="utf-8-sig") as f:   # a BOM from PowerShell 5 is fine
         doc = json.load(f)
@@ -203,9 +221,24 @@ def is_heavy(job: dict) -> bool:
     return bool(job.get("heavy")) or job.get("kind") == "build"
 
 
+def headroom(t: Target, f: Facts) -> float:
+    """Threads this target can still give this job: its free threads, never more than its cap."""
+    free = max(f.threads - f.load1, 0.0)
+    cap = t.cpu_cap or (t.cpus if t.exec == "docker" else 0)   # a container is limited to its --cpus
+    return min(free, float(cap)) if cap else free
+
+
 def decide(job: dict, targets: list[Target], facts: dict, heavy_lock: str,
-           local_model: str = "unknown") -> Decision:
-    """Pure: where this job goes, from facts already measured. Never raises on bad facts."""
+           local_model: str = "unknown", policy: str = "first-free") -> Decision:
+    """Pure: where this job goes, from facts already measured. Never raises on bad facts.
+
+    policy "first-free" takes the first free target in file order (the original rule).
+    "most-headroom" takes, among the targets that are free by every rule below, the one with the
+    most spare threads (ties by file order): the fastest place for a parallel job. Either way a
+    node that is disabled, unknown, busy, guarded or not allowed this kind is never picked.
+    """
+    if policy not in POLICIES:
+        return Decision("refuse", None, f"policy {policy!r} is not one of {', '.join(POLICIES)}")
     kind = job.get("kind")
     if kind not in KINDS:
         return Decision("refuse", None, f"kind {kind!r} is not one of {', '.join(KINDS)}")
@@ -226,7 +259,11 @@ def decide(job: dict, targets: list[Target], facts: dict, heavy_lock: str,
         return Decision("wait", None, f"heavy job and the heavy lock is {heavy_lock}")
 
     considered = []
+    free_targets = []
     for t in targets:
+        if kind not in t.kinds:
+            considered.append((t.id, "skipped", f"this node does not take {kind} jobs (kinds rule)"))
+            continue
         if not t.enabled:
             considered.append((t.id, "disabled", "enabled is false in the targets file"))
             continue
@@ -250,7 +287,14 @@ def decide(job: dict, targets: list[Target], facts: dict, heavy_lock: str,
                 considered.append((t.id, "busy", f"{f.workers} CI job(s) running"))
                 continue
         considered.append((t.id, "free", f"load {f.load1:g} on {f.threads} threads"))
-        return Decision("run", t.id, f"{t.id} is free", considered)
+        if policy == "first-free":
+            return Decision("run", t.id, f"{t.id} is free", considered)
+        free_targets.append(t)
+    if free_targets:
+        best = max(free_targets, key=lambda t: headroom(t, facts[t.id]))   # max keeps the first on a tie
+        return Decision("run", best.id,
+                        f"{best.id} has the most spare threads ({headroom(best, facts[best.id]):g})",
+                        considered)
     return Decision("wait", None, "no enabled target is free and measured", considered)
 
 
@@ -535,6 +579,7 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--timeout", type=int, default=1800)
         s.add_argument("--targets", default=os.environ.get("CLUSTER_ROUTE_TARGETS", DEFAULT_TARGETS))
         s.add_argument("--facts")
+        s.add_argument("--policy", choices=POLICIES, help="override the targets file policy")
         s.add_argument("--heavy-lock-state", choices=("free", "held", "unknown"))
         s.add_argument("--local-model-state", choices=("up", "unknown"))
         s.add_argument("--prompt-file")
@@ -550,6 +595,7 @@ def main(argv=None, run=subprocess.run, out=None) -> int:
     a = build_parser().parse_args(argv)
     try:
         targets = load_targets(a.targets)
+        policy = a.policy or load_policy(a.targets)
     except (OSError, ValueError) as e:
         say(f"ERROR targets: {e}")
         return 2
@@ -574,7 +620,7 @@ def main(argv=None, run=subprocess.run, out=None) -> int:
     lock, lock_text = (a.heavy_lock_state, "given") if a.heavy_lock_state else (
         heavy_lock_state(run=run) if is_heavy(job) else ("not-needed", ""))
     model = a.local_model_state or (local_model_state() if a.kind == "mechanical" else "unknown")
-    d = decide(job, targets, facts, lock, model)
+    d = decide(job, targets, facts, lock, model, policy)
     for tid, verdict, why in d.considered:
         say(f"  {tid:8} {verdict:8} {why}")
     job_id = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + secrets.token_hex(2)
