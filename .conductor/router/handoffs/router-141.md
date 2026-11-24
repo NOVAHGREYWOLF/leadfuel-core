@@ -20,3 +20,8 @@ Stop hook misreads ROSTER.md as a handoff. cd to leadfuel-core before spawning A
 ## Addendum 2
 - hub 1200 new head 86cba04a (WATCH 234; CI tests+lint success on it; stacked on 1105 -> 1070, none landed): needs a fresh DOORS read; its LAND-OK at 809f6d66 is stale.
 - SENSORS part 4 RAN the read-only Railway production pass (owner typed yes, ~23:35 PT): report F:\Claude Sessions\handoff\ROUTER-141-or-140\SENSORS-4\out\report_railway_run_20261124_073530Z.txt. lucid:day has 0 rows ever (do NOT flip LUCID-DAY-RECURRING); QBO 6 of 8 rails over budget, 0 rows in 7d, re-sign-in owner step real; watchdog heartbeat alive; ingest_rejected 66 all-time. Walk page needs: mark the read-only pass step done; cut-uid count still needs its own yes. #140 is now ARCHIVED (its agents' reports are lost).
+
+## Addendum 3
+- lc 110 cleaned by NODE 232: squashed to f6f12d1 (allowlist guard, real guards, scanner fix, 93 tests); needs a fresh DOORS read at f6f12d1 (DOORS 212's CHANGES was at b7a2ffd). Old head b7a2ffd (IPs, login name, aliases; no credentials) may still be served by GitHub by SHA; main also already carries IPs from #103 (node/cluster_targets.json, tests/test_cluster_route.py). OWNER-STEPs: decide whether to change the IPs/login, whether to ask GitHub Support to purge b7a2ffd and whether a desk moves #103's values to a local file.
+- Successor: conductor 061 passed LAUNCH-REQUEST to CONDUCTOR 062 (live ~23:53 PT), who arms a Bypass slot for ROUTER #144.
+- hub 1124: lander NODE 237 merged main in (head 91f3e24d), CI running.
