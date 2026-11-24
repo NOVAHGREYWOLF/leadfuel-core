@@ -69,8 +69,13 @@ from dataclasses import dataclass, field
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_TARGETS = os.path.join(HERE, "cluster_targets.json")
 TARGETS_SCHEMA = "cluster-targets-1"
-DEFAULT_HEAVY_LOCK = os.environ.get(
-    "HEAVY_LOCK_PY", r"F:\Leadfuel\repos\novahub\scripts\heavy_lock.py")
+# No default path. The old default pointed at the shared hub checkout, which sat 15 days behind main
+# and so ran a heavy_lock.py that could not read GitHub's runners API (it said `hub CI: unknown`).
+# The path is the owner's to set, to scripts/heavy_lock.py of a CURRENT-main hub checkout or worktree.
+DEFAULT_HEAVY_LOCK = os.environ.get("HEAVY_LOCK_PY", "")
+# A heavy_lock.py that asks GitHub's runners API has this string; the stale one did not. A file
+# without it is refused (unknown), never used: a stale lock script must not read as free.
+HEAVY_LOCK_MARKER = "actions/runners"
 DEFAULT_LOG = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"),
                            "cluster_route", "placements.jsonl")
 KINDS = ("test", "lint", "build", "mechanical")
@@ -388,15 +393,38 @@ def parse_heavy_status(text: str, rc: int) -> str:
     if not slots:
         return "unknown"
     if all(s == "free" for s in slots):
+        # Free slots are not enough: acquire refuses while hub CI is unknown, so say unknown too.
+        if any(ln.startswith("hub CI: unknown") for ln in (text or "").splitlines()):
+            return "unknown"
         return "free"
     if any(s.startswith("live") for s in slots) and all(s == "free" or s.startswith("live") for s in slots):
         return "held"
     return "unknown"
 
 
-def heavy_lock_state(path: str = DEFAULT_HEAVY_LOCK, run=subprocess.run) -> tuple[str, str]:
+def check_heavy_lock_path(path: str) -> str | None:
+    """None when `path` is a usable heavy_lock.py, else why not. Never falls back to another file."""
+    if not path:
+        return ("HEAVY_LOCK_PY is not set: point it at scripts/heavy_lock.py of a current-main "
+                "hub checkout or worktree (there is no default)")
     if not os.path.isfile(path):
-        return "unknown", f"heavy_lock.py not found at {path}"
+        return f"heavy_lock.py not found at {path} (set HEAVY_LOCK_PY to a current-main hub checkout)"
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError as e:
+        return f"heavy_lock.py at {path} cannot be read: {e}"
+    if HEAVY_LOCK_MARKER not in text:
+        return (f"heavy_lock.py at {path} is stale: it does not read GitHub's runners API, so its "
+                "`hub CI` answer is unknown. Fast-forward that hub checkout or point HEAVY_LOCK_PY "
+                "at a current-main one")
+    return None
+
+
+def heavy_lock_state(path: str = DEFAULT_HEAVY_LOCK, run=subprocess.run) -> tuple[str, str]:
+    why = check_heavy_lock_path(path)
+    if why:
+        return "unknown", why
     try:
         r = run([sys.executable, path, "status"], capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.SubprocessError) as e:
@@ -474,6 +502,9 @@ def log_event(path: str, **fields) -> None:
 
 
 def acquire_heavy(job_id: str, path: str = DEFAULT_HEAVY_LOCK, run=subprocess.run):
+    why = check_heavy_lock_path(path)
+    if why:
+        return None, why
     tok = os.path.join(tempfile.gettempdir(), f"cluster_route-{_safe_id(job_id)}.token")
     r = run([sys.executable, path, "acquire", "--job", f"cluster-route-{_safe_id(job_id)}",
              "--pid", str(os.getpid()), "--token-file", tok], capture_output=True, text=True, timeout=60)

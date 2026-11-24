@@ -119,6 +119,52 @@ def test_heavy_lock_status_parse(text, rc, want):
     assert cr.parse_heavy_status(text, rc) == want
 
 
+def test_free_slots_with_hub_ci_unknown_is_unknown_not_free():
+    assert cr.parse_heavy_status("slot-1: free\nhub CI: unknown (no runner)", 0) == "unknown"
+
+
+# ---- where heavy_lock.py comes from: no default, no stale copy, unknown never reads as free
+CURRENT_LOCK = "# reads gh api repos/x/actions/runners\nprint('slot-1: free')\n"
+STALE_LOCK = "# only local docker\nprint('slot-1: free')\n"
+
+
+def _no_run(*a, **k):
+    raise AssertionError("a refused heavy_lock.py must never be executed")
+
+
+def test_there_is_no_default_heavy_lock_path():
+    # the stale shared-checkout default is gone: unset means unset, not a hard-coded F:\ path
+    assert "novahub" not in open(os.path.join(_NODE, "cluster_route.py"), encoding="utf-8").read()
+    state, why = cr.heavy_lock_state("", run=_no_run)
+    assert state == "unknown" and "HEAVY_LOCK_PY is not set" in why
+
+
+def test_missing_heavy_lock_file_is_unknown(tmp_path):
+    state, why = cr.heavy_lock_state(str(tmp_path / "nope.py"), run=_no_run)
+    assert state == "unknown" and "not found" in why
+
+
+def test_stale_heavy_lock_file_is_refused_not_run(tmp_path):
+    p = tmp_path / "heavy_lock.py"
+    p.write_text(STALE_LOCK, encoding="utf-8")
+    state, why = cr.heavy_lock_state(str(p), run=_no_run)
+    assert state == "unknown" and "stale" in why
+    tok, msg = cr.acquire_heavy("job1", str(p), run=_no_run)
+    assert tok is None and "stale" in msg
+
+
+def test_current_heavy_lock_file_is_used(tmp_path):
+    p = tmp_path / "heavy_lock.py"
+    p.write_text(CURRENT_LOCK, encoding="utf-8")
+    seen = []
+
+    class R:
+        returncode, stdout, stderr = 0, "slot-1: free\nhub CI: idle (1 runner)", ""
+
+    state, _ = cr.heavy_lock_state(str(p), run=lambda argv, **k: (seen.append(argv), R())[1])
+    assert state == "free" and seen and seen[0][1] == str(p)
+
+
 # ------------------------------------------------------------------ small mechanical work
 def test_mechanical_goes_to_the_local_model():
     d = cr.decide({"kind": "mechanical", "title": "lint sweep of docs/", "effort": "low"},
