@@ -56,12 +56,18 @@ def evening_close(data: Mapping[str, Sequence[str]]) -> str:
 
 
 def spoken_minute(text: str) -> str:
-    """Trim text to what one spoken minute holds, cutting at a line boundary."""
+    """Trim text to what one spoken minute holds, cutting at a line boundary.
+
+    If the first line with words is already over the budget, it is cut at the
+    word budget instead, so the minute is never silent.
+    """
     budget = SPOKEN_WORDS_PER_MINUTE
     out: list[str] = []
     for line in text.splitlines():
         n = len(line.split())
         if n > budget:
+            if not any(o.strip() for o in out):
+                out.append(" ".join(line.split()[:budget]))
             break
         budget -= n
         out.append(line)
