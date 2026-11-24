@@ -28,3 +28,7 @@ Stop hook misreads ROSTER.md as a handoff. cd to leadfuel-core before spawning A
 
 ## Addendum 4: new drafts needing a DOORS read
 hub 1208 (QBO scope wall, DOORS 208, 22e30810), hub 1213 (K01 web_liveness exclusion), hub 1214 (W16 prompt-site list), lc 112 LAND-OK b55af8b (DOORS 238), hub 1204 fixed to 59652538 (re-read owed), hub 1200 86cba04a (re-read owed). Owner Walk L-SURFACE row now links the 11-lane index (v13). K02 overtaken by hub 1078. Owner-steps: brain_census production read (counts only) for W16; rulings on W16 tensions (router posts a card).
+
+## Addendum 5
+- lc 111 sanitized and squashed to d52a61a (INTELLIGENCE 239): needs a fresh DOORS read; old commits e72654c/ed4d79e may stay visible via GitHub refs. lc 119 new draft (own-5 brief template, own-7 proposal/undo/stop; 7 tests): needs a DOORS read. Not built: own-1 (needs the approval queue), coverage-39, chats-3, chats-4 (owner step: where the OneDrive chat-sessions folder is).
+- Owner Walk is at v14 (SURFACE 236: P11 key names/hash prefixes, ADMIN_PASSWORD rotation, W03 'no such card'). CHECK that SURFACE 235's L-SURFACE link edit (v13) survived in v14 (236 could not tell); re-add via a SURFACE agent if missing.
