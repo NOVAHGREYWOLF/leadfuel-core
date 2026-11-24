@@ -89,3 +89,27 @@ Measured on 2026-11-24 (Pacific), one run under the heavy lock, below-normal pri
 
 Machines other than GREYWOLF are `unknown` until each is indexed through its own path. On GREYWOLF
 only `F:\` minus the exclusions is indexed; `C:\` is `unknown`.
+
+## The other machines: per-machine readers (part 7)
+
+Code: [`node/cluster_readers.py`](cluster_readers.py), what to read per machine:
+[`node/cluster_reader_sources.json`](cluster_reader_sources.json) (machines, routes and the in-use flag
+come from part 1's `node/cluster_inventory_targets.json`). Tests: `tests/test_cluster_readers.py`.
+They write into the SAME index file above, under the inventory's machine ids (`overlord`, `r710-1`,
+`r620`, `greywolf`, `surface`, `msi`; `r710-2` and `r610` have no route and read `unknown`).
+
+```
+python node/cluster_readers.py plan [--at 2026-11-24T23:30] [--machine r620] [--json]   # dry run, touches nothing
+python node/cluster_readers.py run --machine r620 [--minutes 120] [--mbps 40]           # one pass per machine
+```
+
+- The walk and the hashing run ON the machine that owns the disk (`nice -n 19 ionice -c3 python3 -`
+  on the Proxmox hosts, PowerShell at Idle priority on the laptops); only path, size, date and hash
+  come back. No file content leaves a machine; remote files have `extract_state = remote`, which a
+  content search reports as unknown.
+- One machine pass at a time, each under the estate heavy slot (`node/cluster_scan_slot.py`), the
+  laptops and GREYWOLF only 22:00 to 08:00 Pacific (a pass stops at 08:00), the R620 only when the
+  Postgres standby guard says ok, the R710 #1's `overlord-dumps` left unread while an ingest runs.
+- A machine that cannot be reached is recorded `unknown` with the reason (coverage and search say so);
+  its earlier rows stay. Key setup is the owner's step:
+  `F:\Claude Sessions\handoff\ROUTER-142\CLUSTER-FILES-7\KEY-STEPS.md`.
