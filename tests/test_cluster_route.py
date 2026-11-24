@@ -269,9 +269,128 @@ def test_dry_run_prints_and_starts_nothing(capsys, tmp_path):
     assert "WOULD run on vm102" in out and "--network none" in out
 
 
-def test_default_targets_file_ships_r620_and_r710_disabled():
-    doc = json.load(open(os.path.join(_NODE, "cluster_targets.json"), encoding="utf-8"))
-    by = {t["id"]: t for t in doc["targets"]}
-    assert by["vm102"]["enabled"] is True
-    assert by["r620"]["enabled"] is False and by["r710"]["enabled"] is False
-    assert [t["id"] for t in doc["targets"]][0] == "vm102"
+
+
+
+# ------------------------------------------------------------------ the R620 standby guard (owner, CONDUCTOR 060)
+GUARD = {"kind": "standby-refresh", "via": "overlord", "status_file": "/var/log/pg-standby.status",
+         "max_age_s": 86400}
+R620G = cr.Target.from_dict(dict(R620, cpu_cap=6, idle_io=True, guard=GUARD))
+
+
+def guarded(load=1.0, guard="ok", why="copy 3 h old"):
+    return cr.Facts("ok", "probed", 24, load, 0, 50.0, guard, why)
+
+
+def test_guarded_host_healthy_is_allowed():
+    d = cr.decide({"kind": "test"}, [R620G], {"r620": guarded()}, "free")
+    assert (d.action, d.target) == ("run", "r620")
+
+
+def test_guarded_host_load_above_half_is_skipped():
+    d = cr.decide({"kind": "test"}, [R620G], {"r620": guarded(load=12.5)}, "free")
+    assert d.action == "wait" and d.considered[0][1] == "busy"
+
+
+def test_guarded_host_lagging_is_skipped():
+    d = cr.decide({"kind": "test"}, [R620G], {"r620": guarded(guard="lag", why="30 h old")}, "free")
+    assert d.action == "wait" and d.considered[0][1] == "busy" and "30 h" in d.considered[0][2]
+
+
+@pytest.mark.parametrize("g", ["unknown", None, "garbage"])
+def test_guarded_host_unreadable_guard_is_skipped(g):
+    d = cr.decide({"kind": "test"}, [R620G], {"r620": guarded(guard=g)}, "free")
+    assert d.action == "wait" and d.considered[0][1] in ("unknown", "busy")
+    assert d.target is None
+
+
+def test_guarded_host_is_skipped_and_the_next_target_used():
+    d = cr.decide({"kind": "test"}, [R620G, TARGETS[2]],
+                  {"r620": guarded(guard="lag"), "r710": ok(16, 0.2)}, "free")
+    assert d.target == "r710"
+
+
+def test_guarded_host_command_is_low_priority_and_capped():
+    cmd = cr.remote_command(R620G, ["python", "-m", "pytest", "-q"], "j3", 600)
+    assert "nice -n 19 ionice -c3 taskset -c 0-5 timeout 600 python3 -m pytest" in cmd
+
+
+@pytest.mark.parametrize("bad", [dict(R620, guard=GUARD),                      # no cpu cap
+                                 dict(R620, guard=GUARD, cpu_cap=6, max_load_frac=0.8),
+                                 dict(R620, guard=dict(GUARD, max_age_s=0), cpu_cap=6),
+                                 dict(R620, guard={"kind": "other"}, cpu_cap=6)])
+def test_guarded_host_config_must_keep_the_owner_limits(bad):
+    with pytest.raises(ValueError):
+        cr.Target.from_dict(bad)
+
+
+NOW = 1795488436   # 2026-11-24T02:47:16Z
+
+
+@pytest.mark.parametrize("text,want", [
+    (f"now={NOW}\nlast_ok=20261123T113001Z\nrefreshing=0\n", "ok"),
+    (f"now={NOW}\nlast_ok=20261122T113001Z\nrefreshing=0\n", "lag"),       # 39 h old
+    (f"now={NOW}\nlast_ok=20261123T113001Z\nrefreshing=1\n", "lag"),       # refresh running
+    (f"now={NOW}\nlast_ok=\nrefreshing=0\n", "unknown"),                     # no OK line
+    (f"now={NOW}\nlast_ok=garbage\nrefreshing=0\n", "unknown"),
+    (f"now={NOW}\nlast_ok=20261123T113001Z\nrefreshing=\n", "unknown"),     # pgrep unread
+    ("now=\nlast_ok=20261123T113001Z\nrefreshing=0\n", "unknown"),
+    (f"now={NOW}\nlast_ok=20261130T113001Z\nrefreshing=0\n", "unknown"),    # in the future
+    ("", "unknown"),
+])
+def test_standby_guard_parse(text, want):
+    assert cr.parse_standby_guard(text, 86400)[0] == want
+
+
+class _R:
+    def __init__(self, rc, out):
+        self.returncode, self.stdout, self.stderr = rc, out, ""
+
+
+def _fake_ssh(guard_rc=0, guard_out=f"now={NOW}\nlast_ok=20261123T113001Z\nrefreshing=0\n",
+              load="0.3"):
+    calls = []
+    def run(argv, **kw):
+        calls.append(argv)
+        if argv[-2] == "overlord":
+            return _R(guard_rc, guard_out)
+        return _R(0, f"nproc=24\nload={load} 0.3 0.3 1/1 1\nworkers=0\nmemavail_kb=50000000\n")
+    return run, calls
+
+
+def test_probe_reads_the_guard_for_a_guarded_host():
+    run, calls = _fake_ssh()
+    f = cr.probe(R620G, run=run, resolve=lambda a: "10.20.0.52")
+    assert f.state == "ok" and f.guard == "ok"
+    assert [c[-2] for c in calls] == [R620G.ssh, "overlord"]
+    assert cr.decide({"kind": "test"}, [R620G], {"r620": f}, "free").target == "r620"
+
+
+def test_probe_guard_ssh_failure_skips_the_host():
+    run, _ = _fake_ssh(guard_rc=255, guard_out="")
+    f = cr.probe(R620G, run=run, resolve=lambda a: "10.20.0.52")
+    assert f.guard == "unknown"
+    assert cr.decide({"kind": "test"}, [R620G], {"r620": f}, "free").action == "wait"
+
+
+def test_probe_guard_lag_skips_the_host():
+    run, _ = _fake_ssh(guard_out=f"now={NOW}\nlast_ok=20261121T221704Z\nrefreshing=0\n")
+    f = cr.probe(R620G, run=run, resolve=lambda a: "10.20.0.52")
+    assert f.guard == "lag"
+    assert cr.decide({"kind": "test"}, [R620G], {"r620": f}, "free").action == "wait"
+
+
+def test_guard_script_is_read_only():
+    s = cr.standby_guard_script(GUARD)
+    assert "flock" not in s and "psql" not in s and ">" not in s.replace("2>/dev/null", "")
+    assert "[p]g-standby-refresh" in s
+
+
+def test_default_targets_enable_all_three_and_guard_the_r620():
+    targets = cr.load_targets(os.path.join(_NODE, "cluster_targets.json"))
+    by = {t.id: t for t in targets}
+    assert [t.id for t in targets] == ["vm102", "r620", "r710"]
+    assert all(t.enabled for t in targets)
+    r620 = by["r620"]
+    assert r620.guard and r620.guard["kind"] == "standby-refresh"
+    assert 0 < r620.cpu_cap <= 24 // 2 and r620.max_load_frac <= 0.5 and r620.idle_io

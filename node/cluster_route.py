@@ -21,6 +21,11 @@ Rules, all of them refusals rather than fall-throughs:
     (node/local_route.py), only when local_route.classify says it is mechanical and the model
     answers. Otherwise it is refused or waits. There is no cloud path anywhere in this file (Law 9;
     a cloud path is a decision, never a fallback).
+  * The R620 hosts the hub's Postgres standby (VM 200). Owner's decision (relayed by CONDUCTOR 060
+    via ROUTER #138): it takes jobs at low priority (nice 19, idle I/O, a CPU cap well under its 24
+    threads) and is SKIPPED whenever its load is at or above half, the standby copy is older than
+    its limit or a refresh is running. If either cannot be read, it is unknown and skipped. The
+    guard reads overlord's refresh status file with grep and pgrep only (`read_standby_guard`).
   * Transport stays on the LAN: an ssh alias must resolve (`ssh -G`) to a loopback, private or
     tailnet (100.64/10) address, or the target is unknown and nothing is sent.
   * The job runs with no network: the source is a `git archive` of a commit, plus a vendored copy
@@ -105,6 +110,9 @@ class Target:
     cpus: int = 4
     memory_gb: int = 4
     max_load_frac: float = 0.5
+    cpu_cap: int = 0          # plain hosts: taskset to CPUs 0..cap-1 (0 = no cap)
+    idle_io: bool = False     # plain hosts: ionice -c3, so the job's disk work yields to everything
+    guard: dict | None = None # {"kind": "standby-refresh", "via": alias, "status_file": ..., "max_age_s": n}
 
     @classmethod
     def from_dict(cls, d: dict) -> "Target":
@@ -119,10 +127,24 @@ class Target:
         frac = float(d.get("max_load_frac", 0.5))
         if not 0 < frac <= 1:
             raise ValueError(f"target {d['id']}: max_load_frac must be in (0, 1]")
+        guard = d.get("guard")
+        if guard is not None:
+            if (not isinstance(guard, dict) or guard.get("kind") != "standby-refresh"
+                    or not guard.get("via") or not guard.get("status_file")
+                    or not isinstance(guard.get("max_age_s"), int) or guard["max_age_s"] <= 0):
+                raise ValueError(f"target {d['id']}: guard needs kind standby-refresh, via, "
+                                 "status_file and a positive max_age_s")
+            if frac > 0.5 or not int(d.get("cpu_cap", 0)):
+                raise ValueError(f"target {d['id']}: a guarded host takes max_load_frac <= 0.5 "
+                                 "and a cpu_cap (owner, CONDUCTOR 060)")
+        cap = int(d.get("cpu_cap", 0))
+        if cap < 0:
+            raise ValueError(f"target {d['id']}: cpu_cap must be 0 or more")
         return cls(id=str(d["id"]), ssh=str(d["ssh"]), exec=d["exec"],
                    python=str(d.get("python", "python3")), image=str(d.get("image", "")),
                    enabled=d.get("enabled", False), counts_runners=bool(d.get("counts_runners", False)),
-                   cpus=int(d.get("cpus", 4)), memory_gb=int(d.get("memory_gb", 4)), max_load_frac=frac)
+                   cpus=int(d.get("cpus", 4)), memory_gb=int(d.get("memory_gb", 4)), max_load_frac=frac,
+                   cpu_cap=cap, idle_io=bool(d.get("idle_io", False)), guard=guard)
 
 
 @dataclass(frozen=True)
@@ -133,11 +155,13 @@ class Facts:
     load1: float | None
     workers: int | None
     mem_avail_gb: float | None
+    guard: str | None = None      # for a guarded target: "ok", "lag" or "unknown"; None = not read
+    guard_why: str = ""
 
     @classmethod
     def from_dict(cls, d: dict) -> "Facts":
         f = cls(str(d.get("state")), str(d.get("why", "")), d.get("threads"), d.get("load1"),
-                d.get("workers"), d.get("mem_avail_gb"))
+                d.get("workers"), d.get("mem_avail_gb"), d.get("guard"), str(d.get("guard_why", "")))
         return f if f.state == "ok" and _usable(f) else Facts.unknown(f"recorded facts unusable: {d!r}")
 
     @staticmethod
@@ -204,6 +228,10 @@ def decide(job: dict, targets: list[Target], facts: dict, heavy_lock: str,
         f = facts.get(t.id)
         if not isinstance(f, Facts) or f.state != "ok" or not _usable(f):
             considered.append((t.id, "unknown", f.why if isinstance(f, Facts) else "not measured"))
+            continue
+        if t.guard is not None and f.guard != "ok":
+            verdict = "busy" if f.guard == "lag" else "unknown"
+            considered.append((t.id, verdict, "standby guard: " + (f.guard_why or "not read")))
             continue
         frac = f.load1 / f.threads
         if frac >= t.max_load_frac:
@@ -285,7 +313,71 @@ def probe(target: Target, run=subprocess.run, resolve=None) -> Facts:
         return Facts.unknown(f"ssh could not start: {e}")
     if r.returncode != 0:
         return Facts.unknown(f"ssh exit {r.returncode}: {(r.stderr or '').strip()[:160]}")
-    return parse_probe(r.stdout, target.counts_runners)
+    f = parse_probe(r.stdout, target.counts_runners)
+    if target.guard is not None and f.state == "ok":
+        g, why = read_standby_guard(target.guard, run=run, resolve=resolve)
+        f = Facts(f.state, f.why, f.threads, f.load1, f.workers, f.mem_avail_gb, g, why)
+    return f
+
+
+# The R620 hosts the hub's Postgres standby (VM 200). It is a copy refreshed from GREYWOLF by
+# overlord's cron (/root/pg-standby-refresh.sh nightly, /root/pg-standby-catchup.sh every 2 h). The
+# refresh writes one line per run to a status file; the newest " OK " line is when the copy was
+# last good. "Lag" here is that age, the same measure catchup uses (its MAXAGE, 24 h). Read-only:
+# grep and pgrep on overlord. No Postgres connection, no lock taken (`flock -n` would take it),
+# nothing written. `[p]g-...` keeps pgrep from counting its own command line.
+def standby_guard_script(guard: dict) -> str:
+    f = shlex.quote(guard["status_file"])
+    return ("echo now=$(date -u +%s); "
+            f"echo last_ok=$(grep ' OK ' {f} 2>/dev/null | tail -1 | cut -d' ' -f1); "
+            "echo refreshing=$(pgrep -fc '[p]g-standby-refresh' 2>/dev/null || true)")
+
+
+def parse_standby_guard(text: str, max_age_s: int) -> tuple[str, str]:
+    """("ok"|"lag"|"unknown", why). Anything it cannot read is unknown, never ok."""
+    kv = {}
+    for line in (text or "").splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            kv[k.strip()] = v.strip()
+    now, last, busy = kv.get("now", ""), kv.get("last_ok", ""), kv.get("refreshing", "")
+    if not now.isdigit():
+        return "unknown", "overlord's clock was not read"
+    if not busy.isdigit():
+        return "unknown", "could not tell whether a refresh is running"
+    if int(busy) > 0:
+        return "lag", "a standby refresh is running now"
+    if not re.fullmatch(r"\d{8}T\d{6}Z", last):
+        return "unknown", f"no readable OK line in the status file ({last[:40]!r})"
+    try:
+        t = dt.datetime.strptime(last, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc).timestamp()
+    except ValueError:
+        return "unknown", f"OK timestamp {last!r} does not parse"
+    age = int(now) - int(t)
+    if age < -300:
+        return "unknown", f"OK timestamp is {-age} s in the future of overlord's clock"
+    if age > max_age_s:
+        return "lag", f"standby copy is {age // 3600} h old, over {max_age_s // 3600} h"
+    return "ok", f"standby copy is {max(age, 0) // 3600} h old, no refresh running"
+
+
+def read_standby_guard(guard: dict, run=subprocess.run, resolve=None) -> tuple[str, str]:
+    try:
+        check_lan((resolve or (lambda a: resolve_alias(a, run)))(guard["via"]))
+    except NotLan as e:
+        return "unknown", f"guard transport refused: {e}"
+    except (OSError, subprocess.SubprocessError) as e:
+        return "unknown", f"could not resolve {guard['via']}: {e}"
+    try:
+        r = run(["ssh", *SSH_OPTS, guard["via"], standby_guard_script(guard)], capture_output=True,
+                text=True, timeout=PROBE_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return "unknown", f"guard read timed out after {PROBE_TIMEOUT_S} s"
+    except OSError as e:
+        return "unknown", f"ssh could not start: {e}"
+    if r.returncode != 0:
+        return "unknown", f"guard ssh exit {r.returncode}"
+    return parse_standby_guard(r.stdout, guard["max_age_s"])
 
 
 def parse_heavy_status(text: str, rc: int) -> str:
@@ -338,10 +430,15 @@ def remote_command(target: Target, argv: list[str], job_id: str, timeout_s: int)
         return (f"docker run --rm -i --network none --cpus {target.cpus} --memory {target.memory_gb}g "
                 f"--name jobroute-{_safe_id(job_id)} --label jobroute=1 {shlex.quote(target.image)} "
                 f"sh -c {shlex.quote(inner)}")
+    low = "nice -n 19"
+    if target.idle_io:
+        low += " ionice -c3"
+    if target.cpu_cap:
+        low += f" taskset -c 0-{target.cpu_cap - 1}"
     return (f'd=$(mktemp -d /var/tmp/jobroute.XXXXXX) && chown nobody "$d" && cd "$d" && '
             f"runuser -u nobody -- tar -xzf - && "
             f'runuser -u nobody -- env PYTHONPATH="$d/_vendor" HOME="$d" PYTHONDONTWRITEBYTECODE=1 '
-            f"nice -n 19 timeout {t} {job}; rc=$?; cd /; "
+            f"{low} timeout {t} {job}; rc=$?; cd /; "
             f'[ -n "$d" ] && rm -rf "$d"; exit $rc')
 
 
