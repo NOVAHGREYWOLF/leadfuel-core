@@ -95,7 +95,9 @@ def parse_send(text) -> dict:
         return out
     # Measured 2026-11-06..23 (wake pass sent/*.txt): "session <id> is archived; unarchive it first" and
     # "session <id> not found". The target cannot ever read it: the next pass sends the answer somewhere else.
-    if re.search(r"\bis archived\b|\bnot found\b", low):
+    # Only the measured shape, `session local_<uuid> is archived` / `session local_<uuid> not found`: a looser match
+    # would mark a live target gone on any text that says "not found" (DOORS 182 on PR 107).
+    if re.search(r"\bsession\s+local_[0-9a-f-]{36}\s+(?:is archived\b|not found\b)", low):
         out["delivery"] = "undelivered"
         out["gone"] = True
         return out
