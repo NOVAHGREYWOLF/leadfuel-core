@@ -3,3 +3,6 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# NODE lab plans: real hosts, logins and paths stay local (never commit)
+node/lab_hosts.local.json

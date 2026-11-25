@@ -435,8 +435,85 @@ def test_guard_script_is_read_only():
 def test_default_targets_enable_all_three_and_guard_the_r620():
     targets = cr.load_targets(os.path.join(_NODE, "cluster_targets.json"))
     by = {t.id: t for t in targets}
-    assert [t.id for t in targets] == ["vm102", "r620", "r710"]
-    assert all(t.enabled for t in targets)
+    assert [t.id for t in targets] == ["vm102", "r620", "r710", "overlord"]
+    assert all(t.enabled for t in targets if t.id != "overlord")
+    assert not by["overlord"].enabled          # q9136: every node is listed, a new one is dry-run only
     r620 = by["r620"]
     assert r620.guard and r620.guard["kind"] == "standby-refresh"
     assert 0 < r620.cpu_cap <= 24 // 2 and r620.max_load_frac <= 0.5 and r620.idle_io
+
+# ------------------------------------------------------------------ every node helps (card q9136)
+OVERLORD = {"id": "overlord", "ssh": "overlord", "exec": "plain", "python": "python3", "enabled": True,
+            "max_load_frac": 0.4, "cpu_cap": 8, "idle_io": True, "kinds": ["test", "lint"]}
+FOUR = [cr.Target.from_dict(d) for d in (VM, R620, R710, OVERLORD)]
+FOUR_FREE = dict(ALL_FREE, overlord=ok(36, 2.0))
+
+
+def test_default_policy_is_first_free_so_old_callers_keep_their_answer():
+    d = cr.decide({"kind": "test"}, FOUR, FOUR_FREE, "free")
+    assert d.target == "vm102"
+
+
+def test_most_headroom_picks_the_node_with_the_most_spare_threads():
+    # vm102 is a container capped at 8 cpus; the r620 is nearly full; the r710 has 15.8 spare; the overlord is capped at 8.
+    facts = dict(FOUR_FREE, vm102=ok(20, 1.0), r620=ok(24, 11.0), r710=ok(16, 0.2))
+    d = cr.decide({"kind": "test"}, FOUR, facts, "free", policy="most-headroom")
+    assert d.target == "r710", d.why
+    # positive control: the same fleet under first-free still answers vm102
+    assert cr.decide({"kind": "test"}, FOUR, facts, "free", policy="first-free").target == "vm102"
+
+
+def test_most_headroom_never_picks_a_busy_unknown_or_disabled_node():
+    facts = dict(FOUR_FREE, r710=ok(16, 15.0), r620=unknown(), vm102=ok(20, 19.0))
+    d = cr.decide({"kind": "test"}, FOUR, facts, "free", policy="most-headroom")
+    assert d.target == "overlord"
+    off = [cr.Target.from_dict(dict(OVERLORD, enabled=False))]
+    d2 = cr.decide({"kind": "test"}, off, FOUR_FREE, "free", policy="most-headroom")
+    assert d2.action == "wait" and d2.target is None
+
+
+def test_a_cap_limits_headroom_so_a_huge_busy_host_does_not_win():
+    # overlord has 34 spare threads but may give only 8; the r710 has 16 threads, 12 spare.
+    facts = {"vm102": unknown(), "r620": unknown(), "r710": ok(16, 4.0), "overlord": ok(36, 2.0)}
+    d = cr.decide({"kind": "test"}, FOUR, facts, "free", policy="most-headroom")
+    assert d.target == "r710"
+
+
+def test_most_headroom_tie_keeps_file_order():
+    facts = {"vm102": unknown(), "r620": ok(24, 0.0), "r710": ok(24, 0.0), "overlord": unknown()}
+    r710 = cr.Target.from_dict(dict(R620, id="r710", ssh="pve-ng"))
+    d = cr.decide({"kind": "test"}, [TARGETS[1], r710], facts, "free", policy="most-headroom")
+    assert d.target == "r620"
+
+
+def test_kinds_rule_keeps_a_build_off_the_overlord():
+    facts = {"overlord": ok(36, 0.5)}
+    only = [cr.Target.from_dict(OVERLORD)]
+    assert cr.decide({"kind": "test"}, only, facts, "free").target == "overlord"
+    d = cr.decide({"kind": "build"}, only, facts, "free")
+    assert d.action == "wait" and d.considered[0][1] == "skipped"
+
+
+def test_bad_kinds_and_policy_are_refused():
+    for bad in ([], ["mechanical"], ["test", "test"], "test", ["deploy"]):
+        with pytest.raises(ValueError):
+            cr.Target.from_dict(dict(OVERLORD, kinds=bad))
+    d = cr.decide({"kind": "test"}, FOUR, FOUR_FREE, "free", policy="fastest-guess")
+    assert d.action == "refuse"
+
+
+def test_policy_comes_from_the_targets_file_and_the_flag_overrides_it(tmp_path, capsys):
+    assert cr.load_policy(os.path.join(_NODE, "cluster_targets.json")) == "most-headroom"
+    t = tmp_path / "t.json"
+    t.write_text(json.dumps({"schema": "cluster-targets-1", "targets": [VM]}))
+    assert cr.load_policy(str(t)) == "first-free"          # no policy named: the old rule
+    t.write_text(json.dumps({"schema": "cluster-targets-1", "policy": "random", "targets": [VM]}))
+    with pytest.raises(ValueError):
+        cr.load_policy(str(t))
+    assert cr.main(["where", "--kind", "lint", "--targets", str(t), "--", "ruff"]) == 2
+    assert "ERROR targets" in capsys.readouterr().out
+
+
+def test_the_overlord_command_is_low_priority_capped_and_never_a_build():
+    cmd = cr.remote_command(cr.Target.from_dict(OVERLORD), ["python", "-m", "pytest"], "j1", 60)
+    assert "nice -n 19 ionice -c3 taskset -c 0-7" in cmd and "runuser -u nobody" in cmd
