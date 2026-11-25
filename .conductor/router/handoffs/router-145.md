@@ -23,3 +23,9 @@ q9812 shows A on the page but the owner picked C (samples first, then A) in the 
 
 ## Gotchas
 SendMessage reaches only my own agents; use send_message for sessions. post_card clashes on n: bump it. Hook flags a handoff on any path with that word. Rules in memory: five card and brief rules (links, undo, tiles).
+
+## Update from CONDUCTOR 062 (successor #146 launches via slot 04, fireAt 3:44 PM Pacific)
+- I stay open until my two agents report; I relay their reports to #146 once it is live.
+- #146: open ONE read-only agent to read the locks README and SESSION_MAP and name the owner of the stale ci-novahub tickets and of "locks rotate after 15 minutes"; put it on the Walk page if it is the owner's rule.
+- #146: a one-line Walk row for pushing plugin commit b00b377 (way/plugin, unpushed): owner yes/no. Do not push it.
+- q9812 is C (owner tile): hub 1125 to 1127 unmerged until he reads the samples and says so.
