@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NovahOS front door (mockup)</title>
+<style>
+:root{--bg:#10141a;--fg:#e6edf3;--mut:#8b98a5;--card:#1a212b;--ok:#3fb950;--warn:#d29922;--line:#2b3542}
+@media (prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1f2328;--mut:#59636e;--card:#fff;--line:#d0d7de}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,Segoe UI,sans-serif;padding:16px}
+main{max-width:980px;margin:auto}h1{font-size:20px}h2{font-size:16px;margin:28px 0 8px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.dev{flex:1 1 280px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.dev h3{margin:0 0 8px;font-size:14px}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--mut)}
+.on{color:var(--ok);border-color:var(--ok)}.pend{color:var(--warn);border-color:var(--warn)}
+table{border-collapse:collapse;width:100%;background:var(--card)}td,th{border:1px solid var(--line);padding:6px 9px;text-align:left;font-size:13px}
+.note{color:var(--mut);font-size:13px}button{font:inherit;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+</style></head><body><main>
+<h1>NovahOS front door <span class="pill pend">mockup, nothing is wired</span></h1>
+<p class="note">Picture of the design in docs/FRONT_DOOR_DESIGN.md. Approve it or mark it up; no code is built until he does.</p>
+
+<h2>1. One account, two devices</h2>
+<div class="row">
+ <div class="dev"><h3>GREYWOLF <span class="pill on">signed in</span></h3>
+  <div>Account: the one account</div><div class="note">Device session, stored in the OS credential store</div>
+  <p><button>Sign out this device</button></p></div>
+ <div class="dev"><h3>Surface <span class="pill on">signed in</span></h3>
+  <div>Same account, same rooms, same history</div><div class="note">Separate device session. Revoking GREYWOLF does not touch this one.</div>
+  <p><button>Sign out this device</button></p></div>
+ <div class="dev"><h3>New device <span class="pill pend">needs a code</span></h3>
+  <div>Enter the code shown on a signed-in device</div><div class="note">No code, no session. No hub reachable: opens in LOCAL mode only.</div>
+  <p><button>Show code on this device</button></p></div>
+</div>
+
+<h2>2. Connectors: linked once, used from desktop and online</h2>
+<table><tr><th>Connector</th><th>Linked on</th><th>Desktop</th><th>Online</th><th>Sends anything?</th></tr>
+<tr><td>Mail</td><td>hub (account)</td><td>uses it</td><td>uses it</td><td>only through the approval gate</td></tr>
+<tr><td>Calendar</td><td>hub (account)</td><td>uses it</td><td>uses it</td><td>only through the approval gate</td></tr>
+<tr><td>gh, railway (command-line logins)</td><td>this PC only</td><td>status shown</td><td>not available</td><td>n/a</td></tr></table>
+<p class="note">Linking a connector is not permission to send. Every outbound use waits for his approval.</p>
+
+<h2>3. Which route may a request take?</h2>
+<table><tr><th>Privacy tier</th><th>Local model</th><th>Claude Code or vendor API</th><th>Other machines</th></tr>
+<tr><td>shared</td><td>yes</td><td>yes, each call approved</td><td>yes</td></tr>
+<tr><td>private</td><td>yes</td><td>yes, each call approved</td><td>yes</td></tr>
+<tr><td>secret</td><td>yes</td><td>never as context; one item at a time, approved for that item</td><td>his own machines only</td></tr>
+<tr><td>local_only</td><td>yes</td><td>never</td><td>never</td></tr></table>
+<p class="note">Which of his files sits in which tier waits for the data survey. If the local model is down the router says so and stops; it does not reach for a vendor.</p>
+</main></body></html>

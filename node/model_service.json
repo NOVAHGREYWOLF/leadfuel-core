@@ -1,0 +1,13 @@
+{
+  "schema": "model-service-1",
+  "about": "THE ONE LOCAL MODEL SERVICE (queue item fold-c-G03). One address, written once, read by node/model_service.py. The shell, the local hub and every other machine ask that module and never type an address of their own. No key or credential belongs in this file. Every base_url must be on this machine or the private network: the resolver refuses anything else, and when no service is enabled it raises instead of reaching for a vendor (a cloud path is a decision behind the approval gate, never a fallback). The one service is the overlord GPU service by the owner's standing words (relayed by CONDUCTOR 061, 2026-11-23: 'not GREYWOLF-dependent'). It is listed as not deployed because its container (queue item W09, CT 105) does not exist yet; the port is llama-swap's default and is a PROPOSAL until W09 lands. Enabling it is a one-word edit by the owner after `model_service.py probe overlord-gpu` answers.",
+  "one": "overlord-gpu",
+  "services": [
+    {"id": "overlord-gpu", "kind": "llama-swap", "base_url": "http://overlord:8080/v1",
+     "enabled": false, "state": "not-deployed", "needs": "W09 (CT 105 on overlord) and oss-3 (llama-swap pilot)",
+     "scheduled_ok": true},
+    {"id": "greywolf-ollama", "kind": "ollama", "base_url": "http://127.0.0.1:11434/v1",
+     "enabled": true, "state": "interim", "scheduled_ok": false,
+     "note": "Listens on this PC only (measured 2026-11-21: 127.0.0.1:11434). Fine for the shell while GREYWOLF is on; nothing on a schedule may depend on it."}
+  ]
+}
