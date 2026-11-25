@@ -1,0 +1,42 @@
+# Healthchecks (BSD-3, self-hosted) as the dead-man's switch for every timed job. NODE oss-4. NOT RUNNING, NOT DEPLOYED.
+#
+# Off by default: the service carries the `monitor` profile, so a plain `docker compose up` starts nothing.
+# Starting it is a download of one image and is the owner's typed go (OWNER-STEP), then, on a cluster VM:
+#     docker compose -f node/healthchecks.compose.yml --profile monitor --env-file <your private env file> up -d
+#
+# Guard (owner's, oss-4): no hosted Healthchecks, and no alert through an outside channel until the owner approves
+# that channel. So: loopback bind only, SITE_ROOT is a loopback URL, sign-up is closed, and NO mail host, chat,
+# push or webhook setting appears anywhere in this file. An alert that would leave the machine is a decision made
+# later, in a separate change, with its own gate. tests/test_healthchecks_guard.py fails if any of that drifts.
+#
+# Reachability: 127.0.0.1 only. Reaching it from the tailnet is a separate, deliberate step (a tailscale serve
+# rule), not something this file does. Nothing is exposed to the internet.
+#
+# Secrets: none live here. SECRET_KEY is a required variable (`:?`) so compose refuses to start with it unset;
+# the value belongs in a private env file that is never committed.
+#
+# The image tag is pinned, never `latest`. It was written from memory of the upstream release list and has NOT been
+# pulled or checked against the registry; confirm it exists before the first start.
+name: watch-monitoring
+
+services:
+  healthchecks:
+    image: healthchecks/healthchecks:v3.9
+    profiles: ["monitor"]
+    environment:
+      DB: sqlite
+      DB_NAME: /data/hc.sqlite
+      SECRET_KEY: ${HEALTHCHECKS_SECRET_KEY:?set HEALTHCHECKS_SECRET_KEY in the private env file}
+      SITE_ROOT: http://127.0.0.1:8000
+      SITE_NAME: Estate watch
+      ALLOWED_HOSTS: 127.0.0.1,localhost
+      REGISTRATION_OPEN: "False"
+      DEBUG: "False"
+    volumes:
+      - healthchecks-data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+volumes:
+  healthchecks-data:
