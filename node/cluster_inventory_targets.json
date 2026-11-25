@@ -1,0 +1,104 @@
+{
+  "schema": "cluster-inventory-targets-1",
+  "about": "Machines for node/cluster_inventory.py. READ ONLY: the collector sends one fixed read-only script (lsblk, df, zpool list, vgs, lvs, pvesm status, qm list, pct list and the disk lines of the guest configs) and nothing else. No key, password or token belongs here; a key is a path under the user's own ~/.ssh. Every address must be loopback, RFC 1918 or tailnet, or the machine is unknown and nothing is sent. A machine with route.kind none is listed so it can never be mistaken for empty: it reads `unknown` with its reason. Reach facts as of 2026-11-23 (checked from GREYWOLF): overlord, the R710 #1 and SURFACE answer; the R620 answers only through overlord's key; the R710 #2 and the R610 sit behind the lab lockdown; the MSI is on 192.168.1.0/24 and did not answer. \"scan.in_use\" is for part 2 (node/cluster_scan_slot.py): a machine the owner works on is left alone for heavy passes between 08:00 and 22:00 Pacific; a server any time under nice and ionice, one pass at a time, with the estate heavy slot. The R620 also hosts the Postgres standby: part 2 reuses cluster_route's standby guard before it hashes there.",
+  "machines": [
+    {
+      "id": "overlord",
+      "role": "Proxmox host: system disk, local-lvm, old SSD copies, VM and CT disks",
+      "os": "linux",
+      "route": {
+        "kind": "ssh",
+        "host": "overlord"
+      },
+      "scan": {
+        "in_use": false
+      }
+    },
+    {
+      "id": "r710-1",
+      "role": "Proxmox host pve-ng: backup store, ingest copies, document library",
+      "os": "linux",
+      "route": {
+        "kind": "ssh",
+        "host": "root@10.20.0.51",
+        "key": "~/.ssh/id_ed25519_overlord"
+      },
+      "scan": {
+        "in_use": false
+      }
+    },
+    {
+      "id": "r620",
+      "role": "Proxmox host: second library copy, Postgres standby VM",
+      "os": "linux",
+      "route": {
+        "kind": "ssh-via",
+        "via": "overlord",
+        "host": "root@10.20.0.52",
+        "via_key": "/root/.ssh/id_ed25519_auto"
+      },
+      "scan": {
+        "in_use": false
+      }
+    },
+    {
+      "id": "r710-2",
+      "role": "Proxmox host pve-od, lab VLAN 30",
+      "os": "linux",
+      "route": {
+        "kind": "none",
+        "reason": "VLAN 30 lab lockdown: no route from GREYWOLF or overlord"
+      },
+      "scan": {
+        "in_use": false
+      }
+    },
+    {
+      "id": "r610",
+      "role": "Proxmox host pve-r610, lab VLAN 30",
+      "os": "linux",
+      "route": {
+        "kind": "none",
+        "reason": "VLAN 30 lab lockdown: no route from GREYWOLF or overlord"
+      },
+      "scan": {
+        "in_use": false
+      }
+    },
+    {
+      "id": "greywolf",
+      "role": "Main Windows computer (this machine)",
+      "os": "windows",
+      "route": {
+        "kind": "local"
+      },
+      "scan": {
+        "in_use": true
+      }
+    },
+    {
+      "id": "surface",
+      "role": "Windows laptop that travels",
+      "os": "windows",
+      "route": {
+        "kind": "ssh",
+        "host": "milto@100.102.130.109"
+      },
+      "scan": {
+        "in_use": true
+      }
+    },
+    {
+      "id": "msi",
+      "role": "Windows laptop (GS73), planned compute node; backed up to the R710 #1 before a wipe",
+      "os": "windows",
+      "route": {
+        "kind": "ssh",
+        "host": "192.168.1.91"
+      },
+      "scan": {
+        "in_use": true
+      }
+    }
+  ]
+}
