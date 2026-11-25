@@ -1,0 +1,30 @@
+{
+  "_about": "webchat-10: the one NovahOS brand file. Default applied 2026-11-23 on the owner's standing words (keep the current palette and mark). The app, the installer and the sites read this file; none types a colour of its own. Values were READ from home-node/app/assistant/ui/looks.css (branch one-app-b2-looks, looks claude and v1) and the etg.ai email skin in the private clients repo CLAUDE.md. Not yet wired into the app: see docs/PART205_B_BATCH.md.",
+  "decision": {
+    "palette": "app (warm neutral, clay accent)",
+    "mark": "indigo to violet gradient",
+    "company_site_palette": "greywolf (navy, red) stays the company/etg.ai brand and is not the app's",
+    "icon_set": "keep the set the app ships now; no new icon set chosen",
+    "status": "default, reversible: one file edit changes it"
+  },
+  "app": {
+    "dark": {
+      "ground": "#262624", "surface": "#201f1d", "surface-2": "#2e2d2a", "ink": "#eeebe3", "ink-2": "#cfcbc0", "muted": "#a9a599",
+      "line": "#383733", "accent": "#e08a64", "on-accent": "#1a1915", "up": "#6cc28a", "down": "#ec8a78", "unk": "#e0a24a"
+    },
+    "light": {
+      "ground": "#faf9f5", "surface": "#f2f0e8", "surface-2": "#ffffff", "ink": "#1a1915", "ink-2": "#46443c", "muted": "#6b675c",
+      "line": "#e5e2d7", "accent": "#a94a28", "on-accent": "#ffffff", "up": "#256f40", "down": "#a8362a", "unk": "#8a5a0e"
+    }
+  },
+  "mark": {
+    "gradient": ["#4f52e0", "#6d4fd6"],
+    "gradient_on_dark": ["#9a9df7", "#b4a0f5"],
+    "note": "indigo to violet, from the v1 look accent gradient"
+  },
+  "greywolf": {
+    "navy": "#0d141a", "red": "#e00000", "red_bar": "#fc0000",
+    "gold": null,
+    "note": "gold was not read from any file; null on purpose, not guessed"
+  }
+}
