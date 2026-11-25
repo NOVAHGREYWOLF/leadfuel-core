@@ -29,3 +29,6 @@ SendMessage reaches only my own agents; use send_message for sessions. post_card
 - #146: open ONE read-only agent to read the locks README and SESSION_MAP and name the owner of the stale ci-novahub tickets and of "locks rotate after 15 minutes"; put it on the Walk page if it is the owner's rule.
 - #146: a one-line Walk row for pushing plugin commit b00b377 (way/plugin, unpushed): owner yes/no. Do not push it.
 - q9812 is C (owner tile): hub 1125 to 1127 unmerged until he reads the samples and says so.
+
+## Update: DOORS agent aa2d39c91d90f75ff reported (claims, re-check with gh)
+Hub 592 is at head c1b432b4 (main c88dd1c7 merged in), draft again, CI running. Fixes: test_web_liveness_collapse expectation 4 to 3 state changes; atlas placement entry estate_alert added; off switch ESTATE_ALERT_ENABLED, default off, no cron added. NEXT: a DOORS read of that head after the hub pytest job succeeds on it (read the diff in estate_alert.py, app.py api_cron_estate_alert, tests/test_estate_alert.py), then the single lander lands it (after the current lander finishes hub 1102 and the arm PRs). Lander aa796791170f95607 was still on the hub 1102 gates and CI when written.
