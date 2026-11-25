@@ -1,0 +1,97 @@
+{
+  "schema": "jobrouter-hosts-1",
+  "about": "Host registry for route.py (design 4.1). Counts and flags are TAKEN ON TRUST from the 2026-11-17 design table, the utilization feed sample and devices.md; none was re-measured when this file was written. Every flag that changes a rule is spelled out, because route.py refuses a missing one rather than assume it. No addresses, keys or credentials belong in this file: ssh hosts are named by their ssh config alias.",
+  "stale_after_s": 360,
+  "hosts": [
+    {
+      "id": "overlord",
+      "hostnames": ["overlord"],
+      "threads": 36, "ram_gb": 62.5, "gpu": [],
+      "always_on": true, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": true,
+      "exec": {"mode": "local"},
+      "note": "Proxmox host, always on, mostly idle. The router runs here, so jobs placed on it start locally."
+    },
+    {
+      "id": "ci-runners",
+      "hostnames": ["ci-runners"],
+      "threads": 12, "ram_gb": 23.5, "gpu": [],
+      "always_on": true, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": false,
+      "exec": {"mode": "none"},
+      "note": "VM 102, the 13 CI runners. CI work is placed by runner labels, not by this router, so it takes no router jobs."
+    },
+    {
+      "id": "pve-ng",
+      "hostnames": ["pve-ng"],
+      "threads": 16, "ram_gb": 62.9, "gpu": [],
+      "always_on": false, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": true,
+      "exec": {"mode": "ssh", "alias": "pve-ng", "enabled": false},
+      "note": "R710 #1: backups and restore tests. always_on is false until someone confirms it stays powered (unverified). Its disk is shared with the overlord ingest chain, so a class that reads that disk must wait for it. ssh stays disabled until a key exists."
+    },
+    {
+      "id": "pve-r620",
+      "hostnames": ["pve-r620"],
+      "threads": 24, "ram_gb": 62.8, "gpu": [],
+      "always_on": true, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": true,
+      "exec": {"mode": "ssh", "alias": "pve-r620", "enabled": false},
+      "note": "R620: hosts VM 200, the Postgres standby, so it is always on. ssh stays disabled until a key exists."
+    },
+    {
+      "id": "novahub-pg",
+      "hostnames": ["novahub-pg"],
+      "threads": 4, "ram_gb": 15.6, "gpu": [],
+      "always_on": true, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": false,
+      "exec": {"mode": "none"},
+      "note": "VM 200, the Postgres standby on the R620. Measured by the feed, never given router jobs."
+    },
+    {
+      "id": "GREYWOLF",
+      "hostnames": ["GREYWOLF"],
+      "threads": 16, "ram_gb": 64, "gpu": ["cuda"],
+      "always_on": false, "thermal_limited": true, "ceiling_cpu_pct": 50,
+      "in_cluster": true, "accepts_jobs": true,
+      "exec": {"mode": "none"},
+      "note": "Laptop: hub database, the only CUDA card, throttles at about 24 W, was off 6 days in November. A CPU job never goes here while another eligible host is up. No execution route yet (Windows); a CUDA job class needs one first."
+    },
+    {
+      "id": "SURFACE",
+      "hostnames": ["SURFACE"],
+      "threads": 8, "ram_gb": 7.6, "gpu": [],
+      "always_on": false, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": true, "accepts_jobs": false,
+      "exec": {"mode": "none"},
+      "note": "Thin client at 82 to 85% RAM: memory-bound, not CPU-bound. Takes no router jobs."
+    },
+    {
+      "id": "pve-od",
+      "hostnames": ["pve-od"],
+      "threads": null, "ram_gb": null, "gpu": [],
+      "always_on": false, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": false, "accepts_jobs": false,
+      "exec": {"mode": "none"},
+      "note": "closed by design (owner, card q9591): not in the cluster, may be managed later. Facts stale since 2026-11-07."
+    },
+    {
+      "id": "pve-r610",
+      "hostnames": ["pve-r610"],
+      "threads": null, "ram_gb": null, "gpu": [],
+      "always_on": false, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": false, "accepts_jobs": false,
+      "exec": {"mode": "none"},
+      "note": "closed by design (owner, card q9591): not in the cluster, may be managed later. Facts stale since 2026-11-07."
+    },
+    {
+      "id": "MSI",
+      "hostnames": ["MSI"],
+      "threads": null, "ram_gb": null, "gpu": ["cuda"],
+      "always_on": false, "thermal_limited": false, "ceiling_cpu_pct": 80,
+      "in_cluster": false, "accepts_jobs": false, "in_feed": false,
+      "exec": {"mode": "none"},
+      "note": "Not in the cluster yet (K13) and not in the utilization feed. GTX 1050 Ti with 4 GB per the MSI plan (unverified). Enters the cluster only after its backup is protected."
+    }
+  ]
+}

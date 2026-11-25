@@ -1,0 +1,16 @@
+{
+  "schema": "jobclasses-1",
+  "classes": {
+    "standby-refresh-catchup": {
+      "about": "Owner's first real class (card q9590 A). Refreshes the Postgres standby from GREYWOLF if the last good refresh is over 24 h old and GREYWOLF answers. It is an existing script on overlord that cron runs every 2 h at :17; the router runs the same script, it does not replace it. GREYWOLF is a source, not a place: the class must wait until the feed shows it up on fresh facts. argv and timeout_s are TAKEN ON TRUST from the NODE fleet handoff of 2026-11-17 and were not read on overlord: confirm the path, and that six hours is longer than a real refresh, before the cron line is switched.",
+      "kind": "cpu",
+      "eligible_hosts": ["overlord"],
+      "requires_always_on": true,
+      "requires_up": ["GREYWOLF"],
+      "needs": {"threads": 1, "ram_gb": 1},
+      "argv": ["/root/pg-standby-catchup.sh"],
+      "timeout_s": 21600,
+      "dedupe": true
+    }
+  }
+}
