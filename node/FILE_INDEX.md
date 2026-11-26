@@ -89,3 +89,42 @@ Measured on 2026-11-24 (Pacific), one run under the heavy lock, below-normal pri
 
 Machines other than GREYWOLF are `unknown` until each is indexed through its own path. On GREYWOLF
 only `F:\` minus the exclusions is indexed; `C:\` is `unknown`.
+
+## Smart indexing: near-duplicates and tags (cluster files part 4)
+
+Code: [`node/file_smart.py`](file_smart.py). Tests: [`tests/test_file_smart.py`](../tests/test_file_smart.py).
+It opens the index above **read-only** and writes its own results to `smart.sqlite` beside it
+(`%LOCALAPPDATA%\cluster_files\smart.sqlite`; override with `--smart-db` or `CLUSTER_FILES_SMART_DB`).
+Like the index, it lists real paths: keep it and its reports off the vault.
+
+**How a near-duplicate group is formed.** One seed plus the files that matched the seed itself. Files
+reached only through another member are not pulled in. The first version took connected components
+(single linkage), so a chain A~B~C~D became one group although A and D were unrelated; any two members
+of a group are now within twice the threshold of each other. The similarity stored for each member is
+measured against the keep copy, and a member that matched the seed but not the keep copy says so in its
+note. A report made before this change should be rebuilt (`run` regroups, then `report`) before it is read.
+
+```
+python node/file_smart.py run --machine greywolf --images 3000 --pdfs 300 --model-sample 100 --minutes 75 --gb 5 --wait-lock 20
+python node/file_smart.py report --out %LOCALAPPDATA%\cluster_files\report   # near.json, near.md
+python node/file_smart.py stats
+```
+
+`run` takes `scripts/heavy_lock.py` (`HEAVY_LOCK_PY`), drops to background priority, caps reads at
+`--mbps`, stops at `--minutes` and `--gb`, and refuses busy hours (08:00-22:00 local) unless the machine
+has had no keyboard or mouse input for 15 minutes; when idleness cannot be read in busy hours it refuses.
+It never rescans the drive: it works from the index plus a bounded sample of files.
+
+### Methods (all local, no vendor API)
+
+| What | How |
+|---|---|
+| Same photo, different size | Pillow decodes the image (JPEG in draft mode), applies EXIF rotation, 9x8 greyscale, 64-bit difference hash. Near when the Hamming distance is at most 5 and the aspect ratios agree within 3%. Pairs come from multi-index hashing (eight one-byte buckets). Flat images (<=3 or >=61 bits set) are skipped and counted. heic, svg, raw and psd have no local decoder: `unknown`. |
+| Same document, different format | Word 4-gram shingles of the text the index already holds (md, txt, html with tags and scripts stripped, docx, xlsx, pptx, ...), plus pdf text from pypdf in a bounded sample (first 20 pages, a pdf whose name matches a document first). One-permutation MinHash, 64 bins, densified; 16 bands of 4 for candidates; similarity >= 0.8 confirms. Under 50 words: not compared. Only the first 16,000 characters per file are compared (what the index keeps). |
+| Groups | Union of confirmed pairs. A set that is byte-identical throughout is left to the exact report above. The proposed keep copy: most durable location (the part 5 rule), then the largest picture or the editable source format (md/docx before txt before html before pdf), then the oldest date, then the shortest path. Report only; nothing is moved. |
+| Image sample | Images whose normalised name (`IMG_0042-1024x768 (1).jpg` -> `img_0042`) is shared by another image first, then a seeded random fill. |
+| Rule tags | Facets `media`, `kind` (code, docs, data, media, backup, model, archive, binary), `scope` (estate, personal), `project`, `client` (the folder under `clients`), `privacy`. From path, name, extension and the git flag only. A facet no rule can decide is left open, never guessed. |
+| Model tags | A bounded sample of files the rules left without a scope or project goes to Ollama on loopback (`qwen3:4b-instruct-2507-q8_0` by default), 20 per call, temperature 0, JSON only. Answers outside the allowed values become `unknown`; retired arm names map to the ratified ones. The model's confidence is self-reported and stored as such. No model reachable: the sample is tagged `unknown` with no confidence. |
+| Privacy | A privacy-tier path (the index's verdict, re-checked) is never decoded, never text-read, never pdf-read, and reaches the model by its path only. |
+
+Every tag row has `source` (`rule` or `model`, enforced by a CHECK constraint) and `confidence`.
