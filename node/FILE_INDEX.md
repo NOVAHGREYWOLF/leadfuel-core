@@ -97,6 +97,13 @@ It opens the index above **read-only** and writes its own results to `smart.sqli
 (`%LOCALAPPDATA%\cluster_files\smart.sqlite`; override with `--smart-db` or `CLUSTER_FILES_SMART_DB`).
 Like the index, it lists real paths: keep it and its reports off the vault.
 
+**How a near-duplicate group is formed.** One seed plus the files that matched the seed itself. Files
+reached only through another member are not pulled in. The first version took connected components
+(single linkage), so a chain A~B~C~D became one group although A and D were unrelated; any two members
+of a group are now within twice the threshold of each other. The similarity stored for each member is
+measured against the keep copy, and a member that matched the seed but not the keep copy says so in its
+note. A report made before this change should be rebuilt (`run` regroups, then `report`) before it is read.
+
 ```
 python node/file_smart.py run --machine greywolf --images 3000 --pdfs 300 --model-sample 100 --minutes 75 --gb 5 --wait-lock 20
 python node/file_smart.py report --out %LOCALAPPDATA%\cluster_files\report   # near.json, near.md

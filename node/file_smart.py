@@ -516,21 +516,38 @@ def doc_pairs(sigs: list[array], threshold: float = DOC_SIM) -> tuple[list, int]
 # --------------------------------------------------------------------------- grouping (report only)
 
 def _groups(n: int, pairs: list) -> list[list[int]]:
-    parent = list(range(n))
+    """Seed-anchored groups: a group is one seed plus the files that matched the seed itself, never
+    files reached only through another member. The first version took connected components of the
+    pair graph (single linkage), so A~B and B~C and C~D made one group of A..D although A and D were
+    nothing alike, and one soft file could fuse hundreds of unrelated groups into one. Here every
+    member is within the threshold of the seed, so any two members are within twice the threshold of
+    each other (Hamming distance and Jaccard distance are metrics). Seeds are taken in order of how
+    many files matched them (most first, then lowest index), so a boilerplate hub seeds one group and
+    a file that matched only through it is not dragged along. A file belongs to at most one group."""
+    adj: dict[int, set[int]] = {}
+    for i, j, _ in pairs:
+        adj.setdefault(i, set()).add(j)
+        adj.setdefault(j, set()).add(i)
+    assigned: set[int] = set()
+    out: list[list[int]] = []
+    for seed in sorted(adj, key=lambda x: (-len(adj[x]), x)):
+        if seed in assigned:
+            continue
+        mates = adj[seed] - assigned
+        if not mates:
+            continue
+        group = sorted(mates | {seed})
+        assigned.update(group)
+        out.append(group)
+    return out
 
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-    for i, j, _ in pairs:
-        a, b = find(i), find(j)
-        if a != b:
-            parent[b] = a
-    out: dict[int, list[int]] = {}
-    for i, j, _ in pairs:
-        out.setdefault(find(i), set()).update((i, j))
-    return [sorted(v) for v in out.values()]
+
+def _pair_sim(kind: str, sigs: list, arrs: list | None, i: int, j: int) -> float:
+    """Similarity of two signed files, computed directly (not read off the pair list, which only
+    holds the pairs that cleared the threshold)."""
+    if kind == "image":
+        return 1 - hamming(sigs[i]["dhash"], sigs[j]["dhash"]) / 64
+    return similarity(arrs[i], arrs[j])
 
 
 def propose_near_canonical(kind: str, members: list[dict]) -> tuple[dict, str]:
@@ -557,7 +574,8 @@ def build_near_groups(ic, sc, run: int, machine: str, kind: str, img_dist: int =
         sigs = [dict(r) for r in sc.execute(
             "SELECT path, size, dhash, w, h FROM imgsig WHERE machine=? AND state='done'", (machine,))]
         pairs, skipped = image_pairs(sigs, img_dist)
-        score = {(i, j): 1 - d / 64 for i, j, d in pairs}
+        arrs = None
+        floor = 1 - img_dist / 64
     else:
         rows = [dict(r) for r in sc.execute(
             "SELECT path, size, ext, sig FROM docsig WHERE machine=? AND state='done'", (machine,))]
@@ -568,7 +586,7 @@ def build_near_groups(ic, sc, run: int, machine: str, kind: str, img_dist: int =
             a.frombytes(r["sig"])
             arrs.append(a)
         pairs, skipped = doc_pairs(arrs, doc_sim)
-        score = {(i, j): s for i, j, s in pairs}
+        floor = doc_sim
     meta = {}
     for r in ic.execute("SELECT path, size, ext, mtime, in_git, hash FROM files WHERE machine=? AND ftype=?",
                         (machine, "image" if kind == "image" else "doc")):
@@ -591,18 +609,23 @@ def build_near_groups(ic, sc, run: int, machine: str, kind: str, img_dist: int =
             st["exact_only_skipped"] += 1          # all byte-identical: already in the exact report
             continue
         canon, why = propose_near_canonical(kind, members)
-        sims = [score.get((min(a, b), max(a, b))) for a in g for b in g if a < b]
-        sims = [s for s in sims if s is not None]
+        ci = g[members.index(canon)]
+        # similarity of every member to the keep copy, computed directly: the pair list only holds
+        # pairs that matched, and a member that matched the seed may not match the keep copy
+        sim_to = {i: (1.0 if i == ci else _pair_sim(kind, sigs, arrs, i, ci)) for i in g}
+        sims = [s for i, s in sim_to.items() if i != ci]
         formats = sorted({m["ext"] for m in members})
         recl = sum(m["size"] for m in members if m is not canon)
         cur = sc.execute("INSERT INTO near_groups (run, kind, members, reclaimable, min_sim, max_sim, formats, "
                          "canonical, reason) VALUES (?,?,?,?,?,?,?,?,?)",
                          (run, kind, len(members), recl, min(sims), max(sims), ",".join(formats), canon["path"], why))
         gid = cur.lastrowid
-        ci = g[members.index(canon)]
         for i, m in zip(g, members):
-            s = 1.0 if m is canon else score.get((min(i, ci), max(i, ci)))
+            s = sim_to[i]
             note = []
+            if i != ci and s < floor:
+                note.append(f"matched the group's seed, not the keep copy (similarity {s:.2f}, "
+                            f"below {floor:.2f}): review before treating as a copy")
             if m is not canon and m.get("hash") and m.get("hash") == canon.get("hash"):
                 note.append("byte-identical to the keep copy")
             if kind == "image" and m is not canon and (m.get("w"), m.get("h")) != (canon.get("w"), canon.get("h")):

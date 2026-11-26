@@ -191,6 +191,99 @@ def test_regrouping_replaces_old_groups(idx):
     assert sc.execute("SELECT COUNT(*) FROM near_groups WHERE kind='doc'").fetchone()[0] == 1
 
 
+# --------------------------------------------------------------------------- chaining (synthetic only)
+
+
+def _components(n, pairs):
+    """What the first version did: connected components of the pair graph (single linkage)."""
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            x = parent[x]
+        return x
+    for i, j, _ in pairs:
+        parent[find(i)] = find(j)
+    return len({find(i) for i in range(n)})
+
+
+def _dhash_chain(steps=15, flip=4, seed=3):
+    """Hashes where each is `flip` bits from the last (inside the 5-bit threshold) and the ends are far."""
+    rnd = random.Random(seed)
+    vals = [rnd.getrandbits(64)]
+    order = list(range(64))
+    rnd.shuffle(order)
+    for k in range(steps):
+        v = vals[-1]
+        for b in order[(k * flip) % 64:(k * flip) % 64 + flip]:
+            v ^= 1 << b
+        vals.append(v)
+    return [{"dhash": f"{v:016x}", "w": 100, "h": 100} for v in vals]
+
+
+def test_image_chain_is_not_one_group():
+    sigs = _dhash_chain()
+    assert fs.hamming(sigs[0]["dhash"], sigs[-1]["dhash"]) > 50      # the ends are not the same picture
+    pairs, _ = fs.image_pairs(sigs)
+    assert len(pairs) == len(sigs) - 1                               # only neighbours matched
+    assert _components(len(sigs), pairs) == 1                        # single linkage would have made one group of 16
+    groups = fs._groups(len(sigs), pairs)
+    assert len(groups) > 1 and max(map(len, groups)) <= 3
+    for g in groups:                                                 # triangle bound: within twice the threshold
+        assert all(fs.hamming(sigs[a]["dhash"], sigs[b]["dhash"]) <= 2 * fs.IMG_MAX_DIST for a in g for b in g)
+    assert not any(0 in g and len(sigs) - 1 in g for g in groups)
+
+
+def _doc_chain(steps=8, block=8):
+    """MinHash-shaped arrays: each differs from the last in `block` bins (similarity 0.875)."""
+    from array import array
+    sigs = [array("I", [1000 + b for b in range(fs.BINS)])]
+    for k in range(steps):
+        nxt = array("I", sigs[-1])
+        for b in range(k * block, (k + 1) * block):
+            nxt[b] = 5000 + 100 * k + b
+        sigs.append(nxt)
+    return sigs
+
+
+def test_doc_chain_is_not_one_group():
+    sigs = _doc_chain()
+    assert fs.similarity(sigs[0], sigs[-1]) == 0.0
+    pairs, _ = fs.doc_pairs(sigs)
+    assert {(i, j) for i, j, _ in pairs} == {(k, k + 1) for k in range(len(sigs) - 1)}
+    assert _components(len(sigs), pairs) == 1
+    groups = fs._groups(len(sigs), pairs)
+    assert len(groups) > 1 and max(map(len, groups)) <= 3
+    for g in groups:                                                 # Jaccard distance is a metric: >= 0.6 pairwise
+        assert all(fs.similarity(sigs[a], sigs[b]) >= 1 - 2 * (1 - fs.DOC_SIM) - 1e-9 for a in g for b in g)
+
+
+def test_a_hub_file_does_not_fuse_two_clusters():
+    # 0-1-2 and 4-5-6 are tight; 3 matches one file in each. Components would join all seven.
+    pairs = [(0, 1, .9), (1, 2, .9), (0, 2, .9), (4, 5, .9), (5, 6, .9), (4, 6, .9), (2, 3, .8), (3, 4, .8)]
+    assert _components(7, pairs) == 1
+    groups = fs._groups(7, pairs)
+    assert not any(any(a in g for a in (0, 1)) and any(b in g for b in (5, 6)) for g in groups)
+    flat = [i for g in groups for i in g]
+    assert len(flat) == len(set(flat))                               # a file is in at most one group
+
+
+def test_stored_group_reports_the_real_similarity_to_the_keep_copy(idx):
+    ic, sc = _cons(idx)
+    sigs = _doc_chain()
+    for k, a in enumerate(sigs):
+        sc.execute("INSERT INTO docsig VALUES (?,?,?,?,?,?,?,?,?,?)",
+                   ("greywolf", f"F:/synthetic/doc{k}.md", 0, 100 + k, ".md", "done", 80, a.tobytes(), "text", 1))
+    sc.commit()
+    fs.build_near_groups(ic, sc, 1, "greywolf", "doc", log=_quiet)
+    gs = list(sc.execute("SELECT * FROM near_groups WHERE kind='doc' AND canonical LIKE '%synthetic%'"))
+    assert len(gs) >= 2 and all(g["members"] <= 3 for g in gs)
+    for g in gs:
+        assert g["min_sim"] >= 1 - 2 * (1 - fs.DOC_SIM) - 1e-9
+        for m in sc.execute("SELECT * FROM near_members WHERE group_id=? AND role='near-copy'", (g["id"],)):
+            assert m["sim"] is not None and 0.5 <= m["sim"] <= 1.0
+
+
 # --------------------------------------------------------------------------- tags
 
 
