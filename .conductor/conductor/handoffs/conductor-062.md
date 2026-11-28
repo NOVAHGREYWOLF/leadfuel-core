@@ -22,5 +22,9 @@ Standing: "code everything you can", "open 100 agents if needed", "yes everythin
 ## Owed to the owner (asked, unanswered)
 Syncthing check, vault-sync watcher yes, notes-folder standing setting, slots 07/08 Bypass (q9806), plugin commit b00b377 push, Passwords-screen desk, key file backup off USB yes/no, MSI ssh path, VM 106 disk guard click (optional), hub 1195 landed? (unverified).
 
+## Added at the end
+- UNDELIVERED twice to #147: NODE novah estate part 23 (local_4f39ed9c-cc88-4695-9c96-f86625243cbf) is at its cap and needs a successor, NODE novah estate part 24, opened nested by a router; brief = F:\Claude Sessions\handoff\NODE-novah-estate-part-13\HANDOFF-NODE-23.md. Re-send to #147 (it was mid-turn) and read back.
+- The owner REJECTED my slot-arming tool call for conductor 063 on 11-27: do not arm a slot for my successor; he gets the paste prompt (memory: Nests not slots).
+
 ## Gotchas
 update_scheduled_task works only after the owner types in this session; fireAt must be future (3 min). Monitor until-loop: compare HHMM as numbers carefully. Stop hook misfires on read paths containing "handoff".
